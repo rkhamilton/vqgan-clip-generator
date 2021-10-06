@@ -33,7 +33,7 @@ This example uses [Anaconda](https://www.anaconda.com/products/individual#Downlo
 Create a new virtual Python environment for VQGAN-CLIP-GENERATOR:
 
 ```sh
-conda create --name vqgan python=3.9
+conda create --name vqgan python=3.9 pytorch torchvision cudatoolkit pytest
 conda activate vqgan
 ```
 

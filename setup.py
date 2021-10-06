@@ -1,11 +1,3 @@
-"""A setuptools based setup module.
-
-See:
-https://packaging.python.org/guides/distributing-packages-using-setuptools/
-https://github.com/pypa/sampleproject
-"""
-
-# Always prefer setuptools over distutils
 from setuptools import setup, find_packages
 import pathlib
 
@@ -66,13 +58,20 @@ setup(
 
     python_requires='>=3.6, <4',
 
-    # This field lists other packages that your project depends on to run.
-    # Any package you put here will be installed by pip when your project is
-    # installed, so they must be valid existing projects.
-    #
-    # For an analysis of "install_requires" vs pip's requirements files see:
-    # https://packaging.python.org/en/latest/requirements.html
-    install_requires=[],  # Optional
+    install_requires=[
+        'torch==1.9.0+cu111', 
+        'torchvision==0.10.0+cu111', 
+        'torchaudio==0.9.0'
+        'ftfy',
+        'regex',
+        'tqdm',
+        'CLIP@git+https://github.com/openai/CLIP.git'
+        'taming-transformers@git+https://github.com/CompVis/taming-transformers.git'
+        'pytorch-lightning'
+        'kornia',
+        'imageio-ffmpeg',
+        'einops',
+        'torch_optimizer'],
 
     # List additional groups of dependencies here (e.g. development
     # dependencies). Users will be able to install these using the "extras"
@@ -83,6 +82,7 @@ setup(
     # Similar to `install_requires` above, these must be valid existing
     # projects.
     extras_require={
+        'dev' : ['pytest','setuptools'],
         'test': ['pytest'],
     },
 
