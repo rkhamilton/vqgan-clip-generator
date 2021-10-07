@@ -59,18 +59,16 @@ setup(
     python_requires='>=3.6, <4',
 
     install_requires=[
-        'torch==1.9.0+cu111', 
-        'torchvision==0.10.0+cu111', 
-        'torchaudio==0.9.0'
         'ftfy',
         'regex',
         'tqdm',
-        'CLIP@git+https://github.com/openai/CLIP.git'
-        'taming-transformers@git+https://github.com/CompVis/taming-transformers.git'
-        'pytorch-lightning'
+        'pytorch-lightning',
         'kornia',
-        'imageio-ffmpeg',
-        'einops',
+        'imageio',
+        'omegaconf',
+        'taming-transformers',
+        #'imageio-ffmpeg',
+        #'einops',
         'torch_optimizer'],
 
     # List additional groups of dependencies here (e.g. development
@@ -88,16 +86,16 @@ setup(
 
     # If there are data files included in your packages that need to be
     # installed, specify them here.
-    package_data={  # Optional
-        'sample': ['package_data.dat'],
-    },
+    # package_data={  # Optional
+    #     'sample': ['package_data.dat'],
+    # },
 
     # Although 'package_data' is the preferred approach, in some case you may
     # need to place data files outside of your packages. See:
     # http://docs.python.org/distutils/setupscript.html#installing-additional-files
     #
     # In this case, 'data_file' will be installed into '<sys.prefix>/my_data'
-    data_files=[('my_data', ['data/data_file'])],  # Optional
+    # data_files=[('my_data', ['data/data_file'])],  # Optional
 
     # To provide executable scripts, use entry points in preference to the
     # "scripts" keyword. Entry points provide cross-platform support and allow
@@ -106,11 +104,11 @@ setup(
     #
     # For example, the following would provide a command called `sample` which
     # executes the function `main` from this package when invoked:
-    entry_points={  # Optional
-        'console_scripts': [
-            'sample=sample:main',
-        ],
-    },
+    # entry_points={  # Optional
+    #     'console_scripts': [
+    #         'sample=sample:main',
+    #     ],
+    # },
 
     project_urls={  # Optional
         'Bug Reports': 'https://github.com/rkhamilton/vqgan-clip-generator/issues',

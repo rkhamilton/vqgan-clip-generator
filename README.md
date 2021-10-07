@@ -30,12 +30,31 @@ Environment:
 
 This example uses [Anaconda](https://www.anaconda.com/products/individual#Downloads) to manage virtual Python environments.
 
-Create a new virtual Python environment for VQGAN-CLIP-GENERATOR:
+Create a new virtual Python environment for VQGAN-CLIP-GENERATOR. Then, install the VQGAN-CLIP-GENERATOR package using pip.
 
 ```sh
-conda create --name vqgan python=3.9 pytorch torchvision cudatoolkit pytest
+conda create --name vqgan python=3.9 pip numpy pytest tqdm git pytorch==1.9.0 torchvision==0.10.0 torchaudio==0.9.0 cudatoolkit=11.1 -c pytorch -c conda-forge
 conda activate vqgan
+pip install git+https://github.com/openai/CLIP.git taming-transformers ftfy regex tqdm pytorch-lightning kornia imageio omegaconf taming-transformers torch_optimizer
+pip install vqgan-clip-generator
 ```
+
+## Download model
+
+The VQGAN algorithm requires use of a compatible model file. These files are not provided with the pip intallation, and must be downloaded separately. You can either download them manually, or use the provided download method.
+
+```sh
+mkdir models
+
+curl -L -o models/vqgan_imagenet_f16_16384.yaml -C - 'https://heibox.uni-heidelberg.de/d/a7530b09fed84f80a887/files/?p=%2Fconfigs%2Fmodel.yaml&dl=1' #ImageNet 16384
+curl -L -o models/vqgan_imagenet_f16_16384.ckpt -C - 'https://heibox.uni-heidelberg.de/d/a7530b09fed84f80a887/files/?p=%2Fckpts%2Flast.ckpt&dl=1' #ImageNet 16384
+```
+
+Or, using the provided download method
+
+```python
+vqgan_clip.download(".\models\")
+``` 
 
 ### Using an AMD graphics card
 
