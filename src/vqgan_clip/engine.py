@@ -89,7 +89,9 @@ class Engine:
         torch.manual_seed(seed)
 
     # Set the optimiser
-    def configure_optimizer(self, opt_name, opt_lr=0.1):
+    def configure_optimizer(self):
+        opt_name = self.conf.optimiser
+        opt_lr = self.conf.learning_rate
         if opt_name == "Adam":
             self._optimizer = optim.Adam([self._z], lr=opt_lr)	# LR=0.1 (Default)
         elif opt_name == "AdamW":
@@ -135,7 +137,7 @@ class Engine:
 
     def ascend_txt(self):
         out = self.synth()
-        iii = self._perceptor.encode_image(vm.normalize(self._make_cutouts(out))).float()
+        encoded_image = self._perceptor.encode_image(vm.normalize(self._make_cutouts(out))).float()
         
         result = []
 
@@ -144,7 +146,7 @@ class Engine:
             result.append(F.mse_loss(self._z, torch.zeros_like(self._z_orig)) * ((1/torch.tensor(self._iteration_number*2 + 1))*self.conf.init_weight) / 2)
 
         for prompt in self.pMs:
-            result.append(prompt(iii))
+            result.append(prompt(encoded_image))
         
         if self.conf.make_video:    
             img = np.array(out.mul(255).clamp(0, 255)[0].cpu().detach().numpy().astype(np.uint8))[:,:,:]
@@ -168,7 +170,6 @@ class Engine:
         self.load_model()
         jit = True if float(torch.__version__[:3]) < 1.8 else False
         self._perceptor = clip.load(self.conf.clip_model, jit=jit)[0].eval().requires_grad_(False).to(self._device)
-
 
         self.make_cutouts()    
         self.initialize_z()       
@@ -200,7 +201,7 @@ class Engine:
         smoother_counter = 0 # Smoother counter
         video_styler_frame_num = 0 # for video styling
 
-        self.configure_optimizer(self.conf.optimiser)
+        self.configure_optimizer()
         try:
             for iteration_num in tqdm(range(1,self.conf.iterations+1)):
                 self.train(iteration_num)
