@@ -213,25 +213,13 @@ class Engine:
 
         if self.conf.init_image:
             if 'http' in self.conf.init_image:
-                output = Image.open(urlopen(self.conf.init_image))
+                self.convert_image_to_init_image(Image.open(urlopen(self.conf.init_image)))
             else:
-                output = Image.open(self.conf.init_image)
-            pil_image = output.convert('RGB')
-            pil_image = pil_image.resize((self.output_image_size_X, self.output_image_size_Y), Image.LANCZOS)
-            pil_tensor = TF.to_tensor(pil_image)
-            self._z, *_ = self._model.encode(pil_tensor.to(self._device).unsqueeze(0) * 2 - 1)
+                self.convert_image_to_init_image(Image.open(self.conf.init_image))
         elif self.conf.init_noise == 'pixels':
-            output = vm.random_noise_image(self.conf.image_size[0], self.conf.image_size[1])    
-            pil_image = output.convert('RGB')
-            pil_image = pil_image.resize((self.output_image_size_X, self.output_image_size_Y), Image.LANCZOS)
-            pil_tensor = TF.to_tensor(pil_image)
-            self._z, *_ = self._model.encode(pil_tensor.to(self._device).unsqueeze(0) * 2 - 1)
+            self.convert_image_to_init_image(vm.make_random_noise_image(self.conf.image_size[0], self.conf.image_size[1]))
         elif self.conf.init_noise == 'gradient':
-            output = vm.random_gradient_image(self.conf.image_size[0], self.conf.image_size[1])
-            pil_image = output.convert('RGB')
-            pil_image = pil_image.resize((self.output_image_size_X, self.output_image_size_Y), Image.LANCZOS)
-            pil_tensor = TF.to_tensor(pil_image)
-            self._z, *_ = self._model.encode(pil_tensor.to(self._device).unsqueeze(0) * 2 - 1)
+            self.convert_image_to_init_image(vm.make_random_gradient_image(self.conf.image_size[0], self.conf.image_size[1]))
         else:
             # this is the default that happens if no initialization image options are specified
             one_hot = F.one_hot(torch.randint(n_toks, [toksY * toksX], device=self._device), n_toks).float()
@@ -272,6 +260,12 @@ class Engine:
                 self.train(iteration_num)
         except KeyboardInterrupt:
             pass
+
+    def convert_image_to_init_image(self, output):
+        pil_image = output.convert('RGB')
+        pil_image = pil_image.resize((self.output_image_size_X, self.output_image_size_Y), Image.LANCZOS)
+        pil_tensor = TF.to_tensor(pil_image)
+        self._z, *_ = self._model.encode(pil_tensor.to(self._device).unsqueeze(0) * 2 - 1)
 
     def append_image_prompt(self, prompt):
         # given an image prompt that is a filename followed by a weight e.g. 'prompt_image.png:0.5', load the image, encode it with CLIP, and append it to the list of prompts used for image generation
