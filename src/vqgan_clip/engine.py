@@ -111,7 +111,7 @@ class Engine:
             self._optimizer = optim.Adam([self._z], lr=opt_lr)
 
     def train(self, i):
-        #self._optimiser.zero_grad(set_to_none=True)
+        #self._optimizer.zero_grad(set_to_none=True)
         lossAll = self.ascend_txt()
         
         if i % self.conf.save_every == 0:
