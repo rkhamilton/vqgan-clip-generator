@@ -27,7 +27,7 @@ class EngineConfig:
         self.image_prompts = []
         self.iterations = 100 # number of iterations of train() to perform before stopping.
         self.save_every = 50 # an interim image will be saved to the output location at an iteration interval defined here
-        self.output_image_size = [256,256] # x/y dimensions of the output image in pixels.
+        self.output_image_size = [256,256] # x/y dimensions of the output image in pixels. This will be adjusted slightly based on the GAN model used.
         self.init_image = None # a seed image that can be used to start the training. Without an initial image, random noise will be used.
         self.init_noise = None
         self.init_weight = 0.0
@@ -253,13 +253,7 @@ class Engine:
                 self.append_text_prompt(prompt)
 
         for prompt in self.image_prompts:
-            path, weight, stop = self.split_prompt(prompt)
-            output_image = Image.open(path)
-            pil_image = output_image.convert('RGB')
-            output_image = vm.resize_image(pil_image, (self.output_image_size_X, self.output_image_size_Y))
-            batch = self._make_cutouts(TF.to_tensor(output_image).unsqueeze(0).to(self._device))
-            embed = self._perceptor.encode_image(vm.normalize(batch)).float()
-            self.pMs.append(vm.Prompt(embed, weight, stop).to(self._device))
+            self.append_image_prompt(prompt)
 
         for seed, weight in zip(self.conf.noise_prompt_seeds, self.conf.noise_prompt_weights):
             gen = torch.Generator().manual_seed(seed)
@@ -278,6 +272,16 @@ class Engine:
                 self.train(iteration_num)
         except KeyboardInterrupt:
             pass
+
+    def append_image_prompt(self, prompt):
+        # given an image prompt that is a filename followed by a weight e.g. 'prompt_image.png:0.5', load the image, encode it with CLIP, and append it to the list of prompts used for image generation
+        path, weight, stop = self.split_prompt(prompt)
+        output_image = Image.open(path)
+        pil_image = output_image.convert('RGB')
+        output_image = vm.resize_image(pil_image, (self.output_image_size_X, self.output_image_size_Y))
+        batch = self._make_cutouts(TF.to_tensor(output_image).unsqueeze(0).to(self._device))
+        embed = self._perceptor.encode_image(vm.normalize(batch)).float()
+        self.pMs.append(vm.Prompt(embed, weight, stop).to(self._device))
 
     def append_text_prompt(self, prompt):
         # given a text prompt like 'a field of red flowers:0.5' parse that into text and weights, encode it with CLIP, and add it to the encoded prompts used for image generation
