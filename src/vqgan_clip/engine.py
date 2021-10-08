@@ -24,8 +24,9 @@ import numpy as np
 
 class EngineConfig:
     def __init__(self):
-        self.prompts = 'A painting of flowers in the renaissance style:0.5|rembrandt:0.5^fish:0.2|love:1'
+        self.text_prompts = 'A painting of flowers in the renaissance style:0.5|rembrandt:0.5^fish:0.2|love:1'
         self.image_prompts = []
+        self.noise_prompts = [] # Random number seeds can be used as prompts using the same format as a text prompt. E.g. '123:0.1|234:0.2|345:0.3' Stories (^) are not supported. 
         self.iterations = 100 # number of iterations of train() to perform before stopping.
         self.save_every = 50 # an interim image will be saved to the output location at an iteration interval defined here
         self.output_image_size = [256,256] # x/y dimensions of the output image in pixels. This will be adjusted slightly based on the GAN model used.
@@ -35,8 +36,6 @@ class EngineConfig:
         self.clip_model = 'ViT-B/32'
         self.vqgan_config = f'models/vqgan_imagenet_f16_16384.yaml'
         self.vqgan_checkpoint = f'models/vqgan_imagenet_f16_16384.ckpt'
-        self.noise_prompt_seeds = []
-        self.noise_prompt_weights = []
         self.learning_rate = 0.1
         self.cut_method = 'latest'
         self.num_cuts = 32
@@ -76,7 +75,6 @@ class Engine:
 
         self.pMs = []
 
-        self.image_prompts = []
         self.all_prompts_story_phrases = []
         self.current_prompt_story_phrase = []
 
@@ -123,7 +121,8 @@ class Engine:
                 # tqdm.write(f'i: {i}, loss: {sum(lossAll).item():g}, lossAll: {losses_str}')
                 out = self.synth()
                 info = PngImagePlugin.PngInfo()
-                info.add_text('comment', self.current_prompt_story_phrase[0])
+                if self.current_prompt_story_phrase:
+                    info.add_text('comment', self.current_prompt_story_phrase[0])
                 TF.to_pil_image(out[0].cpu()).save(self.conf.output_filename, pnginfo=info) 	
 
         loss = sum(lossAll)
@@ -165,16 +164,6 @@ class Engine:
 
     # main execution path from generate.py
     def do_it(self):
-        self.parse_text_prompts()
-            
-        # Split target images using the pipe character (weights are split later)
-        if self.conf.image_prompts:
-            self.image_prompts = self.conf.image_prompts.split("|")
-            self.image_prompts = [image.strip() for image in self.image_prompts]
-
-
-
-        
         self._device = torch.device(self.conf.cuda_device)
         self.load_model()
         jit = True if float(torch.__version__[:3]) < 1.8 else False
@@ -182,9 +171,50 @@ class Engine:
 
 
         self.make_cutouts()    
+        self.initialize_z()       
+        
+        # CLIP tokenize/encode prompts from text, input images, and noise parameters
+        self.parse_text_prompts_string()
+        for prompt in self.current_prompt_story_phrase:
+            self.encode_and_append_text_prompt(prompt)
+        
+        # Split target images using the pipe character (weights are split later)
+        if self.conf.image_prompts:
+            image_prompts = self.conf.image_prompts.split("|")
+            image_prompts = [image.strip() for image in image_prompts]
+            # if we had image prompts, encode them with CLIP
+            for prompt in image_prompts:
+                self.encode_and_append_image_prompt(prompt)
 
-        output_image_size_X, output_image_size_Y = self.calculate_output_image_size()
+        # Split noise prompts using the pipe character (weights are split later)
+        if self.conf.noise_prompts:
+            noise_prompts = self.conf.noise_prompts.split("|")
+            noise_prompts = [image.strip() for image in noise_prompts]
+            for prompt in noise_prompts:
+                self.encode_and_append_noise_prompt(prompt)
 
+        # generate the image
+        iteration_num = 0 # Iteration counter
+        zoom_video_frame_num = 0 # Zoom video frame counter
+        phrase_counter = 1 # Phrase counter
+        smoother_counter = 0 # Smoother counter
+        video_styler_frame_num = 0 # for video styling
+
+        self.set_optimiser(self.conf.optimiser)
+        try:
+            for iteration_num in tqdm(range(1,self.conf.iterations+1)):
+                self.train(iteration_num)
+        except KeyboardInterrupt:
+            pass
+
+    def encode_and_append_noise_prompt(self, prompt):
+        txt_seed, weight, _ = self.split_prompt(prompt)
+        seed = int(txt_seed)
+        gen = torch.Generator().manual_seed(seed)
+        embed = torch.empty([1, self._perceptor.visual.output_dim]).normal_(generator=gen)
+        self.pMs.append(vm.Prompt(embed, weight).to(self._device))
+
+    def initialize_z(self):
         # Gumbel or not?
         if self._gumbel:
             e_dim = 256
@@ -222,35 +252,7 @@ class Engine:
             #self._z = torch.rand_like(self._z)*2						# NR: check
 
         self._z_orig = self._z.clone()
-        self._z.requires_grad_(True)       
-        
-        # CLIP tokenize/encode prompts from text, input images, and noise parameters
-        for prompt in self.current_prompt_story_phrase:
-            self.append_text_prompt(prompt)
-
-        for prompt in self.image_prompts:
-            self.append_image_prompt(prompt)
-
-        # TODO figure out how this works and refactor to something like 'seed:weight' to match text and images
-        for seed, weight in zip(self.conf.noise_prompt_seeds, self.conf.noise_prompt_weights):
-            gen = torch.Generator().manual_seed(seed)
-            embed = torch.empty([1, self._perceptor.visual.output_dim]).normal_(generator=gen)
-            self.pMs.append(vm.Prompt(embed, weight).to(self._device))
-
-
-        # generate the image
-        iteration_num = 0 # Iteration counter
-        zoom_video_frame_num = 0 # Zoom video frame counter
-        phrase_counter = 1 # Phrase counter
-        smoother_counter = 0 # Smoother counter
-        video_styler_frame_num = 0 # for video styling
-
-        self.set_optimiser(self.conf.optimiser)
-        try:
-            for iteration_num in tqdm(range(1,self.conf.iterations+1)):
-                self.train(iteration_num)
-        except KeyboardInterrupt:
-            pass
+        self._z.requires_grad_(True)
 
     def calculate_output_image_size(self):
         f = 2**(self._model.decoder.num_resolutions - 1)
@@ -279,7 +281,7 @@ class Engine:
         pil_tensor = TF.to_tensor(pil_image)
         self._z, *_ = self._model.encode(pil_tensor.to(self._device).unsqueeze(0) * 2 - 1)
 
-    def append_image_prompt(self, prompt):
+    def encode_and_append_image_prompt(self, prompt):
         # given an image prompt that is a filename followed by a weight e.g. 'prompt_image.png:0.5', load the image, encode it with CLIP, and append it to the list of prompts used for image generation
         output_image_size_X, output_image_size_Y = self.calculate_output_image_size()
         path, weight, stop = self.split_prompt(prompt)
@@ -290,7 +292,7 @@ class Engine:
         embed = self._perceptor.encode_image(vm.normalize(batch)).float()
         self.pMs.append(vm.Prompt(embed, weight, stop).to(self._device))
 
-    def append_text_prompt(self, prompt):
+    def encode_and_append_text_prompt(self, prompt):
         # given a text prompt like 'a field of red flowers:0.5' parse that into text and weights, encode it with CLIP, and add it to the encoded prompts used for image generation
         txt, weight, stop = self.split_prompt(prompt)
         embed = self._perceptor.encode_text(clip.tokenize(txt).to(self._device)).float()
@@ -300,15 +302,15 @@ class Engine:
         # This step is slow, and does not need to be done each time an image is generated.
         self._model = vm.load_vqgan_model(self.conf.vqgan_config, self.conf.vqgan_checkpoint).to(self._device)
 
-    def parse_text_prompts(self):
+    def parse_text_prompts_string(self):
         # text prompts are provided to the class as a series of phrases and clauses separated by | and ^
         # This method separates this single string into lists of separate phrases to be processed by CLIP
 
         # Split text prompts using the pipe character (weights are split later)
-        if self.conf.prompts:
+        if self.conf.text_prompts:
             # For stories, there will be many phrases separated by ^ 
             # e.g. "a field:0.2^a pile of leaves|painting|red" would parse into two phrases 'a field:0.2' and 'a pile of leaves|painting|red'
-            story_phrases = [phrase.strip() for phrase in self.conf.prompts.split("^")]
+            story_phrases = [phrase.strip() for phrase in self.conf.text_prompts.split("^")]
             
             # Make a list of all phrases.
             all_prompts_phrases = []
@@ -328,3 +330,4 @@ class Engine:
         vals = prompt.rsplit(':', 2)
         vals = vals + ['', '1', '-inf'][len(vals):]
         return vals[0], float(vals[1]), float(vals[2])
+        

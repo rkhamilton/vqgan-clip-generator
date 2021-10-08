@@ -13,3 +13,5 @@ def test_generate_single_image(prompt_text):
     output_file = 'outputs'+os.sep+'output.png'
     assert os.path.exists(output_file)
     os.remove(output_file)
+
+# TODO add tests for noise prompts only, image only, text only, combinations
