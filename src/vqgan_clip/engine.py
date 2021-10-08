@@ -29,7 +29,6 @@ class EngineConfig:
         self.image_prompts = [] # path to image that will be turned into a prompt via CLIP
         self.noise_prompts = [] # Random number seeds can be used as prompts using the same format as a text prompt. E.g. '123:0.1|234:0.2|345:0.3' Stories (^) are not supported. 
         self.iterations = 100 # number of iterations of train() to perform before stopping.
-        self.save_every = 50 # an interim image will be saved to the output location every save_every iterations
         self.output_image_size = [256,256] # x/y dimensions of the output image in pixels. This will be adjusted slightly based on the GAN model used.
         self.seed = None # Integer to use as seed for the random number generaor. If None, a random value will be chosen.
         self.init_image = None # a seed image that can be used to start the training. Without an initial image, random noise will be used.
@@ -63,9 +62,6 @@ class Engine:
     def __init__(self):
         # self._optimiser = optim.Adam([self._z], lr=0.1)
         self.conf = EngineConfig()
-        self._iteration_number = 0.0
-        self._loss = 0.0
-
 
         self._gumbel = False
 
@@ -111,28 +107,10 @@ class Engine:
             print("Unknown optimiser.")
             self._optimizer = optim.Adam([self._z], lr=opt_lr)
 
-    def train(self, i):
+    def train(self, iteration_number):
         #self._optimizer.zero_grad(set_to_none=True)
-        lossAll, current_iteration_image = self.ascend_txt()
+        lossAll, current_iteration_image = self.ascend_txt(iteration_number)
         
-        if i % self.conf.save_every == 0:
-            with torch.inference_mode():
-                # TODO move this to outer loop
-                losses_str = ', '.join(f'{loss.item():g}' for loss in lossAll)
-                # tqdm.write(f'i: {i}, loss: {sum(lossAll).item():g}, lossAll: {losses_str}')
-                out = self.synth()
-                info = PngImagePlugin.PngInfo()
-                # If we have a text prompt for this image, add it as metadata
-                # if self.story_phrase_current_prompt:
-                #     info.add_text('comment', self.story_phrase_current_prompt[0])
-                save_filename = self.conf.output_filename
-                TF.to_pil_image(out[0].cpu()).save(save_filename, pnginfo=info) 
-
-                # if making a video, save a frame named for the video step
-                if self.conf.make_video:
-                    save_filename = './steps/' + str(i) + '.png'
-                    TF.to_pil_image(out[0].cpu()).save(save_filename, pnginfo=info) 
-
         loss = sum(lossAll)
         loss.backward()
         self._optimizer.step()
@@ -140,8 +118,20 @@ class Engine:
         #with torch.no_grad():
         with torch.inference_mode():
             self._z.copy_(self._z.maximum(self.z_min).minimum(self.z_max))
+        
+        return lossAll
 
-    def ascend_txt(self):
+    def save_current_output(self, save_filename):
+        # save the current output from the image generator to location save_filename
+        with torch.inference_mode():
+            out = self.synth()
+            info = PngImagePlugin.PngInfo()
+            # If we have a text prompt for this image, add it as metadata
+            # if self.story_phrase_current_prompt:
+            #     info.add_text('comment', self.story_phrase_current_prompt[0])
+            TF.to_pil_image(out[0].cpu()).save(save_filename, pnginfo=info)
+
+    def ascend_txt(self,iteration_number):
         out = self.synth()
         encoded_image = self._perceptor.encode_image(vm.normalize(self._make_cutouts(out))).float()
         
@@ -149,7 +139,7 @@ class Engine:
 
         if self.conf.init_weight:
             # result.append(F.mse_loss(self._z, z_orig) * args.init_weight / 2)
-            result.append(F.mse_loss(self._z, torch.zeros_like(self._z_orig)) * ((1/torch.tensor(self._iteration_number*2 + 1))*self.conf.init_weight) / 2)
+            result.append(F.mse_loss(self._z, torch.zeros_like(self._z_orig)) * ((1/torch.tensor(iteration_number*2 + 1))*self.conf.init_weight) / 2)
 
         for prompt in self.pMs:
             result.append(prompt(encoded_image))
@@ -158,7 +148,7 @@ class Engine:
         img = np.array(out.mul(255).clamp(0, 255)[0].cpu().detach().numpy().astype(np.uint8))[:,:,:]
         img = np.transpose(img, (1, 2, 0))
         current_iteration_image = np.array(img)
-        # imageio.imwrite('./steps/' + str(self._iteration_number) + '.png', np.array(img))
+        # imageio.imwrite('./steps/' + str(iteration_number) + '.png', np.array(img))
 
         return result, current_iteration_image # return loss, current iteration image
 

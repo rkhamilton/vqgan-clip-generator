@@ -2,9 +2,12 @@
 from vqgan_clip.engine import Engine, EngineConfig
 from tqdm import tqdm
 
-def single_image(config):
+save_every = 50 # an interim image will be saved to the output location every save_every iterations
+
+
+def single_image(eng_config=EngineConfig()):
     eng = Engine()
-    eng.conf = config
+    eng.conf = eng_config
 
     # load the models
     eng.initialize_VQGAN_CLIP()       
@@ -29,6 +32,15 @@ def single_image(config):
     eng.configure_optimizer()
     try:
         for iteration_num in tqdm(range(1,eng.conf.iterations+1)):
-            eng.train(iteration_num)
+            lossAll = eng.train(iteration_num)
+            if iteration_num % save_every == 0:
+                # TODO move this to outer loop
+                losses_str = ', '.join(f'{loss.item():g}' for loss in lossAll)
+                tqdm.write(f'i: {iteration_num}, loss: {sum(lossAll).item():g}, lossAll: {losses_str}')
+                eng.save_current_output(eng.conf.output_filename) 
+
+                # # if making a video, save a frame named for the video step
+                # if eng.conf.make_video:
+                #     eng.save_current_output('./steps/' + str(iteration_num) + '.png') 
     except KeyboardInterrupt:
         pass
