@@ -79,6 +79,12 @@ class Engine:
         self.all_prompts_story_phrases = []
         self.current_prompt_story_phrase = []
 
+        # default_image_size = 512  # >8GB VRAM
+        # if not torch.cuda.is_available():
+        #     default_image_size = 256  # no GPU found
+        # elif get_device_properties(0).total_memory <= 2 ** 33:  # 2 ** 33 = 8,589,934,592 bytes = 8 GB
+        #     default_image_size = 318  # <8GB VRAM
+
     def set_seed(self, seed):
         self.seed = seed
         torch.manual_seed(seed)
@@ -158,35 +164,18 @@ class Engine:
 
     # main execution path from generate.py
     def do_it(self):
-        # Split text prompts using the pipe character (weights are split later)
-        if self.conf.prompts:
-            # For stories, there will be many phrases
-            story_phrases = [phrase.strip() for phrase in self.conf.prompts.split("^")]
-            
-            # Make a list of all phrases
-            all_prompts_phrases = []
-            for phrase in story_phrases:
-                all_prompts_phrases.append(phrase.split("|"))
-            self.all_prompts_story_phrases = all_prompts_phrases
-
-            # First phrase
-            self.current_prompt_story_phrase = self.all_prompts_story_phrases[0]
+        self.parse_text_prompts()
             
         # Split target images using the pipe character (weights are split later)
         if self.conf.image_prompts:
             self.image_prompts = self.conf.image_prompts.split("|")
             self.image_prompts = [image.strip() for image in self.image_prompts]
-            # Check for GPU and reduce the default image size if low VRAM
 
-        default_image_size = 512  # >8GB VRAM
-        if not torch.cuda.is_available():
-            default_image_size = 256  # no GPU found
-        elif get_device_properties(0).total_memory <= 2 ** 33:  # 2 ** 33 = 8,589,934,592 bytes = 8 GB
-            default_image_size = 318  # <8GB VRAM
+
 
         
         self._device = torch.device(self.conf.cuda_device)
-        self._model = vm.load_vqgan_model(self.conf.vqgan_config, self.conf.vqgan_checkpoint).to(self._device)
+        self.load_model()
         jit = True if float(torch.__version__[:3]) < 1.8 else False
         self._perceptor = clip.load(self.conf.clip_model, jit=jit)[0].eval().requires_grad_(False).to(self._device)
 
@@ -212,7 +201,7 @@ class Engine:
         # CLIP tokenize/encode   
         if self.current_prompt_story_phrase:
             for prompt in self.current_prompt_story_phrase:
-                txt, weight, stop = vm.split_prompt(prompt)
+                txt, weight, stop = self.split_prompt(prompt)
                 embed = self._perceptor.encode_text(clip.tokenize(txt).to(self._device)).float()
                 self.pMs.append(vm.Prompt(embed, weight, stop).to(self._device))
 
@@ -228,7 +217,7 @@ class Engine:
             self.z_min = self._model.quantize.embedding.weight.min(dim=0).values[None, :, None, None]
             self.z_max = self._model.quantize.embedding.weight.max(dim=0).values[None, :, None, None]
 
-
+        # There are 
         if self.conf.init_image:
             if 'http' in self.conf.init_image:
                 output = Image.open(urlopen(self.conf.init_image))
@@ -251,6 +240,7 @@ class Engine:
             pil_tensor = TF.to_tensor(pil_image)
             self._z, *_ = self._model.encode(pil_tensor.to(self._device).unsqueeze(0) * 2 - 1)
         else:
+            # this is the default that happens if no initialization image options are specified
             one_hot = F.one_hot(torch.randint(n_toks, [toksY * toksX], device=self._device), n_toks).float()
             # self._z = one_hot @ self._model.quantize.embedding.weight
             if self._gumbel:
@@ -267,12 +257,12 @@ class Engine:
         # CLIP tokenize/encode   
         if self.current_prompt_story_phrase:
             for prompt in self.current_prompt_story_phrase:
-                txt, weight, stop = vm.split_prompt(prompt)
+                txt, weight, stop = self.split_prompt(prompt)
                 embed = self._perceptor.encode_text(clip.tokenize(txt).to(self._device)).float()
                 self.pMs.append(vm.Prompt(embed, weight, stop).to(self._device))
 
         for prompt in self.image_prompts:
-            path, weight, stop = vm.split_prompt(prompt)
+            path, weight, stop = self.split_prompt(prompt)
             output_image = Image.open(path)
             pil_image = output_image.convert('RGB')
             output_image = vm.resize_image(pil_image, (sideX, sideY))
@@ -297,3 +287,36 @@ class Engine:
                 self.train(iteration_num)
         except KeyboardInterrupt:
             pass
+
+    def load_model(self):
+        # This step is slow, and does not need to be done each time an image is generated.
+        self._model = vm.load_vqgan_model(self.conf.vqgan_config, self.conf.vqgan_checkpoint).to(self._device)
+
+    def parse_text_prompts(self):
+        # text prompts are provided to the class as a series of phrases and clauses separated by | and ^
+        # This method separates this single string into lists of separate phrases to be processed by CLIP
+
+        # Split text prompts using the pipe character (weights are split later)
+        if self.conf.prompts:
+            # For stories, there will be many phrases separated by ^ 
+            # e.g. "a field:0.2^a pile of leaves|painting|red" would parse into two phrases 'a field:0.2' and 'a pile of leaves|painting|red'
+            story_phrases = [phrase.strip() for phrase in self.conf.prompts.split("^")]
+            
+            # Make a list of all phrases.
+            all_prompts_phrases = []
+            for phrase in story_phrases:
+                all_prompts_phrases.append(phrase.split("|"))
+            self.all_prompts_story_phrases = all_prompts_phrases
+
+            # First phrase
+            self.current_prompt_story_phrase = self.all_prompts_story_phrases[0]
+        else:
+            self.all_prompts_story_phrases = []
+            self.current_prompt_story_phrase = []
+
+    @staticmethod
+    def split_prompt(prompt):
+        #NR: Split prompts and weights
+        vals = prompt.rsplit(':', 2)
+        vals = vals + ['', '1', '-inf'][len(vals):]
+        return vals[0], float(vals[1]), float(vals[2])

@@ -358,12 +358,6 @@ class MakeCutoutsOrig(nn.Module):
         clamp_with_grad = ClampWithGrad.apply
         return clamp_with_grad(torch.cat(cutouts, dim=0), 0, 1)
 
-#NR: Split prompts and weights
-def split_prompt(prompt):
-    vals = prompt.rsplit(':', 2)
-    vals = vals + ['', '1', '-inf'][len(vals):]
-    return vals[0], float(vals[1]), float(vals[2])
-
 normalize = transforms.Normalize(mean=[0.48145466, 0.4578275, 0.40821073],
                                         std=[0.26862954, 0.26130258, 0.27577711])
 
