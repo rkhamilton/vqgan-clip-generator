@@ -1,4 +1,5 @@
 # This contains the original math to generate an image from VQGAN+CLIP. I don't fully understand what it's doing and don't expect to change it.
+from os import stat
 import vqgan_clip.vqgan_math as vm
 
 import torch
@@ -179,25 +180,10 @@ class Engine:
         jit = True if float(torch.__version__[:3]) < 1.8 else False
         self._perceptor = clip.load(self.conf.clip_model, jit=jit)[0].eval().requires_grad_(False).to(self._device)
 
-        f = 2**(self._model.decoder.num_resolutions - 1)
 
-        # Cutout class options:
-        # 'latest','original','updated' or 'updatedpooling'
-        if self.conf.cut_method == 'latest':
-            self._make_cutouts = vm.MakeCutouts(self._perceptor.visual.input_resolution, self.conf.num_cuts, self.conf.augments, cut_pow=self.conf.cut_power)
-        elif self.conf.cut_method == 'original':
-            self._make_cutouts = vm.MakeCutoutsOrig(self._perceptor.visual.input_resolution, self.conf.num_cuts, cut_pow=self.conf.cut_power)
-        elif self.conf.cut_method == 'updated':
-            self._make_cutouts = vm.MakeCutoutsUpdate(self._perceptor.visual.input_resolution, self.conf.num_cuts, cut_pow=self.conf.cut_power)
-        elif self.conf.cut_method == 'nrupdated':
-            self._make_cutouts = vm.MakeCutoutsNRUpdate(self._perceptor.visual.input_resolution, self.conf.num_cuts, self.conf.augments, cut_pow=self.conf.cut_power)
-        else:
-            self._make_cutouts = vm.MakeCutoutsPoolingUpdate(self._perceptor.visual.input_resolution, self.conf.num_cuts, cut_pow=self.conf.cut_power)    
+        self.make_cutouts()    
 
-        toksX = self.conf.output_image_size[0] // f
-        toksY = self.conf.output_image_size[1] // f
-        self.output_image_size_X = (self.conf.output_image_size[0] // f) * f
-        self.output_image_size_Y = (self.conf.output_image_size[1] // f) * f
+        output_image_size_X, output_image_size_Y = self.calculate_output_image_size()
 
         # Gumbel or not?
         if self._gumbel:
@@ -222,6 +208,9 @@ class Engine:
             self.convert_image_to_init_image(vm.make_random_gradient_image(self.conf.image_size[0], self.conf.image_size[1]))
         else:
             # this is the default that happens if no initialization image options are specified
+            f = 2**(self._model.decoder.num_resolutions - 1)
+            toksX = self.conf.output_image_size[0] // f
+            toksY = self.conf.output_image_size[1] // f
             one_hot = F.one_hot(torch.randint(n_toks, [toksY * toksX], device=self._device), n_toks).float()
             # self._z = one_hot @ self._model.quantize.embedding.weight
             if self._gumbel:
@@ -235,19 +224,21 @@ class Engine:
         self._z_orig = self._z.clone()
         self._z.requires_grad_(True)       
         
-        # CLIP tokenize/encode   
-        if self.current_prompt_story_phrase:
-            for prompt in self.current_prompt_story_phrase:
-                self.append_text_prompt(prompt)
+        # CLIP tokenize/encode prompts from text, input images, and noise parameters
+        for prompt in self.current_prompt_story_phrase:
+            self.append_text_prompt(prompt)
 
         for prompt in self.image_prompts:
             self.append_image_prompt(prompt)
 
+        # TODO figure out how this works and refactor to something like 'seed:weight' to match text and images
         for seed, weight in zip(self.conf.noise_prompt_seeds, self.conf.noise_prompt_weights):
             gen = torch.Generator().manual_seed(seed)
             embed = torch.empty([1, self._perceptor.visual.output_dim]).normal_(generator=gen)
             self.pMs.append(vm.Prompt(embed, weight).to(self._device))
 
+
+        # generate the image
         iteration_num = 0 # Iteration counter
         zoom_video_frame_num = 0 # Zoom video frame counter
         phrase_counter = 1 # Phrase counter
@@ -261,18 +252,40 @@ class Engine:
         except KeyboardInterrupt:
             pass
 
+    def calculate_output_image_size(self):
+        f = 2**(self._model.decoder.num_resolutions - 1)
+        output_image_size_X = (self.conf.output_image_size[0] // f) * f
+        output_image_size_Y = (self.conf.output_image_size[1] // f) * f
+        return output_image_size_X, output_image_size_Y
+
+    def make_cutouts(self):
+        # Cutout class options:
+        # 'latest','original','updated', 'nrupdated', or 'updatedpooling'
+        if self.conf.cut_method == 'latest':
+            self._make_cutouts = vm.MakeCutouts(self._perceptor.visual.input_resolution, self.conf.num_cuts, self.conf.augments, cut_pow=self.conf.cut_power)
+        elif self.conf.cut_method == 'original':
+            self._make_cutouts = vm.MakeCutoutsOrig(self._perceptor.visual.input_resolution, self.conf.num_cuts, cut_pow=self.conf.cut_power)
+        elif self.conf.cut_method == 'updated':
+            self._make_cutouts = vm.MakeCutoutsUpdate(self._perceptor.visual.input_resolution, self.conf.num_cuts, cut_pow=self.conf.cut_power)
+        elif self.conf.cut_method == 'nrupdated':
+            self._make_cutouts = vm.MakeCutoutsNRUpdate(self._perceptor.visual.input_resolution, self.conf.num_cuts, self.conf.augments, cut_pow=self.conf.cut_power)
+        else:
+            self._make_cutouts = vm.MakeCutoutsPoolingUpdate(self._perceptor.visual.input_resolution, self.conf.num_cuts, cut_pow=self.conf.cut_power)
+
     def convert_image_to_init_image(self, output):
+        output_image_size_X, output_image_size_Y = self.calculate_output_image_size()
         pil_image = output.convert('RGB')
-        pil_image = pil_image.resize((self.output_image_size_X, self.output_image_size_Y), Image.LANCZOS)
+        pil_image = pil_image.resize((output_image_size_X, output_image_size_Y), Image.LANCZOS)
         pil_tensor = TF.to_tensor(pil_image)
         self._z, *_ = self._model.encode(pil_tensor.to(self._device).unsqueeze(0) * 2 - 1)
 
     def append_image_prompt(self, prompt):
         # given an image prompt that is a filename followed by a weight e.g. 'prompt_image.png:0.5', load the image, encode it with CLIP, and append it to the list of prompts used for image generation
+        output_image_size_X, output_image_size_Y = self.calculate_output_image_size()
         path, weight, stop = self.split_prompt(prompt)
         output_image = Image.open(path)
         pil_image = output_image.convert('RGB')
-        output_image = vm.resize_image(pil_image, (self.output_image_size_X, self.output_image_size_Y))
+        output_image = vm.resize_image(pil_image, (output_image_size_X, output_image_size_Y))
         batch = self._make_cutouts(TF.to_tensor(output_image).unsqueeze(0).to(self._device))
         embed = self._perceptor.encode_image(vm.normalize(batch)).float()
         self.pMs.append(vm.Prompt(embed, weight, stop).to(self._device))

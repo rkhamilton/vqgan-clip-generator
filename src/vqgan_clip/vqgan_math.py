@@ -42,7 +42,7 @@ def zoom_at(img, x, y, zoom):
 
 
 # NR: Testing with different intital images
-def random_noise_image(w,h):
+def make_random_noise_image(w,h):
     random_image = Image.fromarray(np.random.randint(0,255,(w,h,3),dtype=np.dtype('uint8')))
     return random_image
 
@@ -64,7 +64,7 @@ def gradient_3d(width, height, start_list, stop_list, is_horizontal_list):
     return result
 
     
-def random_gradient_image(w,h):
+def make_random_gradient_image(w,h):
     array = gradient_3d(w, h, (0, 0, np.random.randint(0,255)), (np.random.randint(1,255), np.random.randint(2,255), np.random.randint(3,128)), (True, False, False))
     random_image = Image.fromarray(np.uint8(array))
     return random_image
