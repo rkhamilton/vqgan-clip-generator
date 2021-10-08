@@ -76,9 +76,6 @@ class Engine:
 
         self.pMs = []
 
-        self.all_prompts_story_phrases = []
-        self.current_prompt_story_phrase = []
-
         # default_image_size = 512  # >8GB VRAM
         # if not torch.cuda.is_available():
         #     default_image_size = 256  # no GPU found
@@ -121,13 +118,13 @@ class Engine:
         if i % self.conf.save_every == 0:
             with torch.inference_mode():
                 # TODO move this to outer loop
-                # losses_str = ', '.join(f'{loss.item():g}' for loss in lossAll)
+                losses_str = ', '.join(f'{loss.item():g}' for loss in lossAll)
                 # tqdm.write(f'i: {i}, loss: {sum(lossAll).item():g}, lossAll: {losses_str}')
                 out = self.synth()
                 info = PngImagePlugin.PngInfo()
                 # If we have a text prompt for this image, add it as metadata
-                if self.current_prompt_story_phrase:
-                    info.add_text('comment', self.current_prompt_story_phrase[0])
+                # if self.story_phrase_current_prompt:
+                #     info.add_text('comment', self.story_phrase_current_prompt[0])
                 save_filename = self.conf.output_filename
                 TF.to_pil_image(out[0].cpu()).save(save_filename, pnginfo=info) 
 
@@ -176,6 +173,33 @@ class Engine:
 
     # main execution path from generate.py
     def do_it(self):
+        self.initialize_VQGAN_CLIP()       
+        
+        # CLIP tokenize/encode prompts from text, input images, and noise parameters
+        text_prompts, story_phrases_all_prompts = self.parse_story_prompts(self.conf.text_prompts)
+        for prompt in text_prompts:
+            self.encode_and_append_text_prompt(prompt)
+        
+        # Split target images using the pipe character (weights are split later)
+        image_prompts, image_prompts_all = self.parse_story_prompts(self.conf.image_prompts)
+        # if we had image prompts, encode them with CLIP
+        for prompt in image_prompts:
+            self.encode_and_append_image_prompt(prompt)
+
+        # Split noise prompts using the pipe character (weights are split later)
+        noise_prompts, noise_prompts_all = self.parse_story_prompts(self.conf.image_prompts)
+        for prompt in noise_prompts:
+            self.encode_and_append_noise_prompt(prompt)
+
+        # generate the image
+        self.configure_optimizer()
+        try:
+            for iteration_num in tqdm(range(1,self.conf.iterations+1)):
+                self.train(iteration_num)
+        except KeyboardInterrupt:
+            pass
+
+    def initialize_VQGAN_CLIP(self):
         if self.conf.cudnn_determinism:
             torch.backends.cudnn.deterministic = True
 
@@ -185,40 +209,7 @@ class Engine:
         self._perceptor = clip.load(self.conf.clip_model, jit=jit)[0].eval().requires_grad_(False).to(self._device)
 
         self.make_cutouts()    
-        self.initialize_z()       
-        
-        # CLIP tokenize/encode prompts from text, input images, and noise parameters
-        self.parse_text_prompts_string()
-        for prompt in self.current_prompt_story_phrase:
-            self.encode_and_append_text_prompt(prompt)
-        
-        # Split target images using the pipe character (weights are split later)
-        if self.conf.image_prompts:
-            image_prompts = self.conf.image_prompts.split("|")
-            image_prompts = [image.strip() for image in image_prompts]
-            # if we had image prompts, encode them with CLIP
-            for prompt in image_prompts:
-                self.encode_and_append_image_prompt(prompt)
-
-        # Split noise prompts using the pipe character (weights are split later)
-        if self.conf.noise_prompts:
-            noise_prompts = self.conf.noise_prompts.split("|")
-            noise_prompts = [image.strip() for image in noise_prompts]
-            for prompt in noise_prompts:
-                self.encode_and_append_noise_prompt(prompt)
-
-        # generate the image
-        zoom_video_frame_num = 0 # Zoom video frame counter
-        phrase_counter = 1 # Phrase counter
-        smoother_counter = 0 # Smoother counter
-        video_styler_frame_num = 0 # for video styling
-
-        self.configure_optimizer()
-        try:
-            for iteration_num in tqdm(range(1,self.conf.iterations+1)):
-                self.train(iteration_num)
-        except KeyboardInterrupt:
-            pass
+        self.initialize_z()
 
     def encode_and_append_noise_prompt(self, prompt):
         txt_seed, weight, _ = self.split_prompt(prompt)
@@ -315,27 +306,27 @@ class Engine:
         # This step is slow, and does not need to be done each time an image is generated.
         self._model = vm.load_vqgan_model(self.conf.vqgan_config, self.conf.vqgan_checkpoint).to(self._device)
 
-    def parse_text_prompts_string(self):
-        # text prompts are provided to the class as a series of phrases and clauses separated by | and ^
+    @staticmethod
+    def parse_story_prompts(prompt):
+        # prompts (images, text, noise) are provided to the class as a series of phrases and clauses separated by | and ^. The set of all such groups is the story.
         # This method separates this single string into lists of separate phrases to be processed by CLIP
 
+        all_prompts = []
+        current_prompt = []
+
         # Split text prompts using the pipe character (weights are split later)
-        if self.conf.text_prompts:
+        if prompt:
             # For stories, there will be many phrases separated by ^ 
             # e.g. "a field:0.2^a pile of leaves|painting|red" would parse into two phrases 'a field:0.2' and 'a pile of leaves|painting|red'
-            story_phrases = [phrase.strip() for phrase in self.conf.text_prompts.split("^")]
+            story_phrases = [phrase.strip() for phrase in prompt.split("^")]
             
             # Make a list of all phrases.
-            all_prompts_phrases = []
             for phrase in story_phrases:
-                all_prompts_phrases.append(phrase.split("|"))
-            self.all_prompts_story_phrases = all_prompts_phrases
+                all_prompts.append(phrase.split("|"))
 
             # First phrase
-            self.current_prompt_story_phrase = self.all_prompts_story_phrases[0]
-        else:
-            self.all_prompts_story_phrases = []
-            self.current_prompt_story_phrase = []
+            current_prompt = all_prompts[0]
+        return current_prompt, all_prompts
 
     @staticmethod
     def split_prompt(prompt):
