@@ -171,34 +171,6 @@ class Engine:
         clamp_with_grad = vm.ClampWithGrad.apply
         return clamp_with_grad(self._model.decode(z_q).add(1).div(2), 0, 1)
 
-    # main execution path from generate.py
-    def do_it(self):
-        self.initialize_VQGAN_CLIP()       
-        
-        # CLIP tokenize/encode prompts from text, input images, and noise parameters
-        text_prompts, story_phrases_all_prompts = self.parse_story_prompts(self.conf.text_prompts)
-        for prompt in text_prompts:
-            self.encode_and_append_text_prompt(prompt)
-        
-        # Split target images using the pipe character (weights are split later)
-        image_prompts, image_prompts_all = self.parse_story_prompts(self.conf.image_prompts)
-        # if we had image prompts, encode them with CLIP
-        for prompt in image_prompts:
-            self.encode_and_append_image_prompt(prompt)
-
-        # Split noise prompts using the pipe character (weights are split later)
-        noise_prompts, noise_prompts_all = self.parse_story_prompts(self.conf.image_prompts)
-        for prompt in noise_prompts:
-            self.encode_and_append_noise_prompt(prompt)
-
-        # generate the image
-        self.configure_optimizer()
-        try:
-            for iteration_num in tqdm(range(1,self.conf.iterations+1)):
-                self.train(iteration_num)
-        except KeyboardInterrupt:
-            pass
-
     def initialize_VQGAN_CLIP(self):
         if self.conf.cudnn_determinism:
             torch.backends.cudnn.deterministic = True
