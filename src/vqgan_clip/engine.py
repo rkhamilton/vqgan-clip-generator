@@ -20,6 +20,7 @@ from urllib.request import urlopen
 
 import numpy as np
 
+import os
 
 
 class EngineConfig:
@@ -43,7 +44,7 @@ class EngineConfig:
         self.cut_power = 1.0
         self.cudnn_determinism = False # if true, use algorithms that have reproducible, deterministic output. Performance will be lower.
         self.optimiser = 'Adam' # choices=['Adam','AdamW','Adagrad','Adamax','DiffGrad','AdamP','RAdam','RMSprop'], default='Adam'
-        self.output_filename = 'output.png' # location to save the output image.
+        self.output_filename = 'output' + os.sep + 'output.png' # location to save the output image.
         self.augments = [['Af', 'Pe', 'Ji', 'Er']] # I have no idea what this does. choices=['Ji','Sh','Gn','Pe','Ro','Af','Et','Ts','Cr','Er','Re']
         self.cuda_device = 'cuda:0' # select your GPU. Default to the first gpu, device 0
         self.make_video = False
@@ -115,7 +116,7 @@ class Engine:
 
     def train(self, i):
         #self._optimizer.zero_grad(set_to_none=True)
-        lossAll = self.ascend_txt()
+        lossAll, current_iteration_image = self.ascend_txt()
         
         if i % self.conf.save_every == 0:
             with torch.inference_mode():
@@ -124,9 +125,16 @@ class Engine:
                 # tqdm.write(f'i: {i}, loss: {sum(lossAll).item():g}, lossAll: {losses_str}')
                 out = self.synth()
                 info = PngImagePlugin.PngInfo()
+                # If we have a text prompt for this image, add it as metadata
                 if self.current_prompt_story_phrase:
                     info.add_text('comment', self.current_prompt_story_phrase[0])
-                TF.to_pil_image(out[0].cpu()).save(self.conf.output_filename, pnginfo=info) 	
+                save_filename = self.conf.output_filename
+                TF.to_pil_image(out[0].cpu()).save(save_filename, pnginfo=info) 
+
+                # if making a video, save a frame named for the video step
+                if self.conf.make_video:
+                    save_filename = './steps/' + str(i) + '.png'
+                    TF.to_pil_image(out[0].cpu()).save(save_filename, pnginfo=info) 
 
         loss = sum(lossAll)
         loss.backward()
@@ -149,12 +157,13 @@ class Engine:
         for prompt in self.pMs:
             result.append(prompt(encoded_image))
         
-        if self.conf.make_video:    
-            img = np.array(out.mul(255).clamp(0, 255)[0].cpu().detach().numpy().astype(np.uint8))[:,:,:]
-            img = np.transpose(img, (1, 2, 0))
-            imageio.imwrite('./steps/' + str(self._iteration_number) + '.png', np.array(img))
+        # Create a PNG image of the current iteration
+        img = np.array(out.mul(255).clamp(0, 255)[0].cpu().detach().numpy().astype(np.uint8))[:,:,:]
+        img = np.transpose(img, (1, 2, 0))
+        current_iteration_image = np.array(img)
+        # imageio.imwrite('./steps/' + str(self._iteration_number) + '.png', np.array(img))
 
-        return result # return loss
+        return result, current_iteration_image # return loss, current iteration image
 
     # Vector quantize
     def synth(self):
@@ -199,7 +208,6 @@ class Engine:
                 self.encode_and_append_noise_prompt(prompt)
 
         # generate the image
-        iteration_num = 0 # Iteration counter
         zoom_video_frame_num = 0 # Zoom video frame counter
         phrase_counter = 1 # Phrase counter
         smoother_counter = 0 # Smoother counter
