@@ -179,31 +179,25 @@ class Engine:
         jit = True if float(torch.__version__[:3]) < 1.8 else False
         self._perceptor = clip.load(self.conf.clip_model, jit=jit)[0].eval().requires_grad_(False).to(self._device)
 
-        cut_size = self._perceptor.visual.input_resolution
         f = 2**(self._model.decoder.num_resolutions - 1)
 
         # Cutout class options:
         # 'latest','original','updated' or 'updatedpooling'
         if self.conf.cut_method == 'latest':
-            self._make_cutouts = vm.MakeCutouts(cut_size, self.conf.num_cuts, self.conf.augments, cut_pow=self.conf.cut_power)
+            self._make_cutouts = vm.MakeCutouts(self._perceptor.visual.input_resolution, self.conf.num_cuts, self.conf.augments, cut_pow=self.conf.cut_power)
         elif self.conf.cut_method == 'original':
-            self._make_cutouts = vm.MakeCutoutsOrig(cut_size, self.conf.num_cuts, cut_pow=self.conf.cut_power)
+            self._make_cutouts = vm.MakeCutoutsOrig(self._perceptor.visual.input_resolution, self.conf.num_cuts, cut_pow=self.conf.cut_power)
         elif self.conf.cut_method == 'updated':
-            self._make_cutouts = vm.MakeCutoutsUpdate(cut_size, self.conf.num_cuts, cut_pow=self.conf.cut_power)
+            self._make_cutouts = vm.MakeCutoutsUpdate(self._perceptor.visual.input_resolution, self.conf.num_cuts, cut_pow=self.conf.cut_power)
         elif self.conf.cut_method == 'nrupdated':
-            self._make_cutouts = vm.MakeCutoutsNRUpdate(cut_size, self.conf.num_cuts, self.conf.augments, cut_pow=self.conf.cut_power)
+            self._make_cutouts = vm.MakeCutoutsNRUpdate(self._perceptor.visual.input_resolution, self.conf.num_cuts, self.conf.augments, cut_pow=self.conf.cut_power)
         else:
-            self._make_cutouts = vm.MakeCutoutsPoolingUpdate(cut_size, self.conf.num_cuts, cut_pow=self.conf.cut_power)    
+            self._make_cutouts = vm.MakeCutoutsPoolingUpdate(self._perceptor.visual.input_resolution, self.conf.num_cuts, cut_pow=self.conf.cut_power)    
 
-        toksX, toksY = self.conf.output_image_size[0] // f, self.conf.output_image_size[1] // f
-        sideX, sideY = toksX * f, toksY * f
-
-        # CLIP tokenize/encode   
-        if self.current_prompt_story_phrase:
-            for prompt in self.current_prompt_story_phrase:
-                txt, weight, stop = self.split_prompt(prompt)
-                embed = self._perceptor.encode_text(clip.tokenize(txt).to(self._device)).float()
-                self.pMs.append(vm.Prompt(embed, weight, stop).to(self._device))
+        toksX = self.conf.output_image_size[0] // f
+        toksY = self.conf.output_image_size[1] // f
+        self.output_image_size_X = (self.conf.output_image_size[0] // f) * f
+        self.output_image_size_Y = (self.conf.output_image_size[1] // f) * f
 
         # Gumbel or not?
         if self._gumbel:
@@ -217,26 +211,25 @@ class Engine:
             self.z_min = self._model.quantize.embedding.weight.min(dim=0).values[None, :, None, None]
             self.z_max = self._model.quantize.embedding.weight.max(dim=0).values[None, :, None, None]
 
-        # There are 
         if self.conf.init_image:
             if 'http' in self.conf.init_image:
                 output = Image.open(urlopen(self.conf.init_image))
             else:
                 output = Image.open(self.conf.init_image)
             pil_image = output.convert('RGB')
-            pil_image = pil_image.resize((sideX, sideY), Image.LANCZOS)
+            pil_image = pil_image.resize((self.output_image_size_X, self.output_image_size_Y), Image.LANCZOS)
             pil_tensor = TF.to_tensor(pil_image)
             self._z, *_ = self._model.encode(pil_tensor.to(self._device).unsqueeze(0) * 2 - 1)
         elif self.conf.init_noise == 'pixels':
             output = vm.random_noise_image(self.conf.image_size[0], self.conf.image_size[1])    
             pil_image = output.convert('RGB')
-            pil_image = pil_image.resize((sideX, sideY), Image.LANCZOS)
+            pil_image = pil_image.resize((self.output_image_size_X, self.output_image_size_Y), Image.LANCZOS)
             pil_tensor = TF.to_tensor(pil_image)
             self._z, *_ = self._model.encode(pil_tensor.to(self._device).unsqueeze(0) * 2 - 1)
         elif self.conf.init_noise == 'gradient':
             output = vm.random_gradient_image(self.conf.image_size[0], self.conf.image_size[1])
             pil_image = output.convert('RGB')
-            pil_image = pil_image.resize((sideX, sideY), Image.LANCZOS)
+            pil_image = pil_image.resize((self.output_image_size_X, self.output_image_size_Y), Image.LANCZOS)
             pil_tensor = TF.to_tensor(pil_image)
             self._z, *_ = self._model.encode(pil_tensor.to(self._device).unsqueeze(0) * 2 - 1)
         else:
@@ -257,15 +250,13 @@ class Engine:
         # CLIP tokenize/encode   
         if self.current_prompt_story_phrase:
             for prompt in self.current_prompt_story_phrase:
-                txt, weight, stop = self.split_prompt(prompt)
-                embed = self._perceptor.encode_text(clip.tokenize(txt).to(self._device)).float()
-                self.pMs.append(vm.Prompt(embed, weight, stop).to(self._device))
+                self.append_text_prompt(prompt)
 
         for prompt in self.image_prompts:
             path, weight, stop = self.split_prompt(prompt)
             output_image = Image.open(path)
             pil_image = output_image.convert('RGB')
-            output_image = vm.resize_image(pil_image, (sideX, sideY))
+            output_image = vm.resize_image(pil_image, (self.output_image_size_X, self.output_image_size_Y))
             batch = self._make_cutouts(TF.to_tensor(output_image).unsqueeze(0).to(self._device))
             embed = self._perceptor.encode_image(vm.normalize(batch)).float()
             self.pMs.append(vm.Prompt(embed, weight, stop).to(self._device))
@@ -287,6 +278,12 @@ class Engine:
                 self.train(iteration_num)
         except KeyboardInterrupt:
             pass
+
+    def append_text_prompt(self, prompt):
+        # given a text prompt like 'a field of red flowers:0.5' parse that into text and weights, encode it with CLIP, and add it to the encoded prompts used for image generation
+        txt, weight, stop = self.split_prompt(prompt)
+        embed = self._perceptor.encode_text(clip.tokenize(txt).to(self._device)).float()
+        self.pMs.append(vm.Prompt(embed, weight, stop).to(self._device))
 
     def load_model(self):
         # This step is slow, and does not need to be done each time an image is generated.
