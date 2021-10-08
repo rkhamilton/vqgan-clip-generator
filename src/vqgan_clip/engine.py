@@ -31,8 +31,8 @@ class Engine:
         'init_noise' : None,
         'init_weight' : 0.0,
         'clip_model' : 'ViT-B/32',
-        'vqgan_config' : f'checkpoints/vqgan_imagenet_f16_16384.yaml',
-        'vqgan_checkpoint' : f'checkpoints/vqgan_imagenet_f16_16384.ckpt',
+        'vqgan_config' : f'models/vqgan_imagenet_f16_16384.yaml',
+        'vqgan_checkpoint' : f'models/vqgan_imagenet_f16_16384.ckpt',
         'noise_prompt_seeds' : [],
         'noise_prompt_weights' : [],
         'learning_rate' : 0.1,
@@ -73,6 +73,9 @@ class Engine:
 
         self.pMs = []
 
+        self.image_prompts = []
+        self.all_prompts_phrases = []
+        self.current_prompt_phrase = []
 
     def set_seed(self, seed):
         self.seed = seed
@@ -154,23 +157,21 @@ class Engine:
     # main execution path from generate.py
     def do_it(self):
         # Split text prompts using the pipe character (weights are split later)
-        # TODO stop overwriting config prompt
         if self.config['prompt']:
             # For stories, there will be many phrases
             story_phrases = [phrase.strip() for phrase in self.config['prompt'].split("^")]
             
             # Make a list of all phrases
-            all_phrases = []
             for phrase in story_phrases:
-                all_phrases.append(phrase.split("|"))
+                self.all_prompts_phrases.append(phrase.split("|"))
             
             # First phrase
-            self.config['prompt'] = all_phrases[0]
+            self.current_prompt_phrase = self.all_prompts_phrases[0]
             
         # Split target images using the pipe character (weights are split later)
         if self.config['image_prompts']:
-            self.config['image_prompts'] = self.config['image_prompts'].split("|")
-            self.config['image_prompts'] = [image.strip() for image in self.config['image_prompts']]
+            self.image_prompts = self.config['image_prompts'].split("|")
+            self.image_prompts = [image.strip() for image in self.image_prompts]
             # Check for GPU and reduce the default image size if low VRAM
 
         default_image_size = 512  # >8GB VRAM
@@ -266,7 +267,7 @@ class Engine:
                 embed = self._perceptor.encode_text(clip.tokenize(txt).to(self._device)).float()
                 self.pMs.append(vm.Prompt(embed, weight, stop).to(self._device))
 
-        for prompt in self.config['image_prompts']:
+        for prompt in self.image_prompts:
             path, weight, stop = vm.split_prompt(prompt)
             output_image = Image.open(path)
             pil_image = output_image.convert('RGB')
