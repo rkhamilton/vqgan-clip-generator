@@ -89,26 +89,26 @@ class Engine:
         torch.manual_seed(seed)
 
     # Set the optimiser
-    def set_optimiser(self, opt_name, opt_lr=0.1):
+    def configure_optimizer(self, opt_name, opt_lr=0.1):
         if opt_name == "Adam":
-            self._optimiser = optim.Adam([self._z], lr=opt_lr)	# LR=0.1 (Default)
+            self._optimizer = optim.Adam([self._z], lr=opt_lr)	# LR=0.1 (Default)
         elif opt_name == "AdamW":
-            self._optimiser = optim.AdamW([self._z], lr=opt_lr)	
+            self._optimizer = optim.AdamW([self._z], lr=opt_lr)	
         elif opt_name == "Adagrad":
-            self._optimiser = optim.Adagrad([self._z], lr=opt_lr)	
+            self._optimizer = optim.Adagrad([self._z], lr=opt_lr)	
         elif opt_name == "Adamax":
-            self._optimiser = optim.Adamax([self._z], lr=opt_lr)	
+            self._optimizer = optim.Adamax([self._z], lr=opt_lr)	
         elif opt_name == "DiffGrad":
-            self._optimiser = DiffGrad([self._z], lr=opt_lr, eps=1e-9, weight_decay=1e-9) # NR: Playing for reasons
+            self._optimizer = DiffGrad([self._z], lr=opt_lr, eps=1e-9, weight_decay=1e-9) # NR: Playing for reasons
         elif opt_name == "AdamP":
-            self._optimiser = AdamP([self._z], lr=opt_lr)		    
+            self._optimizer = AdamP([self._z], lr=opt_lr)		    
         elif opt_name == "RAdam":
-            self._optimiser = RAdam([self._z], lr=opt_lr)		    
+            self._optimizer = RAdam([self._z], lr=opt_lr)		    
         elif opt_name == "RMSprop":
-            self._optimiser = optim.RMSprop([self._z], lr=opt_lr)
+            self._optimizer = optim.RMSprop([self._z], lr=opt_lr)
         else:
             print("Unknown optimiser.")
-            self._optimiser = optim.Adam([self._z], lr=opt_lr)
+            self._optimizer = optim.Adam([self._z], lr=opt_lr)
 
     def train(self, i):
         #self._optimiser.zero_grad(set_to_none=True)
@@ -127,7 +127,7 @@ class Engine:
 
         loss = sum(lossAll)
         loss.backward()
-        self._optimiser.step()
+        self._optimizer.step()
         
         #with torch.no_grad():
         with torch.inference_mode():
@@ -200,7 +200,7 @@ class Engine:
         smoother_counter = 0 # Smoother counter
         video_styler_frame_num = 0 # for video styling
 
-        self.set_optimiser(self.conf.optimiser)
+        self.configure_optimizer(self.conf.optimiser)
         try:
             for iteration_num in tqdm(range(1,self.conf.iterations+1)):
                 self.train(iteration_num)
