@@ -370,3 +370,38 @@ class Engine:
         vals = vals + ['', '1', '-inf'][len(vals):]
         return vals[0], float(vals[1]), float(vals[2])
         
+    def parse_all_prompts(self):
+        # CLIP tokenize/encode prompts from text, input images, and noise parameters
+        if self.conf.text_prompts:
+            self.text_prompts = self.parse_story_prompts(self.conf.text_prompts)
+        else:
+            self.text_prompts = []
+        
+        # Split target images using the pipe character (weights are split later)
+        if self.conf.image_prompts:
+            self.image_prompts = self.parse_story_prompts(self.conf.image_prompts)
+        else:
+            self.image_prompts = []
+
+        # Split noise prompts using the pipe character (weights are split later)
+        if self.conf.image_prompts:
+            self.noise_prompts = self.parse_story_prompts(self.conf.image_prompts)
+        else: 
+            self.noise_prompts = []
+
+
+    def encode_and_append_prompts(self, prompt_number):
+        if len(self.text_prompts) > prompt_number:
+            for prompt in self.text_prompts[prompt_number]:
+                self.encode_and_append_text_prompt(prompt)
+        
+        # Split target images using the pipe character (weights are split later)
+        if len(self.image_prompts) > prompt_number:
+            # if we had image prompts, encode them with CLIP
+            for prompt in self.image_prompts[prompt_number]:
+                self.encode_and_append_image_prompt(prompt)
+
+        # Split noise prompts using the pipe character (weights are split later)
+        if len(self.noise_prompts) > prompt_number:
+            for prompt in self.noise_prompts[prompt_number]:
+                self.encode_and_append_noise_prompt(prompt)
