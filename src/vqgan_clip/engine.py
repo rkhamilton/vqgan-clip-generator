@@ -23,12 +23,13 @@ import numpy as np
 import os
 
 
-class EngineConfig:
+class VQGAN_CLIP_Config:
     def __init__(self):
         self.text_prompts = 'A painting of flowers in the renaissance style:0.5|rembrandt:0.5^fish:0.2|love:1'
         self.image_prompts = [] # path to image that will be turned into a prompt via CLIP
         self.noise_prompts = [] # Random number seeds can be used as prompts using the same format as a text prompt. E.g. '123:0.1|234:0.2|345:0.3' Stories (^) are not supported. 
         self.iterations = 100 # number of iterations of train() to perform before stopping.
+        self.save_every = 50 # an interim image will be saved to the output location every save_every iterations
         self.output_image_size = [256,256] # x/y dimensions of the output image in pixels. This will be adjusted slightly based on the GAN model used.
         self.seed = None # Integer to use as seed for the random number generaor. If None, a random value will be chosen.
         self.init_image = None # a seed image that can be used to start the training. Without an initial image, random noise will be used.
@@ -59,9 +60,9 @@ class EngineConfig:
         self.video_style_dir = None
 
 class Engine:
-    def __init__(self):
+    def __init__(self, config=VQGAN_CLIP_Config()):
         # self._optimiser = optim.Adam([self._z], lr=0.1)
-        self.conf = EngineConfig()
+        self.apply_configuration(config)
 
         self._gumbel = False
 
@@ -72,6 +73,14 @@ class Engine:
 
         self.pMs = []
 
+    def apply_configuration(self,config):
+        """Apply an instance of VQGAN_CLIP_Config to this Engine instance
+
+        Args:
+            config (VQGAN_CLIP_Config): An instance of VQGAN_CLIP_Config that has been customized for this run.
+        """
+        self.conf = config
+
         # default_image_size = 512  # >8GB VRAM
         # if not torch.cuda.is_available():
         #     default_image_size = 256  # no GPU found
@@ -80,11 +89,18 @@ class Engine:
 
 
     def set_seed(self, seed):
+        """Set the seed for the random number generator used by VQGAN-CLIP
+
+        Args:
+            seed (int): Integer seed for the random number generator. The code is still non-deterministic unless cudnn_determinism = False is used in the configuration.
+        """
         self.seed = seed
         torch.manual_seed(seed)
 
     # Set the optimiser
     def configure_optimizer(self):
+        """Configure the optimization algorithm selected in self.conf.optimiser. This must be done immediately before training with train()
+        """
         opt_name = self.conf.optimiser
         opt_lr = self.conf.learning_rate
         if opt_name == "Adam":
@@ -108,8 +124,16 @@ class Engine:
             self._optimizer = optim.Adam([self._z], lr=opt_lr)
 
     def train(self, iteration_number):
+        """Executes training of the already-initialized VQGAN-CLIP model to generate an image. After a user-desired number of calls to train(), use save_current_output() to save the generated image.
+
+        Args:
+            iteration_number (int): Current iteration number, used only to adjust the weight of the inital image if init_weight is used.
+
+        Returns:
+            lossAll (tensor): A list of losses from the training process
+        """
         #self._optimizer.zero_grad(set_to_none=True)
-        lossAll, current_iteration_image = self.ascend_txt(iteration_number)
+        lossAll = self.ascend_txt(iteration_number)
         
         loss = sum(lossAll)
         loss.backward()
@@ -122,7 +146,12 @@ class Engine:
         return lossAll
 
     def save_current_output(self, save_filename):
-        # save the current output from the image generator to location save_filename
+        """Save the current output from the image generator as a PNG file to location save_filename
+
+        Args:
+            save_filename (str): string containing the path to save the generated image. e.g. 'output.png' or 'outputs/my_file.png'
+        """
+        # 
         with torch.inference_mode():
             out = self.synth()
             info = PngImagePlugin.PngInfo()
@@ -132,6 +161,14 @@ class Engine:
             TF.to_pil_image(out[0].cpu()).save(save_filename, pnginfo=info)
 
     def ascend_txt(self,iteration_number):
+        """Part of the process of training a GAN
+
+        Args:
+            iteration_number (int): Current iteration number, used only to adjust the weight of the inital image if init_weight is used.
+
+        Returns:
+            lossAll (tensor): Parameter describing the performance of the GAN training process
+        """
         out = self.synth()
         encoded_image = self._perceptor.encode_image(vm.normalize(self._make_cutouts(out))).float()
         
@@ -144,13 +181,7 @@ class Engine:
         for prompt in self.pMs:
             result.append(prompt(encoded_image))
         
-        # Create a PNG image of the current iteration
-        img = np.array(out.mul(255).clamp(0, 255)[0].cpu().detach().numpy().astype(np.uint8))[:,:,:]
-        img = np.transpose(img, (1, 2, 0))
-        current_iteration_image = np.array(img)
-        # imageio.imwrite('./steps/' + str(iteration_number) + '.png', np.array(img))
-
-        return result, current_iteration_image # return loss, current iteration image
+        return result
 
     # Vector quantize
     def synth(self):
@@ -162,6 +193,8 @@ class Engine:
         return clamp_with_grad(self._model.decode(z_q).add(1).div(2), 0, 1)
 
     def initialize_VQGAN_CLIP(self):
+        """Prior to using a VGQAN-CLIP engine instance, it must be initialized using this method.
+        """
         if self.conf.cudnn_determinism:
             torch.backends.cudnn.deterministic = True
 
@@ -174,6 +207,14 @@ class Engine:
         self.initialize_z()
 
     def encode_and_append_noise_prompt(self, prompt):
+        """Encodes a weighted list of random number generator seeds using CLIP and appends those to the set of prompts being used by this model instance.
+        
+        example: encode_and_append_noise_prompt('1:1.0|2:0.2')
+
+        Args:
+            prompt (list of strings):   Takes as input a list of string prompts of the form 'number:weight'. The number must be an integer. 
+                                        The number and weight are extracted and encoded by the CLIP perceptor, and stored by the Engine instance.
+        """
         txt_seed, weight, _ = self.split_prompt(prompt)
         seed = int(txt_seed)
         gen = torch.Generator().manual_seed(seed)
@@ -248,6 +289,13 @@ class Engine:
         self._z, *_ = self._model.encode(pil_tensor.to(self._device).unsqueeze(0) * 2 - 1)
 
     def encode_and_append_image_prompt(self, prompt):
+        """Encodes a list of image prompts using CLIP and appends those to the set of prompts being used by this model instance.
+        
+        example: encode_and_append_image_prompt('input\a_face.jpg:1.0|sample.png:0.2')
+
+        Args:
+            prompt (list of strings): Takes as input a list of string prompts of the form 'image_file_path:weight'. The file path and weight are extracted and encoded by the CLIP perceptor, and stored by the Engine instance.
+        """
         # given an image prompt that is a filename followed by a weight e.g. 'prompt_image.png:0.5', load the image, encode it with CLIP, and append it to the list of prompts used for image generation
         output_image_size_X, output_image_size_Y = self.calculate_output_image_size()
         path, weight, stop = self.split_prompt(prompt)
@@ -259,6 +307,13 @@ class Engine:
         self.pMs.append(vm.Prompt(embed, weight, stop).to(self._device))
 
     def encode_and_append_text_prompt(self, prompt):
+        """Encodes a list of text prompts using CLIP and appends those to the set of prompts being used by this model instance.
+        
+        example: encode_and_append_text_prompt('A red sailboat:1.0|A cup of water:0.2')
+
+        Args:
+            prompt (list of strings): Takes as input a list of string prompts of the form 'text prompt:weight'. The prompt and weight are extracted and encoded by the CLIP perceptor, and stored by the Engine instance.
+        """
         # given a text prompt like 'a field of red flowers:0.5' parse that into text and weights, encode it with CLIP, and add it to the encoded prompts used for image generation
         txt, weight, stop = self.split_prompt(prompt)
         embed = self._perceptor.encode_text(clip.tokenize(txt).to(self._device)).float()
@@ -270,11 +325,21 @@ class Engine:
 
     @staticmethod
     def parse_story_prompts(prompt):
-        # prompts (images, text, noise) are provided to the class as a series of phrases and clauses separated by | and ^. The set of all such groups is the story.
-        # This method separates this single string into lists of separate phrases to be processed by CLIP
+        """This method splits the input string by ^, then by |, and returns the full set of substrings as a list.
+        Story prompts, in the form of images, text, noise, are provided to the class as a string containing a series of phrases and clauses separated by | and ^. The set of all such groups of text is the story.
+        
+        example parse_story_prompts("a field:0.2^a pile of leaves|painting|red")
+        would return [['a field:0.2'],['a pile of leaves','painting','red']]
+
+        Args:
+            prompt (string): A string containing a series of phrases and separated by ^ and |
+
+        Returns:
+            all_prompts (list of lists): A list of lists of all substrings from the input prompt, first split by ^, then by |
+        """
+        # 
 
         all_prompts = []
-        current_prompt = []
 
         # Split text prompts using the pipe character (weights are split later)
         if prompt:
@@ -286,12 +351,20 @@ class Engine:
             for phrase in story_phrases:
                 all_prompts.append(phrase.split("|"))
 
-            # First phrase
-            current_prompt = all_prompts[0]
-        return current_prompt, all_prompts
+        return all_prompts
 
     @staticmethod
     def split_prompt(prompt):
+        """Split an input string of the form 'string:float' into three returned objects: string, float, -inf
+
+        Args:
+            prompt (string): String of the form 'string:float' E.g. 'a red boat:1.2'
+
+        Returns:
+            text (str): The substring from prompt prior to the colon, e.g. 'A red boat'
+            weight (float): The string after the colon is converted to a float, e.g 1.2
+            stop (int): Returns -inf. I have never seen this value used, but it is provided in the original algorithm.
+        """
         #NR: Split prompts and weights
         vals = prompt.rsplit(':', 2)
         vals = vals + ['', '1', '-inf'][len(vals):]
