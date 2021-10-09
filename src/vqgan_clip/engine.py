@@ -27,7 +27,7 @@ class VQGAN_CLIP_Config:
     def __init__(self):
         self.text_prompts = 'A painting of flowers in the renaissance style:0.5|rembrandt:0.5^fish:0.2|love:1'
         self.image_prompts = [] # path to image that will be turned into a prompt via CLIP
-        self.noise_prompts = [] # Random number seeds can be used as prompts using the same format as a text prompt. E.g. '123:0.1|234:0.2|345:0.3' Stories (^) are not supported. 
+        self.noise_prompts = [] # Random number seeds can be used as prompts using the same format as a text prompt. E.g. '123:0.1|234:0.2|345:0.3' Stories (^) are supported. 
         self.iterations = 100 # number of iterations of train() to perform before stopping.
         self.save_every = 50 # an interim image will be saved to the output location every save_every iterations
         self.output_image_size = [256,256] # x/y dimensions of the output image in pixels. This will be adjusted slightly based on the GAN model used.
@@ -371,7 +371,10 @@ class Engine:
         return vals[0], float(vals[1]), float(vals[2])
         
     def parse_all_prompts(self):
-        # CLIP tokenize/encode prompts from text, input images, and noise parameters
+        """Split prompt strings into lists of lists of prompts.
+        Apply self.parse_story_prompts() to each of self.conf.text_prompts, self.conf.image_prompts, and self.conf.noise_prompts
+        """
+        # 
         if self.conf.text_prompts:
             self.text_prompts = self.parse_story_prompts(self.conf.text_prompts)
         else:
@@ -384,24 +387,38 @@ class Engine:
             self.image_prompts = []
 
         # Split noise prompts using the pipe character (weights are split later)
-        if self.conf.image_prompts:
-            self.noise_prompts = self.parse_story_prompts(self.conf.image_prompts)
+        if self.conf.noise_prompts:
+            self.noise_prompts = self.parse_story_prompts(self.conf.noise_prompts)
         else: 
             self.noise_prompts = []
 
 
     def encode_and_append_prompts(self, prompt_number):
-        if len(self.text_prompts) > prompt_number:
-            for prompt in self.text_prompts[prompt_number]:
+        """CLIP tokenize/encode the selected prompts from text, input images, and noise parameters
+        Apply self.encode_and_append_text_prompt() to each of 
+        self.text_prompts(prompt_number), 
+        self.image_prompts(prompt_number), and 
+        self.noise_prompts(prompt_number)
+
+        If prompt_number is greater than the length of any of the lists above, it will roll over and encode from the beginning again.
+
+        Args:
+            prompt_number (int): The index of the prompt which should be encoded. 
+        """
+        if len(self.text_prompts) > 0:
+            current_index = prompt_number % len(self.text_prompts)
+            for prompt in self.text_prompts[current_index]:
                 self.encode_and_append_text_prompt(prompt)
         
         # Split target images using the pipe character (weights are split later)
-        if len(self.image_prompts) > prompt_number:
+        if len(self.image_prompts) > 0:
             # if we had image prompts, encode them with CLIP
-            for prompt in self.image_prompts[prompt_number]:
+            current_index = prompt_number % len(self.image_prompts)
+            for prompt in self.image_prompts[current_index]:
                 self.encode_and_append_image_prompt(prompt)
 
         # Split noise prompts using the pipe character (weights are split later)
-        if len(self.noise_prompts) > prompt_number:
-            for prompt in self.noise_prompts[prompt_number]:
+        if len(self.noise_prompts) > 0:
+            current_index = prompt_number % len(self.noise_prompts)
+            for prompt in self.noise_prompts[current_index]:
                 self.encode_and_append_noise_prompt(prompt)

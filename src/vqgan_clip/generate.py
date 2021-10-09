@@ -23,6 +23,8 @@ def single_image(eng_config=VQGAN_CLIP_Config()):
                 # # if making a video, save a frame named for the video step
                 # if eng.conf.make_video:
                 #     eng.save_current_output('./steps/' + str(iteration_num) + '.png') 
+        # Save the output at the end
+        eng.save_current_output(eng.conf.output_filename) 
     except KeyboardInterrupt:
         pass
 
