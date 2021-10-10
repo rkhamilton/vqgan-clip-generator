@@ -48,8 +48,8 @@ class VQGAN_CLIP_Config:
         self.optimiser = 'Adam' # choices=['Adam','AdamW','Adagrad','Adamax','DiffGrad','AdamP','RAdam','RMSprop'], default='Adam'
         self.augments = [['Af', 'Pe', 'Ji', 'Er']] # I have no idea what this does. choices=['Ji','Sh','Gn','Pe','Ro','Af','Et','Ts','Cr','Er','Re']
         self.cuda_device = 'cuda:0' # select your GPU. Default to the first gpu, device 0
-        self.make_video = False
-        self.make_zoom_video = False
+        # self.make_video = False
+        # self.make_zoom_video = False
         self.zoom_start = 0
         self.zoom_save_every = 50
         self.zoom_scale = 1.02
