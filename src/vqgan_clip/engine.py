@@ -31,10 +31,12 @@ class VQGAN_CLIP_Config:
         self.iterations = 100 # number of iterations of train() to perform before stopping.
         self.save_every = 50 # an interim image will be saved to the output location every save_every iterations
         self.output_image_size = [256,256] # x/y dimensions of the output image in pixels. This will be adjusted slightly based on the GAN model used.
-        self.seed = None # Integer to use as seed for the random number generaor. If None, a random value will be chosen.
+        self.output_filename = 'output' + os.sep + 'output.png' # location to save the output image.
         self.init_image = None # a seed image that can be used to start the training. Without an initial image, random noise will be used.
         self.init_noise = None # seed an image with noise. Options None, 'pixels' or 'gradient'
         self.init_weight = 0.0 # used to keep some similarity to the initial image. Not tested here.
+        self.change_prompt_every = 0 # Serial prompts, sepated by ^, will be cycled through every change_prompt_every iterations. Prompts will loop if more cycles are requested than there are prompts.
+        self.seed = None # Integer to use as seed for the random number generaor. If None, a random value will be chosen.
         self.clip_model = 'ViT-B/32' # options 'ViT-B/32', 'ViT-B/16)', default to 'ViT-B/32'
         self.vqgan_config = f'models/vqgan_imagenet_f16_16384.yaml' # path to model yaml file
         self.vqgan_checkpoint = f'models/vqgan_imagenet_f16_16384.ckpt' # path to model checkpoint file
@@ -44,7 +46,6 @@ class VQGAN_CLIP_Config:
         self.cut_power = 1.0
         self.cudnn_determinism = False # if true, use algorithms that have reproducible, deterministic output. Performance will be lower.
         self.optimiser = 'Adam' # choices=['Adam','AdamW','Adagrad','Adamax','DiffGrad','AdamP','RAdam','RMSprop'], default='Adam'
-        self.output_filename = 'output' + os.sep + 'output.png' # location to save the output image.
         self.augments = [['Af', 'Pe', 'Ji', 'Er']] # I have no idea what this does. choices=['Ji','Sh','Gn','Pe','Ro','Af','Et','Ts','Cr','Er','Re']
         self.cuda_device = 'cuda:0' # select your GPU. Default to the first gpu, device 0
         self.make_video = False
@@ -54,7 +55,6 @@ class VQGAN_CLIP_Config:
         self.zoom_scale = 1.02
         self.zoom_shift_x = 0
         self.zoom_shift_y = 0
-        self.change_prompt_every = 0
         self.output_video_fps = 60
         self.input_video_fps = 15
         self.video_style_dir = None
