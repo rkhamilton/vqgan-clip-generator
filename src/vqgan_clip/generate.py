@@ -5,6 +5,12 @@ import glob, os
 import subprocess
 
 def single_image(eng_config=VQGAN_CLIP_Config()):
+    """Generate an image using VQGAN+CLIP. The configuration of the algorithms is done via a VQGAN_CLIP_Config instance.
+
+    Args:
+        eng_config (VQGAN_CLIP_Config, optional): An instance of VQGAN_CLIP_Config with attributes customized for your use. See the documentation for VQGAN_CLIP_Config().
+        
+    """
     eng = Engine(eng_config)
     eng.initialize_VQGAN_CLIP() 
     eng.parse_all_prompts()
@@ -33,6 +39,14 @@ def single_image(eng_config=VQGAN_CLIP_Config()):
 
 
 def video(eng_config=VQGAN_CLIP_Config(), video_frames_path='./steps', output_framerate=30, assumed_input_framerate=None):
+    """Generate a video using VQGAN+CLIP. The configuration of the algorithms is done via a VQGAN_CLIP_Config instance.
+
+    Args:
+        eng_config (VQGAN_CLIP_Config, optional): An instance of VQGAN_CLIP_Config with attributes customized for your use. See the documentation for VQGAN_CLIP_Config().
+        video_frames_path (str, optional): Path where still images should be saved as they are generated before being combined into a video. Defaults to './steps'.
+        output_framerate (int, optional): Desired framerate of the output video. Defaults to 30.
+        assumed_input_framerate (int, optional): An assumed framerate to use for the still images. If an assumed input framerate is provided, the output video will be interpolated to the specified output framerate. Defaults to None.
+    """
     eng = Engine(eng_config)
     eng.initialize_VQGAN_CLIP() 
     eng.parse_all_prompts()

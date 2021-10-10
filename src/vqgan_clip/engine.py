@@ -24,6 +24,35 @@ import os
 
 
 class VQGAN_CLIP_Config:
+    """A set of attributes used to customize the execution of VQGAN+CLIP
+    
+    Instantiate VQGAN_CLIP_Config then customize attributes as described below.
+
+    * self.text_prompts = \'A painting of flowers in the renaissance style:0.5|rembrandt:0.5^fish:0.2|love:1\'  
+    * self.image_prompts = [] # path to image that will be turned into a prompt via CLIP  
+    * self.noise_prompts = [] # Random number seeds can be used as prompts using the same format as a text prompt. E.g. \'123:0.1|234:0.2|345:0.3\' Stories (^) are supported.  
+    * self.iterations = 100 # number of iterations of train() to perform before stopping.  
+    * self.save_every = 50 # an interim image will be saved to the output location every save_every iterations  
+    * self.output_image_size = [256,256] # x/y dimensions of the output image in pixels. This will be adjusted slightly based on the GAN model used.  
+    * self.output_filename = \'output\' + os.sep + \'output\' # location to save the output image. Omit the file extension.  
+    * self.init_image = None # a seed image that can be used to start the training. Without an initial image, random noise will be used.  
+    * self.init_noise = None # seed an image with noise. Options None, \'pixels\' or \'gradient\'  
+    * self.init_weight = 0.0 # used to keep some similarity to the initial image. Not tested here.  
+    * self.change_prompt_every = 0 # Serial prompts, sepated by ^, will be cycled through every change_prompt_every iterations. Prompts will loop if more cycles are requested than there are prompts.  
+    * self.seed = None # Integer to use as seed for the random number generaor. If None, a random value will be chosen.  
+    * self.clip_model = \'ViT-B/32\' # options \'ViT-B/32\', \'ViT-B/16)\', default to \'ViT-B/32\'  
+    * self.vqgan_config = f\'models/vqgan_imagenet_f16_16384.yaml\' # path to model yaml file  
+    * self.vqgan_checkpoint = f\'models/vqgan_imagenet_f16_16384.ckpt\' # path to model checkpoint file  
+    * self.learning_rate = 0.1  
+    * self.cut_method = \'latest\' # choices=[\'original\',\'updated\',\'nrupdated\',\'updatedpooling\',\'latest\'] default=\'latest\'  
+    * self.num_cuts = 32  
+    * self.cut_power = 1.0  
+    * self.cudnn_determinism = False # if true, use algorithms that have reproducible, deterministic output. Performance will be lower.  
+    * self.optimiser = \'Adam\' # choices=[\'Adam\',\'AdamW\',\'Adagrad\',\'Adamax\',\'DiffGrad\',\'AdamP\',\'RAdam\',\'RMSprop\'], default=\'Adam\'  
+    * self.augments = [[\'Af\', \'Pe\', \'Ji\', \'Er\']] # I have no idea what this does. choices=[\'Ji\',\'Sh\',\'Gn\',\'Pe\',\'Ro\',\'Af\',\'Et\',\'Ts\',\'Cr\',\'Er\',\'Re\']  
+    * self.cuda_device = \'cuda:0\' # select your GPU. Default to the first gpu, device 0  
+
+    """
     def __init__(self):
         self.text_prompts = 'A painting of flowers in the renaissance style:0.5|rembrandt:0.5^fish:0.2|love:1'
         self.image_prompts = [] # path to image that will be turned into a prompt via CLIP
