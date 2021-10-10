@@ -18,14 +18,20 @@ def single_image(eng_config=VQGAN_CLIP_Config()):
     eng.configure_optimizer()
     output_file = eng.conf.output_filename + '.png'
     # generate the image
+    current_prompt_number = 0
     try:
         for iteration_num in tqdm(range(1,eng.conf.iterations+1)):
             #perform eng.conf.iterations of train()
             lossAll = eng.train(iteration_num)
+            if iteration_num % eng_config.change_prompt_every == 0:
+                # change prompts if every change_prompt_every iterations
+                current_prompt_number += 1
+                eng.clear_all_prompts()
+                eng.encode_and_append_prompts(current_prompt_number)
             if iteration_num % eng_config.save_every == 0:
                 # display some statistics about how the GAN training is going whever we save an interim image
-                losses_str = ', '.join(f'{loss.item():7.3g}' for loss in lossAll)
-                tqdm.write(f'iteration:{iteration_num:6d}\tloss sum: {sum(lossAll).item():7.3g}\tloss for each prompt:{losses_str}')
+                losses_str = ', '.join(f'{loss.item():7.3f}' for loss in lossAll)
+                tqdm.write(f'iteration:{iteration_num:6d}\tloss sum: {sum(lossAll).item():7.3f}\tloss for each prompt:{losses_str}')
                 # save an interim copy of the image so you can look at it as it changes if you like
                 eng.save_current_output(output_file) 
 
@@ -61,16 +67,23 @@ def video(eng_config=VQGAN_CLIP_Config(), video_frames_path='./steps', output_fr
         delete_video_frames(video_frames_path)
 
     # generate images
+    current_prompt_number = 0
     video_frame_num = 1
     try:
         for iteration_num in tqdm(range(1,eng.conf.iterations+1)):
             #perform eng.conf.iterations of train()
             lossAll = eng.train(iteration_num)
+            if iteration_num % eng_config.change_prompt_every == 0:
+                # change prompts if every change_prompt_every iterations
+                current_prompt_number += 1
+                eng.clear_all_prompts()
+                eng.encode_and_append_prompts(current_prompt_number)
+
             if iteration_num % eng_config.save_every == 0:
                 # save a frame of video every .save_every iterations
                 # display some statistics about how the GAN training is going whever we save an interim image
-                losses_str = ', '.join(f'{loss.item():7.3g}' for loss in lossAll)
-                tqdm.write(f'iteration:{iteration_num:6d}\tvideo frame: {video_frame_num:6d}\tloss sum: {sum(lossAll).item():7.3g}\tloss for each prompt:{losses_str}')
+                losses_str = ', '.join(f'{loss.item():7.3f}' for loss in lossAll)
+                tqdm.write(f'iteration:{iteration_num:6d}\tvideo frame: {video_frame_num:6d}\tloss sum: {sum(lossAll).item():7.3f}\tloss for each prompt:{losses_str}')
 
                 # if making a video, save a frame named for the video step
                 eng.save_current_output(video_frames_path + os.sep + str(video_frame_num) + '.png')

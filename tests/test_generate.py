@@ -126,3 +126,19 @@ def test_video_single_prompt_interpolation(testing_config):
     vqgan_clip.generate.video(config,video_frames_path='./steps', output_framerate=30, assumed_input_framerate=5)
     assert os.path.exists(config.output_filename + '.mp4')
     os.remove(config.output_filename + '.mp4')
+
+
+def test_video_multiple_prompt_interpolation(testing_config):
+    '''Generate a video file based on a text prompt and interpolate to a higher framerate
+    '''
+    config = testing_config
+    config.text_prompts = 'A painting of flowers in the renaissance style^a black dog in a cave'
+    config.output_filename = 'output' + os.sep + 'output'
+    config.save_every = 10
+    config.iterations = 300
+    config.change_prompt_every = 100
+    config.output_image_size = [128,128]
+
+    vqgan_clip.generate.video(config,video_frames_path='./steps', output_framerate=30, assumed_input_framerate=5)
+    assert os.path.exists(config.output_filename + '.mp4')
+    os.remove(config.output_filename + '.mp4')

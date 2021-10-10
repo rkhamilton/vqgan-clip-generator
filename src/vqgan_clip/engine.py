@@ -25,7 +25,7 @@ import os
 
 class VQGAN_CLIP_Config:
     """A set of attributes used to customize the execution of VQGAN+CLIP
-    
+
     Instantiate VQGAN_CLIP_Config then customize attributes as described below.
 
     * self.text_prompts = \'A painting of flowers in the renaissance style:0.5|rembrandt:0.5^fish:0.2|love:1\'  
@@ -98,7 +98,7 @@ class Engine:
 
         self.seed = torch.seed()
 
-        self.pMs = []
+        self.clear_all_prompts()
 
     def apply_configuration(self,config):
         """Apply an instance of VQGAN_CLIP_Config to this Engine instance
@@ -315,6 +315,11 @@ class Engine:
         pil_tensor = TF.to_tensor(pil_image)
         self._z, *_ = self._model.encode(pil_tensor.to(self._device).unsqueeze(0) * 2 - 1)
 
+    def clear_all_prompts(self):
+        """Clear all encoded prompts. You might use this during video generation to reset the prompts so that you can cause the video to steer in a new direction.
+        """
+        self.pMs = []
+
     def encode_and_append_image_prompt(self, prompt):
         """Encodes a list of image prompts using CLIP and appends those to the set of prompts being used by this model instance.
         
@@ -435,6 +440,7 @@ class Engine:
         if len(self.text_prompts) > 0:
             current_index = prompt_number % len(self.text_prompts)
             for prompt in self.text_prompts[current_index]:
+                tqdm.write(f'Text prompt: {prompt_number}\n {prompt}')
                 self.encode_and_append_text_prompt(prompt)
         
         # Split target images using the pipe character (weights are split later)
@@ -442,10 +448,12 @@ class Engine:
             # if we had image prompts, encode them with CLIP
             current_index = prompt_number % len(self.image_prompts)
             for prompt in self.image_prompts[current_index]:
+                tqdm.write(f'Image prompt: {prompt_number}\n {prompt}')
                 self.encode_and_append_image_prompt(prompt)
 
         # Split noise prompts using the pipe character (weights are split later)
         if len(self.noise_prompts) > 0:
             current_index = prompt_number % len(self.noise_prompts)
             for prompt in self.noise_prompts[current_index]:
+                tqdm.write(f'Noise prompt: {prompt_number}\n {prompt}')
                 self.encode_and_append_noise_prompt(prompt)
