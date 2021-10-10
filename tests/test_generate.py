@@ -24,8 +24,9 @@ def test_single_image(testing_config):
     '''
     config = testing_config
     vqgan_clip.generate.single_image(config)
-    assert os.path.exists(config.output_filename)
-    os.remove(config.output_filename)
+    output = config.output_filename + '.png'
+    assert os.path.exists(output)
+    os.remove(output)
 
 def test_single_image_story(testing_config):
     '''Generate a single image based on a text prompt changing every 10 iterations
@@ -34,8 +35,9 @@ def test_single_image_story(testing_config):
     config.change_prompt_every = 10
     config.iterations = 100
     vqgan_clip.generate.single_image(config)
-    assert os.path.exists(config.output_filename)
-    os.remove(config.output_filename)
+    output = config.output_filename + '.png'
+    assert os.path.exists(output)
+    os.remove(output)
 
 def test_single_image_noise_prompt(testing_config):
     '''Generate a single image based on a noise prompt
@@ -44,9 +46,9 @@ def test_single_image_noise_prompt(testing_config):
     config.text_prompts = []
     config.noise_prompts = '123:0.1|234:0.2|345:0.3'
     vqgan_clip.generate.single_image(config)
-    assert os.path.exists(config.output_filename)
-    os.remove(config.output_filename)
-
+    output = config.output_filename + '.png'
+    assert os.path.exists(output)
+    os.remove(output)
 
 def test_single_image_noise_prompt_story(testing_config):
     '''Generate a single image based on a noise prompt changing every 10 iterations
@@ -57,8 +59,9 @@ def test_single_image_noise_prompt_story(testing_config):
     config.change_prompt_every = 10
     config.iterations = 100
     vqgan_clip.generate.single_image(config)
-    assert os.path.exists(config.output_filename)
-    os.remove(config.output_filename)
+    output = config.output_filename + '.png'
+    assert os.path.exists(output)
+    os.remove(output)
 
 def test_single_image_image_prompt(testing_config, image_prompts):
     '''Generate a single image based on a image prompt prompt
@@ -67,8 +70,9 @@ def test_single_image_image_prompt(testing_config, image_prompts):
     config.text_prompts = []
     config.image_prompts = image_prompts
     vqgan_clip.generate.single_image(config)
-    assert os.path.exists(config.output_filename)
-    os.remove(config.output_filename)
+    output = config.output_filename + '.png'
+    assert os.path.exists(output)
+    os.remove(output)
 
 def test_single_image_image_prompt_story(testing_config, image_prompts):
     '''Generate a single image based on a image prompt prompt
@@ -79,8 +83,9 @@ def test_single_image_image_prompt_story(testing_config, image_prompts):
     config.change_prompt_every = 10
     config.iterations = 100
     vqgan_clip.generate.single_image(config)
-    assert os.path.exists(config.output_filename)
-    os.remove(config.output_filename)
+    output = config.output_filename + '.png'
+    assert os.path.exists(output)
+    os.remove(output)
 
 def test_single_image_all_prompts(testing_config, image_prompts):
     '''Generate a single image based on a text prompt, image prompt, and noise prompt.
@@ -90,6 +95,34 @@ def test_single_image_all_prompts(testing_config, image_prompts):
     config.noise_prompts = '123:0.1|234:0.2|345:0.3'
     config.image_prompts = image_prompts
     vqgan_clip.generate.single_image(config)
-    assert os.path.exists(config.output_filename)
-    os.remove(config.output_filename)
+    output = config.output_filename + '.png'
+    assert os.path.exists(output)
+    os.remove(output)
 
+def test_video_single_prompt(testing_config):
+    '''Generate a video file based on a text prompt
+    '''
+    config = testing_config
+    config.text_prompts = 'A painting of flowers in the renaissance style'
+    config.output_filename = 'output' + os.sep + 'output'
+    config.save_every = 10
+    config.iterations = 100
+    config.output_image_size = [128,128]
+
+    vqgan_clip.generate.video(config)
+    assert os.path.exists(config.output_filename + '.mp4')
+    os.remove(config.output_filename + '.mp4')
+
+def test_video_single_prompt_interpolation(testing_config):
+    '''Generate a video file based on a text prompt and interpolate to a higher framerate
+    '''
+    config = testing_config
+    config.text_prompts = 'A painting of flowers in the renaissance style'
+    config.output_filename = 'output' + os.sep + 'output'
+    config.save_every = 10
+    config.iterations = 100
+    config.output_image_size = [128,128]
+
+    vqgan_clip.generate.video(config,video_frames_path='./steps', output_framerate=30, assumed_input_framerate=5)
+    assert os.path.exists(config.output_filename + '.mp4')
+    os.remove(config.output_filename + '.mp4')

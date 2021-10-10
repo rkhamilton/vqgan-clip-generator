@@ -31,7 +31,7 @@ class VQGAN_CLIP_Config:
         self.iterations = 100 # number of iterations of train() to perform before stopping.
         self.save_every = 50 # an interim image will be saved to the output location every save_every iterations
         self.output_image_size = [256,256] # x/y dimensions of the output image in pixels. This will be adjusted slightly based on the GAN model used.
-        self.output_filename = 'output' + os.sep + 'output.png' # location to save the output image.
+        self.output_filename = 'output' + os.sep + 'output' # location to save the output image. Omit the file extension.
         self.init_image = None # a seed image that can be used to start the training. Without an initial image, random noise will be used.
         self.init_noise = None # seed an image with noise. Options None, 'pixels' or 'gradient'
         self.init_weight = 0.0 # used to keep some similarity to the initial image. Not tested here.
@@ -48,8 +48,6 @@ class VQGAN_CLIP_Config:
         self.optimiser = 'Adam' # choices=['Adam','AdamW','Adagrad','Adamax','DiffGrad','AdamP','RAdam','RMSprop'], default='Adam'
         self.augments = [['Af', 'Pe', 'Ji', 'Er']] # I have no idea what this does. choices=['Ji','Sh','Gn','Pe','Ro','Af','Et','Ts','Cr','Er','Re']
         self.cuda_device = 'cuda:0' # select your GPU. Default to the first gpu, device 0
-        # self.make_video = False
-        # self.make_zoom_video = False
         self.zoom_start = 0
         self.zoom_save_every = 50
         self.zoom_scale = 1.02
