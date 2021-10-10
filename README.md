@@ -56,6 +56,18 @@ Or, using the provided download method
 vqgan_clip.download(".\models\")
 ``` 
 
+Note that when using this package you must specify the location where you've saved these model files
+```python
+import vqgan_clip.generate
+from vqgan_clip.engine import VQGAN_CLIP_Config
+
+config = VQGAN_CLIP_Config()
+config.vqgan_config = f'models/vqgan_imagenet_f16_16384.yaml' # path to model yaml file
+config.vqgan_checkpoint = f'models/vqgan_imagenet_f16_16384.ckpt' # path to model checkpoint file
+config.text_prompts = 'A pastoral landscape painting by Rembrandt:1.0|A red cow:0.1'
+vqgan_clip.generate.single_image(config)
+```
+
 ### Using an AMD graphics card
 
 Instructions courtesy of NerdyRodent. Note: This hasn't been tested yet.

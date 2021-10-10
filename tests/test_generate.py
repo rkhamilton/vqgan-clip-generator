@@ -15,7 +15,11 @@ def testing_config(tmpdir_factory):
     config.output_filename = str(tmpdir_factory.mktemp('output').join('output.png'))
     return config
 
-def test_generate_single_image(testing_config):
+@pytest.fixture
+def image_prompts():
+    return f'\\Users\\ryanh\\Documents\src\\vqgan_lib_dev\\vqgan-clip-generator\\tests\\images\\prompt1.jpg:0.5|\\Users\\ryanh\\Documents\src\\vqgan_lib_dev\\vqgan-clip-generator\\tests\\images\\prompt2.jpg:0.3'
+
+def test_single_image(testing_config):
     '''Generate a single image based on a text prompt
     '''
     config = testing_config
@@ -23,7 +27,7 @@ def test_generate_single_image(testing_config):
     assert os.path.exists(config.output_filename)
     os.remove(config.output_filename)
 
-def test_generate_single_image_story(testing_config):
+def test_single_image_story(testing_config):
     '''Generate a single image based on a text prompt changing every 10 iterations
     '''
     config = testing_config
@@ -33,7 +37,7 @@ def test_generate_single_image_story(testing_config):
     assert os.path.exists(config.output_filename)
     os.remove(config.output_filename)
 
-def test_generate_single_image_noise_prompt(testing_config):
+def test_single_image_noise_prompt(testing_config):
     '''Generate a single image based on a noise prompt
     '''
     config = testing_config
@@ -44,7 +48,7 @@ def test_generate_single_image_noise_prompt(testing_config):
     os.remove(config.output_filename)
 
 
-def test_generate_single_image_noise_prompt_story(testing_config):
+def test_single_image_noise_prompt_story(testing_config):
     '''Generate a single image based on a noise prompt changing every 10 iterations
     '''
     config = testing_config
@@ -56,7 +60,36 @@ def test_generate_single_image_noise_prompt_story(testing_config):
     assert os.path.exists(config.output_filename)
     os.remove(config.output_filename)
 
-def test_generate_single_image_image_prompt(testing_config):
-    assert False
+def test_single_image_image_prompt(testing_config, image_prompts):
+    '''Generate a single image based on a image prompt prompt
+    '''
+    config = testing_config
+    config.text_prompts = []
+    config.image_prompts = image_prompts
+    vqgan_clip.generate.single_image(config)
+    assert os.path.exists(config.output_filename)
+    os.remove(config.output_filename)
 
-# TODO add tests for noise prompts only, image only, text only, combinations
+def test_single_image_image_prompt_story(testing_config, image_prompts):
+    '''Generate a single image based on a image prompt prompt
+    '''
+    config = testing_config
+    config.text_prompts = []
+    config.image_prompts = image_prompts
+    config.change_prompt_every = 10
+    config.iterations = 100
+    vqgan_clip.generate.single_image(config)
+    assert os.path.exists(config.output_filename)
+    os.remove(config.output_filename)
+
+def test_single_image_all_prompts(testing_config, image_prompts):
+    '''Generate a single image based on a text prompt, image prompt, and noise prompt.
+    '''
+    config = testing_config
+    config.text_prompts = 'A painting of flowers in the renaissance style:0.5|rembrandt:0.5^fish:0.2|love:1'
+    config.noise_prompts = '123:0.1|234:0.2|345:0.3'
+    config.image_prompts = image_prompts
+    vqgan_clip.generate.single_image(config)
+    assert os.path.exists(config.output_filename)
+    os.remove(config.output_filename)
+

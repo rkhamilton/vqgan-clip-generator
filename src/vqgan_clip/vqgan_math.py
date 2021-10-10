@@ -47,8 +47,9 @@ def make_random_noise_image(w,h):
     return random_image
 
 
-# create initial gradient image
 def gradient_2d(start, stop, width, height, is_horizontal):
+    """create initial gradient image
+    """
     if is_horizontal:
         return np.tile(np.linspace(start, stop, width), (height, 1))
     else:
