@@ -28,18 +28,10 @@ class VQGAN_CLIP_Config:
     """A set of attributes used to customize the execution of VQGAN+CLIP
 
     Instantiate VQGAN_CLIP_Config then customize attributes as described below.
-
-    * self.text_prompts = \'A painting of flowers in the renaissance style:0.5|rembrandt:0.5^fish:0.2|love:1\'  
-    * self.image_prompts = [] # path to image that will be turned into a prompt via CLIP  
-    * self.noise_prompts = [] # Random number seeds can be used as prompts using the same format as a text prompt. E.g. \'123:0.1|234:0.2|345:0.3\' Stories (^) are supported.  
-    * self.iterations = 100 # number of iterations of train() to perform before stopping.  
-    * self.save_every = 50 # an interim image will be saved to the output location every save_every iterations  
-    * self.output_image_size = [256,256] # x/y dimensions of the output image in pixels. This will be adjusted slightly based on the GAN model used.  
-    * self.output_filename = \'output\' + os.sep + \'output\' # location to save the output image. Omit the file extension.  
-    * self.init_image = None # a seed image that can be used to start the training. Without an initial image, random noise will be used.  
-    * self.init_noise = None # seed an image with noise. Options None, \'pixels\' or \'gradient\'  
-    * self.init_weight = 0.0 # used to keep some similarity to the initial image. Not tested here.  
-    * self.change_prompt_every = 0 # Serial prompts, sepated by ^, will be cycled through every change_prompt_every iterations. Prompts will loop if more cycles are requested than there are prompts.  
+    * output_image_size (list of int) : x/y dimensions of the output image in pixels. This will be adjusted slightly based on the GAN model used. Default = [256,256]
+    * init_image (str) : A seed image that can be used to start the training. Without an initial image, random noise will be used. Default = None  
+    * init_noise (str) : Seed an image with noise. Options None, \'pixels\' or \'gradient\'  Default = None 
+    * init_weight (float) : Used to keep some similarity to the initial image. Not tested here. Default = 0.0
     * self.seed = None # Integer to use as seed for the random number generaor. If None, a random value will be chosen.  
     * self.clip_model = \'ViT-B/32\' # options \'ViT-B/32\', \'ViT-B/16)\', default to \'ViT-B/32\'  
     * self.vqgan_config = f\'models/vqgan_imagenet_f16_16384.yaml\' # path to model yaml file  
@@ -52,20 +44,12 @@ class VQGAN_CLIP_Config:
     * self.optimiser = \'Adam\' # choices=[\'Adam\',\'AdamW\',\'Adagrad\',\'Adamax\',\'DiffGrad\',\'AdamP\',\'RAdam\',\'RMSprop\'], default=\'Adam\'  
     * self.augments = [[\'Af\', \'Pe\', \'Ji\', \'Er\']] # I have no idea what this does. choices=[\'Ji\',\'Sh\',\'Gn\',\'Pe\',\'Ro\',\'Af\',\'Et\',\'Ts\',\'Cr\',\'Er\',\'Re\']  
     * self.cuda_device = \'cuda:0\' # select your GPU. Default to the first gpu, device 0  
-
     """
     def __init__(self):
-        self.text_prompts = 'A painting of flowers in the renaissance style:0.5|rembrandt:0.5^fish:0.2|love:1'
-        self.image_prompts = [] # path to image that will be turned into a prompt via CLIP
-        self.noise_prompts = [] # Random number seeds can be used as prompts using the same format as a text prompt. E.g. '123:0.1|234:0.2|345:0.3' Stories (^) are supported. 
-        self.iterations = 100 # number of iterations of train() to perform before stopping.
-        self.save_every = 50 # an interim image will be saved to the output location every save_every iterations
         self.output_image_size = [256,256] # x/y dimensions of the output image in pixels. This will be adjusted slightly based on the GAN model used.
-        self.output_filename = 'output' + os.sep + 'output' # location to save the output image. Omit the file extension.
         self.init_image = None # a seed image that can be used to start the training. Without an initial image, random noise will be used.
         self.init_noise = None # seed an image with noise. Options None, 'pixels' or 'gradient'
         self.init_weight = 0.0 # used to keep some similarity to the initial image. Not tested here.
-        self.change_prompt_every = 0 # Serial prompts, sepated by ^, will be cycled through every change_prompt_every iterations. Prompts will loop if more cycles are requested than there are prompts.
         self.seed = None # Integer to use as seed for the random number generaor. If None, a random value will be chosen.
         self.clip_model = 'ViT-B/32' # options 'ViT-B/32', 'ViT-B/16)', default to 'ViT-B/32'
         self.vqgan_config = f'models/vqgan_imagenet_f16_16384.yaml' # path to model yaml file
@@ -235,7 +219,7 @@ class Engine:
             prompt (list of strings):   Takes as input a list of string prompts of the form 'number:weight'. The number must be an integer. 
                                         The number and weight are extracted and encoded by the CLIP perceptor, and stored by the Engine instance.
         """
-        txt_seed, weight, _ = self.split_prompt(prompt)
+        txt_seed, weight, _ = VF.split_prompt(prompt)
         seed = int(txt_seed)
         gen = torch.Generator().manual_seed(seed)
         embed = torch.empty([1, self._perceptor.visual.output_dim]).normal_(generator=gen)
@@ -324,7 +308,7 @@ class Engine:
         """
         # given an image prompt that is a filename followed by a weight e.g. 'prompt_image.png:0.5', load the image, encode it with CLIP, and append it to the list of prompts used for image generation
         output_image_size_X, output_image_size_Y = self.calculate_output_image_size()
-        path, weight, stop = self.split_prompt(prompt)
+        path, weight, stop = VF.split_prompt(prompt)
         output_image = Image.open(path)
         pil_image = output_image.convert('RGB')
         output_image = VF.resize_image(pil_image, (output_image_size_X, output_image_size_Y))
@@ -341,7 +325,7 @@ class Engine:
             prompt (list of strings): Takes as input a list of string prompts of the form 'text prompt:weight'. The prompt and weight are extracted and encoded by the CLIP perceptor, and stored by the Engine instance.
         """
         # given a text prompt like 'a field of red flowers:0.5' parse that into text and weights, encode it with CLIP, and add it to the encoded prompts used for image generation
-        txt, weight, stop = self.split_prompt(prompt)
+        txt, weight, stop = VF.split_prompt(prompt)
         embed = self._perceptor.encode_text(clip.tokenize(txt).to(self._device)).float()
         self.pMs.append(VF.Prompt(embed, weight, stop).to(self._device))
 
@@ -349,105 +333,40 @@ class Engine:
         # This step is slow, and does not need to be done each time an image is generated.
         self._model = VF.load_vqgan_model(self.conf.vqgan_config, self.conf.vqgan_checkpoint).to(self._device)
 
-    @staticmethod
-    def parse_story_prompts(prompt):
-        """This method splits the input string by ^, then by |, and returns the full set of substrings as a list.
-        Story prompts, in the form of images, text, noise, are provided to the class as a string containing a series of phrases and clauses separated by | and ^. The set of all such groups of text is the story.
-        
-        example parse_story_prompts("a field:0.2^a pile of leaves|painting|red")
-        would return [['a field:0.2'],['a pile of leaves','painting','red']]
-
-        Args:
-            prompt (string): A string containing a series of phrases and separated by ^ and |
-
-        Returns:
-            all_prompts (list of lists): A list of lists of all substrings from the input prompt, first split by ^, then by |
-        """
-        # 
-
-        all_prompts = []
-
-        # Split text prompts using the pipe character (weights are split later)
-        if prompt:
-            # For stories, there will be many phrases separated by ^ 
-            # e.g. "a field:0.2^a pile of leaves|painting|red" would parse into two phrases 'a field:0.2' and 'a pile of leaves|painting|red'
-            story_phrases = [phrase.strip() for phrase in prompt.split("^")]
-            
-            # Make a list of all phrases.
-            for phrase in story_phrases:
-                all_prompts.append(phrase.split("|"))
-
-        return all_prompts
-
-    @staticmethod
-    def split_prompt(prompt):
-        """Split an input string of the form 'string:float' into three returned objects: string, float, -inf
-
-        Args:
-            prompt (string): String of the form 'string:float' E.g. 'a red boat:1.2'
-
-        Returns:
-            text (str): The substring from prompt prior to the colon, e.g. 'A red boat'
-            weight (float): The string after the colon is converted to a float, e.g 1.2
-            stop (int): Returns -inf. I have never seen this value used, but it is provided in the original algorithm.
-        """
-        #NR: Split prompts and weights
-        vals = prompt.rsplit(':', 2)
-        vals = vals + ['', '1', '-inf'][len(vals):]
-        return vals[0], float(vals[1]), float(vals[2])
-        
-    def parse_all_prompts(self):
-        """Split prompt strings into lists of lists of prompts.
-        Apply self.parse_story_prompts() to each of self.conf.text_prompts, self.conf.image_prompts, and self.conf.noise_prompts
-        """
-        # 
-        if self.conf.text_prompts:
-            self.text_prompts = self.parse_story_prompts(self.conf.text_prompts)
-        else:
-            self.text_prompts = []
-        
-        # Split target images using the pipe character (weights are split later)
-        if self.conf.image_prompts:
-            self.image_prompts = self.parse_story_prompts(self.conf.image_prompts)
-        else:
-            self.image_prompts = []
-
-        # Split noise prompts using the pipe character (weights are split later)
-        if self.conf.noise_prompts:
-            self.noise_prompts = self.parse_story_prompts(self.conf.noise_prompts)
-        else: 
-            self.noise_prompts = []
-
-
-    def encode_and_append_prompts(self, prompt_number):
+      
+    def encode_and_append_prompts(self, prompt_number, text_prompts=[], image_prompts=[], noise_prompts=[]):
         """CLIP tokenize/encode the selected prompts from text, input images, and noise parameters
         Apply self.encode_and_append_text_prompt() to each of 
-        self.text_prompts(prompt_number), 
-        self.image_prompts(prompt_number), and 
-        self.noise_prompts(prompt_number)
+        text_prompts[prompt_number], 
+        image_prompts[prompt_number], and 
+        noise_prompts[prompt_number]
 
         If prompt_number is greater than the length of any of the lists above, it will roll over and encode from the beginning again.
 
         Args:
-            prompt_number (int): The index of the prompt which should be encoded. 
+            prompt_number (int): The index of the prompt which should be encoded in series.  
+            text_prompts (list of lists): List of lists text prompts that should all be applied in parallel
+            image_prompts (list of lists): List of lists of text prompts that should all be applied in parallel
+            noise_prompts (list of lists): List of lists of text prompts that should all be applied in parallel
+            
         """
-        if len(self.text_prompts) > 0:
-            current_index = prompt_number % len(self.text_prompts)
-            for prompt in self.text_prompts[current_index]:
+        if len(text_prompts) > 0:
+            current_index = prompt_number % len(text_prompts)
+            for prompt in text_prompts[current_index]:
                 tqdm.write(f'Text prompt: {prompt_number}\n {prompt}')
                 self.encode_and_append_text_prompt(prompt)
         
         # Split target images using the pipe character (weights are split later)
-        if len(self.image_prompts) > 0:
+        if len(image_prompts) > 0:
             # if we had image prompts, encode them with CLIP
-            current_index = prompt_number % len(self.image_prompts)
-            for prompt in self.image_prompts[current_index]:
+            current_index = prompt_number % len(image_prompts)
+            for prompt in image_prompts[current_index]:
                 tqdm.write(f'Image prompt: {prompt_number}\n {prompt}')
                 self.encode_and_append_image_prompt(prompt)
 
         # Split noise prompts using the pipe character (weights are split later)
-        if len(self.noise_prompts) > 0:
-            current_index = prompt_number % len(self.noise_prompts)
-            for prompt in self.noise_prompts[current_index]:
+        if len(noise_prompts) > 0:
+            current_index = prompt_number % len(noise_prompts)
+            for prompt in noise_prompts[current_index]:
                 tqdm.write(f'Noise prompt: {prompt_number}\n {prompt}')
                 self.encode_and_append_noise_prompt(prompt)

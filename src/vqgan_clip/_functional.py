@@ -393,3 +393,72 @@ def delete_files(path_to_delete):
     files = glob.glob(path_to_delete + os.sep + '*')
     for f in files:
         os.remove(f)
+
+def parse_all_prompts(text_prompts, image_prompts, noise_prompts):
+    """Split prompt strings into lists of lists of prompts.
+    Apply parse_story_prompts() to each of conf.text_prompts, conf.image_prompts, and conf.noise_prompts
+    """
+    # 
+    if text_prompts:
+        text_prompts = parse_story_prompts(text_prompts)
+    else:
+        text_prompts = []
+    
+    # Split target images using the pipe character (weights are split later)
+    if image_prompts:
+        image_prompts = parse_story_prompts(image_prompts)
+    else:
+        image_prompts = []
+
+    # Split noise prompts using the pipe character (weights are split later)
+    if noise_prompts:
+        noise_prompts = parse_story_prompts(noise_prompts)
+    else: 
+        noise_prompts = []
+    
+    return text_prompts, image_prompts, noise_prompts
+
+def parse_story_prompts(prompt):
+    """This method splits the input string by ^, then by |, and returns the full set of substrings as a list.
+    Story prompts, in the form of images, text, noise, are provided to the class as a string containing a series of phrases and clauses separated by | and ^. The set of all such groups of text is the story.
+    
+    example parse_story_prompts("a field:0.2^a pile of leaves|painting|red")
+    would return [['a field:0.2'],['a pile of leaves','painting','red']]
+
+    Args:
+        prompt (string): A string containing a series of phrases and separated by ^ and |
+
+    Returns:
+        all_prompts (list of lists): A list of lists of all substrings from the input prompt, first split by ^, then by |
+    """
+    # 
+
+    all_prompts = []
+
+    # Split text prompts using the pipe character (weights are split later)
+    if prompt:
+        # For stories, there will be many phrases separated by ^ 
+        # e.g. "a field:0.2^a pile of leaves|painting|red" would parse into two phrases 'a field:0.2' and 'a pile of leaves|painting|red'
+        story_phrases = [phrase.strip() for phrase in prompt.split("^")]
+        
+        # Make a list of all phrases.
+        for phrase in story_phrases:
+            all_prompts.append(phrase.split("|"))
+
+    return all_prompts
+
+def split_prompt(prompt):
+    """Split an input string of the form 'string:float' into three returned objects: string, float, -inf
+
+    Args:
+        prompt (string): String of the form 'string:float' E.g. 'a red boat:1.2'
+
+    Returns:
+        text (str): The substring from prompt prior to the colon, e.g. 'A red boat'
+        weight (float): The string after the colon is converted to a float, e.g 1.2
+        stop (int): Returns -inf. I have never seen this value used, but it is provided in the original algorithm.
+    """
+    #NR: Split prompts and weights
+    vals = prompt.rsplit(':', 2)
+    vals = vals + ['', '1', '-inf'][len(vals):]
+    return vals[0], float(vals[1]), float(vals[2])
