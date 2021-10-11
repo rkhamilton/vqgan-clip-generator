@@ -159,7 +159,7 @@ class Engine:
         Returns:
             lossAll (tensor): A list of losses from the training process
         """
-        #self._optimizer.zero_grad(set_to_none=True)
+        self._optimizer.zero_grad(set_to_none=True)
         lossAll = self.ascend_txt(iteration_number)
         
         loss = sum(lossAll)
@@ -180,12 +180,12 @@ class Engine:
         """
         # 
         with torch.inference_mode():
-            out = self.synth()
+            # model_output = self.synth()
             info = PngImagePlugin.PngInfo()
             # If we have a text prompt for this image, add it as metadata
             # if self.story_phrase_current_prompt:
             #     info.add_text('comment', self.story_phrase_current_prompt[0])
-            TF.to_pil_image(out[0].cpu()).save(save_filename, pnginfo=info)
+            TF.to_pil_image(self.output_tensor[0].cpu()).save(save_filename, pnginfo=info)
 
     def ascend_txt(self,iteration_number):
         """Part of the process of training a GAN
@@ -196,8 +196,8 @@ class Engine:
         Returns:
             lossAll (tensor): Parameter describing the performance of the GAN training process
         """
-        out = self.synth()
-        encoded_image = self._perceptor.encode_image(vm.normalize(self._make_cutouts(out))).float()
+        self.output_tensor = self.synth()
+        encoded_image = self._perceptor.encode_image(vm.normalize(self._make_cutouts(self.output_tensor))).float()
         
         result = []
 
@@ -308,9 +308,9 @@ class Engine:
         else:
             self._make_cutouts = vm.MakeCutoutsPoolingUpdate(self._perceptor.visual.input_resolution, self.conf.num_cuts, cut_pow=self.conf.cut_power)
 
-    def convert_image_to_init_image(self, output):
+    def convert_image_to_init_image(self, pil_image):
         output_image_size_X, output_image_size_Y = self.calculate_output_image_size()
-        pil_image = output.convert('RGB')
+        pil_image = pil_image.convert('RGB')
         pil_image = pil_image.resize((output_image_size_X, output_image_size_Y), Image.LANCZOS)
         pil_tensor = TF.to_tensor(pil_image)
         self._z, *_ = self._model.encode(pil_tensor.to(self._device).unsqueeze(0) * 2 - 1)
