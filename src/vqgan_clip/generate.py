@@ -5,6 +5,10 @@ from tqdm import tqdm
 import glob, os
 import subprocess
 
+from PIL import ImageFile, Image, ImageChops
+ImageFile.LOAD_TRUNCATED_IMAGES = True
+from torchvision.transforms import functional as TF
+
 def single_image(eng_config=VQGAN_CLIP_Config()):
     """Generate an image using VQGAN+CLIP. The configuration of the algorithms is done via a VQGAN_CLIP_Config instance.
 
@@ -46,7 +50,7 @@ def single_image(eng_config=VQGAN_CLIP_Config()):
 
 
 def video(eng_config=VQGAN_CLIP_Config(), video_frames_path='./steps', output_framerate=30, assumed_input_framerate=None):
-    """Generate a video using VQGAN+CLIP. The configuration of the algorithms is done via a VQGAN_CLIP_Config instance.
+    """Generate a video using VQGAN+CLIP. The configuration of the VQGAN+CLIP algorithms is done via a VQGAN_CLIP_Config instance.
 
     Args:
         eng_config (VQGAN_CLIP_Config, optional): An instance of VQGAN_CLIP_Config with attributes customized for your use. See the documentation for VQGAN_CLIP_Config().
@@ -65,7 +69,7 @@ def video(eng_config=VQGAN_CLIP_Config(), video_frames_path='./steps', output_fr
     if not os.path.exists(video_frames_path):
         os.mkdir(video_frames_path)
     else:
-        delete_video_frames(video_frames_path)
+        _delete_video_frames(video_frames_path)
 
     # generate images
     current_prompt_number = 0
@@ -94,14 +98,91 @@ def video(eng_config=VQGAN_CLIP_Config(), video_frames_path='./steps', output_fr
         pass
 
     # Encode the video even if the user aborts generating stills using CTRL+C
-    encode_video(output_file=output_file,
+    _encode_video(output_file=output_file,
         path_to_stills=video_frames_path, 
         metadata=eng.conf.text_prompts,
         output_framerate=output_framerate,
         assumed_input_framerate=assumed_input_framerate)
 
+def zoom_video(eng_config=VQGAN_CLIP_Config(), video_frames_path='./steps', output_framerate=30, assumed_input_framerate=None, zoom_scale=1.0, shift_x=0, shift_y=0):
+    """Generate a video using VQGAN+CLIP where each frame moves relative to the previous frame. The configuration of the VQGAN+CLIP algorithms is done via a VQGAN_CLIP_Config instance.
 
-def delete_video_frames(path_to_delete):
+    Args:
+        eng_config (VQGAN_CLIP_Config, optional): An instance of VQGAN_CLIP_Config with attributes customized for your use. See the documentation for VQGAN_CLIP_Config().
+        video_frames_path (str, optional): Path where still images should be saved as they are generated before being combined into a video. Defaults to './steps'.
+        output_framerate (int, optional): Desired framerate of the output video. Defaults to 30.
+        assumed_input_framerate (int, optional): An assumed framerate to use for the still images. If an assumed input framerate is provided, the output video will be interpolated to the specified output framerate. Defaults to None.
+    """
+    eng = Engine(eng_config)
+    eng.initialize_VQGAN_CLIP() 
+    eng.parse_all_prompts()
+    eng.encode_and_append_prompts(0)
+    eng.configure_optimizer()
+    output_file = eng.conf.output_filename + '.mp4'
+
+    # if the location for the interim video frames doesn't exist, create it
+    if not os.path.exists(video_frames_path):
+        os.mkdir(video_frames_path)
+    else:
+        _delete_video_frames(video_frames_path)
+
+    # generate images
+    current_prompt_number = 0
+    video_frame_num = 1
+    output_image_size_x, output_image_size_y = eng.calculate_output_image_size()
+    try:
+        for iteration_num in tqdm(range(1,eng.conf.iterations+1)):
+            #perform eng.conf.iterations of train()
+            lossAll = eng.train(iteration_num)
+
+            if eng_config.change_prompt_every and iteration_num % eng_config.change_prompt_every == 0:
+                # change prompts if every change_prompt_every iterations
+                current_prompt_number += 1
+                eng.clear_all_prompts()
+                eng.encode_and_append_prompts(current_prompt_number)
+
+            if eng_config.save_every and iteration_num % eng_config.save_every == 0:
+                # Transform the current video frame
+                # Convert z back into a Pil image 
+                pil_image = TF.to_pil_image(eng.output_tensor[0].cpu())
+                                        
+                # Zoom
+                if zoom_scale != 1.0:
+                    new_pil_image = _zoom_at(pil_image, output_image_size_x/2, output_image_size_y/2, zoom_scale)
+                else:
+                    new_pil_image = pil_image
+                
+                # Shift
+                if shift_x or shift_y:
+                    # This one wraps the image
+                    new_pil_image = ImageChops.offset(new_pil_image, shift_x, shift_y)
+                
+                # Re-encode and use this as the new initial image for the next iteration
+                eng.convert_image_to_init_image(new_pil_image)
+
+                # Re-create optimiser with the new initial image
+                eng.configure_optimizer()
+
+                # save a frame of video every .save_every iterations
+                # display some statistics about how the GAN training is going whever we save an interim image
+                losses_str = ', '.join(f'{loss.item():7.3f}' for loss in lossAll)
+                tqdm.write(f'iteration:{iteration_num:6d}\tvideo frame: {video_frame_num:6d}\tloss sum: {sum(lossAll).item():7.3f}\tloss for each prompt:{losses_str}')
+
+                # if making a video, save a frame named for the video step
+                eng.save_current_output(video_frames_path + os.sep + str(video_frame_num) + '.png')
+                video_frame_num += 1
+        tqdm.write('Generating video...')
+    except KeyboardInterrupt:
+        pass
+
+    # Encode the video even if the user aborts generating stills using CTRL+C
+    _encode_video(output_file=output_file,
+        path_to_stills=video_frames_path, 
+        metadata=eng.conf.text_prompts,
+        output_framerate=output_framerate,
+        assumed_input_framerate=assumed_input_framerate)
+
+def _delete_video_frames(path_to_delete):
     """Delete all files in the folder passed as an argument
 
     Args:
@@ -112,7 +193,7 @@ def delete_video_frames(path_to_delete):
         os.remove(f)
 
 
-def encode_video(output_file=f'.\\output\\output.mp4', path_to_stills=f'.\\steps', metadata='', output_framerate=30, assumed_input_framerate=None):
+def _encode_video(output_file=f'.\\output\\output.mp4', path_to_stills=f'.\\steps', metadata='', output_framerate=30, assumed_input_framerate=None):
     """Encodes a folder of PNG images to a video in HEVC format using ffmpeg with optional interpolation. Input stills must be sequentially numbered png files starting from 1. E.g. 1.png 2.png etc.
 
     Args:
@@ -149,3 +230,11 @@ def encode_video(output_file=f'.\\output\\output.mp4', path_to_stills=f'.\\steps
             '-strict', '-2',
             '-metadata', f'comment={metadata}',
             output_file])
+
+# For zoom video
+def _zoom_at(img, x, y, zoom):
+    w, h = img.size
+    zoom2 = zoom * 2
+    img = img.crop((x - w / zoom2, y - h / zoom2, 
+                    x + w / zoom2, y + h / zoom2))
+    return img.resize((w, h), Image.LANCZOS)

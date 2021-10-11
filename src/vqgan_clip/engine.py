@@ -77,14 +77,6 @@ class VQGAN_CLIP_Config:
         self.optimiser = 'Adam' # choices=['Adam','AdamW','Adagrad','Adamax','DiffGrad','AdamP','RAdam','RMSprop'], default='Adam'
         self.augments = [['Af', 'Pe', 'Ji', 'Er']] # I have no idea what this does. choices=['Ji','Sh','Gn','Pe','Ro','Af','Et','Ts','Cr','Er','Re']
         self.cuda_device = 'cuda:0' # select your GPU. Default to the first gpu, device 0
-        self.zoom_start = 0
-        self.zoom_save_every = 50
-        self.zoom_scale = 1.02
-        self.zoom_shift_x = 0
-        self.zoom_shift_y = 0
-        self.output_video_fps = 60
-        self.input_video_fps = 15
-        self.video_style_dir = None
 
 class Engine:
     def __init__(self, config=VQGAN_CLIP_Config()):
@@ -284,9 +276,8 @@ class Engine:
 
             self._z = self._z.view([-1, toksY, toksX, e_dim]).permute(0, 3, 1, 2) 
             #self._z = torch.rand_like(self._z)*2						# NR: check
-
-        self._z_orig = self._z.clone()
-        self._z.requires_grad_(True)
+            self._z_orig = self._z.clone()
+            self._z.requires_grad_(True)
 
     def calculate_output_image_size(self):
         f = 2**(self._model.decoder.num_resolutions - 1)
@@ -314,6 +305,8 @@ class Engine:
         pil_image = pil_image.resize((output_image_size_X, output_image_size_Y), Image.LANCZOS)
         pil_tensor = TF.to_tensor(pil_image)
         self._z, *_ = self._model.encode(pil_tensor.to(self._device).unsqueeze(0) * 2 - 1)
+        self._z_orig = self._z.clone()
+        self._z.requires_grad_(True)
 
     def clear_all_prompts(self):
         """Clear all encoded prompts. You might use this during video generation to reset the prompts so that you can cause the video to steer in a new direction.
