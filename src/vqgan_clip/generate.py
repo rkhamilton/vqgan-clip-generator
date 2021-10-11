@@ -1,4 +1,5 @@
 # This module is the interface for creating images and video from text prompts
+# This should also serve as examples of how you can use the Engine class to create images and video using your own creativity.
 from vqgan_clip.engine import Engine, VQGAN_CLIP_Config
 from tqdm import tqdm
 import glob, os
@@ -23,12 +24,12 @@ def single_image(eng_config=VQGAN_CLIP_Config()):
         for iteration_num in tqdm(range(1,eng.conf.iterations+1)):
             #perform eng.conf.iterations of train()
             lossAll = eng.train(iteration_num)
-            if iteration_num % eng_config.change_prompt_every == 0:
+            if eng_config.change_prompt_every and iteration_num % eng_config.change_prompt_every == 0:
                 # change prompts if every change_prompt_every iterations
                 current_prompt_number += 1
                 eng.clear_all_prompts()
                 eng.encode_and_append_prompts(current_prompt_number)
-            if iteration_num % eng_config.save_every == 0:
+            if eng_config.save_every and iteration_num % eng_config.save_every == 0:
                 # display some statistics about how the GAN training is going whever we save an interim image
                 losses_str = ', '.join(f'{loss.item():7.3f}' for loss in lossAll)
                 tqdm.write(f'iteration:{iteration_num:6d}\tloss sum: {sum(lossAll).item():7.3f}\tloss for each prompt:{losses_str}')
@@ -73,13 +74,13 @@ def video(eng_config=VQGAN_CLIP_Config(), video_frames_path='./steps', output_fr
         for iteration_num in tqdm(range(1,eng.conf.iterations+1)):
             #perform eng.conf.iterations of train()
             lossAll = eng.train(iteration_num)
-            if iteration_num % eng_config.change_prompt_every == 0:
+            if eng_config.change_prompt_every and iteration_num % eng_config.change_prompt_every == 0:
                 # change prompts if every change_prompt_every iterations
                 current_prompt_number += 1
                 eng.clear_all_prompts()
                 eng.encode_and_append_prompts(current_prompt_number)
 
-            if iteration_num % eng_config.save_every == 0:
+            if eng_config.save_every and iteration_num % eng_config.save_every == 0:
                 # save a frame of video every .save_every iterations
                 # display some statistics about how the GAN training is going whever we save an interim image
                 losses_str = ', '.join(f'{loss.item():7.3f}' for loss in lossAll)
