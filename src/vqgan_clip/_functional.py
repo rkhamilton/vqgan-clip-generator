@@ -11,6 +11,7 @@ from torchvision.transforms import functional as TF
 from torchvision import transforms
 from omegaconf import OmegaConf
 from taming.models import cond_transformer, vqgan
+import glob, os
 
 def sinc(x):
     return torch.where(x != 0, torch.sin(math.pi * x) / (math.pi * x), x.new_ones([]))
@@ -382,3 +383,13 @@ def load_vqgan_model(config_path, checkpoint_path):
         raise ValueError(f'unknown model type: {config.model.target}')
     del model.loss
     return model
+
+def delete_files(path_to_delete):
+    """Delete all files in the folder passed as an argument
+
+    Args:
+        frame_path (str): Folder path
+    """
+    files = glob.glob(path_to_delete + os.sep + '*')
+    for f in files:
+        os.remove(f)

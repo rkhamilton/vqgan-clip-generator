@@ -142,3 +142,16 @@ def test_video_multiple_prompt_interpolation(testing_config):
     vqgan_clip.generate.video(config,video_frames_path='./steps', output_framerate=30, assumed_input_framerate=5)
     assert os.path.exists(config.output_filename + '.mp4')
     os.remove(config.output_filename + '.mp4')
+
+
+def test_zoom_video(testing_config):
+    '''Generate a zoom video based on a text prompt changing every 10 iterations
+    '''
+    config = testing_config
+    config.save_every = 5
+    config.change_prompt_every = 50
+    config.iterations = 200
+    vqgan_clip.generate.zoom_video(config, output_framerate=30, assumed_input_framerate=10, zoom_scale=1.02, shift_x=1, shift_y=1)
+    output = config.output_filename + '.mp4'
+    assert os.path.exists(output)
+    os.remove(output)

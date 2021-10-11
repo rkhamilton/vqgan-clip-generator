@@ -1,9 +1,8 @@
 # This contains the original math to generate an image from VQGAN+CLIP. I don't fully understand what it's doing and don't expect to change it.
-from os import stat
-import vqgan_clip.vqgan_math as vm
+from . import _functional as VF
 
 import torch
-from torch import nn, optim
+from torch import optim
 from torch.nn import functional as F
 from torchvision.transforms import functional as TF
 from torch.cuda import get_device_properties
@@ -11,7 +10,7 @@ torch.backends.cudnn.benchmark = False		# NR: True is a bit faster, but can lead
 #torch.use_deterministic_algorithms(True)	# NR: grid_sampler_2d_backward_cuda does not have a deterministic implementation
 from torch_optimizer import DiffGrad, AdamP, RAdam
 import clip
-from PIL import ImageFile, Image, PngImagePlugin, ImageChops
+from PIL import ImageFile, Image, PngImagePlugin
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 import imageio
 from tqdm import tqdm
@@ -21,6 +20,8 @@ from urllib.request import urlopen
 import numpy as np
 
 import os
+
+__all__ = ["VQGAN_CLIP_Config", "Engine"]
 
 
 class VQGAN_CLIP_Config:
@@ -85,8 +86,8 @@ class Engine:
 
         self._gumbel = False
 
-        self.replace_grad = vm.ReplaceGrad.apply
-        self.clamp_with_grad = vm.ClampWithGrad.apply
+        self.replace_grad = VF.ReplaceGrad.apply
+        self.clamp_with_grad = VF.ClampWithGrad.apply
 
         self.seed = torch.seed()
 
@@ -189,7 +190,7 @@ class Engine:
             lossAll (tensor): Parameter describing the performance of the GAN training process
         """
         self.output_tensor = self.synth()
-        encoded_image = self._perceptor.encode_image(vm.normalize(self._make_cutouts(self.output_tensor))).float()
+        encoded_image = self._perceptor.encode_image(VF.normalize(self._make_cutouts(self.output_tensor))).float()
         
         result = []
 
@@ -205,10 +206,10 @@ class Engine:
     # Vector quantize
     def synth(self):
         if self._gumbel:
-            z_q = vm.vector_quantize(self._z.movedim(1, 3), self._model.quantize.embed.weight).movedim(3, 1)
+            z_q = VF.vector_quantize(self._z.movedim(1, 3), self._model.quantize.embed.weight).movedim(3, 1)
         else:
-            z_q = vm.vector_quantize(self._z.movedim(1, 3), self._model.quantize.embedding.weight).movedim(3, 1)
-        clamp_with_grad = vm.ClampWithGrad.apply
+            z_q = VF.vector_quantize(self._z.movedim(1, 3), self._model.quantize.embedding.weight).movedim(3, 1)
+        clamp_with_grad = VF.ClampWithGrad.apply
         return clamp_with_grad(self._model.decode(z_q).add(1).div(2), 0, 1)
 
     def initialize_VQGAN_CLIP(self):
@@ -238,7 +239,7 @@ class Engine:
         seed = int(txt_seed)
         gen = torch.Generator().manual_seed(seed)
         embed = torch.empty([1, self._perceptor.visual.output_dim]).normal_(generator=gen)
-        self.pMs.append(vm.Prompt(embed, weight).to(self._device))
+        self.pMs.append(VF.Prompt(embed, weight).to(self._device))
 
     def initialize_z(self):
         # Gumbel or not?
@@ -259,9 +260,9 @@ class Engine:
             else:
                 self.convert_image_to_init_image(Image.open(self.conf.init_image))
         elif self.conf.init_noise == 'pixels':
-            self.convert_image_to_init_image(vm.make_random_noise_image(self.conf.image_size[0], self.conf.image_size[1]))
+            self.convert_image_to_init_image(VF.make_random_noise_image(self.conf.image_size[0], self.conf.image_size[1]))
         elif self.conf.init_noise == 'gradient':
-            self.convert_image_to_init_image(vm.make_random_gradient_image(self.conf.image_size[0], self.conf.image_size[1]))
+            self.convert_image_to_init_image(VF.make_random_gradient_image(self.conf.image_size[0], self.conf.image_size[1]))
         else:
             # this is the default that happens if no initialization image options are specified
             f = 2**(self._model.decoder.num_resolutions - 1)
@@ -289,15 +290,15 @@ class Engine:
         # Cutout class options:
         # 'latest','original','updated', 'nrupdated', or 'updatedpooling'
         if self.conf.cut_method == 'latest':
-            self._make_cutouts = vm.MakeCutouts(self._perceptor.visual.input_resolution, self.conf.num_cuts, self.conf.augments, cut_pow=self.conf.cut_power)
+            self._make_cutouts = VF.MakeCutouts(self._perceptor.visual.input_resolution, self.conf.num_cuts, self.conf.augments, cut_pow=self.conf.cut_power)
         elif self.conf.cut_method == 'original':
-            self._make_cutouts = vm.MakeCutoutsOrig(self._perceptor.visual.input_resolution, self.conf.num_cuts, cut_pow=self.conf.cut_power)
+            self._make_cutouts = VF.MakeCutoutsOrig(self._perceptor.visual.input_resolution, self.conf.num_cuts, cut_pow=self.conf.cut_power)
         elif self.conf.cut_method == 'updated':
-            self._make_cutouts = vm.MakeCutoutsUpdate(self._perceptor.visual.input_resolution, self.conf.num_cuts, cut_pow=self.conf.cut_power)
+            self._make_cutouts = VF.MakeCutoutsUpdate(self._perceptor.visual.input_resolution, self.conf.num_cuts, cut_pow=self.conf.cut_power)
         elif self.conf.cut_method == 'nrupdated':
-            self._make_cutouts = vm.MakeCutoutsNRUpdate(self._perceptor.visual.input_resolution, self.conf.num_cuts, self.conf.augments, cut_pow=self.conf.cut_power)
+            self._make_cutouts = VF.MakeCutoutsNRUpdate(self._perceptor.visual.input_resolution, self.conf.num_cuts, self.conf.augments, cut_pow=self.conf.cut_power)
         else:
-            self._make_cutouts = vm.MakeCutoutsPoolingUpdate(self._perceptor.visual.input_resolution, self.conf.num_cuts, cut_pow=self.conf.cut_power)
+            self._make_cutouts = VF.MakeCutoutsPoolingUpdate(self._perceptor.visual.input_resolution, self.conf.num_cuts, cut_pow=self.conf.cut_power)
 
     def convert_image_to_init_image(self, pil_image):
         output_image_size_X, output_image_size_Y = self.calculate_output_image_size()
@@ -326,10 +327,10 @@ class Engine:
         path, weight, stop = self.split_prompt(prompt)
         output_image = Image.open(path)
         pil_image = output_image.convert('RGB')
-        output_image = vm.resize_image(pil_image, (output_image_size_X, output_image_size_Y))
+        output_image = VF.resize_image(pil_image, (output_image_size_X, output_image_size_Y))
         batch = self._make_cutouts(TF.to_tensor(output_image).unsqueeze(0).to(self._device))
-        embed = self._perceptor.encode_image(vm.normalize(batch)).float()
-        self.pMs.append(vm.Prompt(embed, weight, stop).to(self._device))
+        embed = self._perceptor.encode_image(VF.normalize(batch)).float()
+        self.pMs.append(VF.Prompt(embed, weight, stop).to(self._device))
 
     def encode_and_append_text_prompt(self, prompt):
         """Encodes a list of text prompts using CLIP and appends those to the set of prompts being used by this model instance.
@@ -342,11 +343,11 @@ class Engine:
         # given a text prompt like 'a field of red flowers:0.5' parse that into text and weights, encode it with CLIP, and add it to the encoded prompts used for image generation
         txt, weight, stop = self.split_prompt(prompt)
         embed = self._perceptor.encode_text(clip.tokenize(txt).to(self._device)).float()
-        self.pMs.append(vm.Prompt(embed, weight, stop).to(self._device))
+        self.pMs.append(VF.Prompt(embed, weight, stop).to(self._device))
 
     def load_model(self):
         # This step is slow, and does not need to be done each time an image is generated.
-        self._model = vm.load_vqgan_model(self.conf.vqgan_config, self.conf.vqgan_checkpoint).to(self._device)
+        self._model = VF.load_vqgan_model(self.conf.vqgan_config, self.conf.vqgan_checkpoint).to(self._device)
 
     @staticmethod
     def parse_story_prompts(prompt):

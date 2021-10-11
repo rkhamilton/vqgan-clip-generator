@@ -8,6 +8,7 @@ import subprocess
 from PIL import ImageFile, Image, ImageChops
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 from torchvision.transforms import functional as TF
+from . import _functional as VF
 
 def single_image(eng_config=VQGAN_CLIP_Config()):
     """Generate an image using VQGAN+CLIP. The configuration of the algorithms is done via a VQGAN_CLIP_Config instance.
@@ -69,7 +70,7 @@ def video(eng_config=VQGAN_CLIP_Config(), video_frames_path='./steps', output_fr
     if not os.path.exists(video_frames_path):
         os.mkdir(video_frames_path)
     else:
-        _delete_video_frames(video_frames_path)
+        VF.delete_files(video_frames_path)
 
     # generate images
     current_prompt_number = 0
@@ -98,7 +99,7 @@ def video(eng_config=VQGAN_CLIP_Config(), video_frames_path='./steps', output_fr
         pass
 
     # Encode the video even if the user aborts generating stills using CTRL+C
-    _encode_video(output_file=output_file,
+    encode_video(output_file=output_file,
         path_to_stills=video_frames_path, 
         metadata=eng.conf.text_prompts,
         output_framerate=output_framerate,
@@ -124,7 +125,7 @@ def zoom_video(eng_config=VQGAN_CLIP_Config(), video_frames_path='./steps', outp
     if not os.path.exists(video_frames_path):
         os.mkdir(video_frames_path)
     else:
-        _delete_video_frames(video_frames_path)
+        VF.delete_files(video_frames_path)
 
     # generate images
     current_prompt_number = 0
@@ -148,7 +149,7 @@ def zoom_video(eng_config=VQGAN_CLIP_Config(), video_frames_path='./steps', outp
                                         
                 # Zoom
                 if zoom_scale != 1.0:
-                    new_pil_image = _zoom_at(pil_image, output_image_size_x/2, output_image_size_y/2, zoom_scale)
+                    new_pil_image = VF.zoom_at(pil_image, output_image_size_x/2, output_image_size_y/2, zoom_scale)
                 else:
                     new_pil_image = pil_image
                 
@@ -176,24 +177,13 @@ def zoom_video(eng_config=VQGAN_CLIP_Config(), video_frames_path='./steps', outp
         pass
 
     # Encode the video even if the user aborts generating stills using CTRL+C
-    _encode_video(output_file=output_file,
+    encode_video(output_file=output_file,
         path_to_stills=video_frames_path, 
         metadata=eng.conf.text_prompts,
         output_framerate=output_framerate,
         assumed_input_framerate=assumed_input_framerate)
 
-def _delete_video_frames(path_to_delete):
-    """Delete all files in the folder passed as an argument
-
-    Args:
-        frame_path (str): Folder path
-    """
-    files = glob.glob(path_to_delete + os.sep + '*')
-    for f in files:
-        os.remove(f)
-
-
-def _encode_video(output_file=f'.\\output\\output.mp4', path_to_stills=f'.\\steps', metadata='', output_framerate=30, assumed_input_framerate=None):
+def encode_video(output_file=f'.\\output\\output.mp4', path_to_stills=f'.\\steps', metadata='', output_framerate=30, assumed_input_framerate=None):
     """Encodes a folder of PNG images to a video in HEVC format using ffmpeg with optional interpolation. Input stills must be sequentially numbered png files starting from 1. E.g. 1.png 2.png etc.
 
     Args:
@@ -230,11 +220,3 @@ def _encode_video(output_file=f'.\\output\\output.mp4', path_to_stills=f'.\\step
             '-strict', '-2',
             '-metadata', f'comment={metadata}',
             output_file])
-
-# For zoom video
-def _zoom_at(img, x, y, zoom):
-    w, h = img.size
-    zoom2 = zoom * 2
-    img = img.crop((x - w / zoom2, y - h / zoom2, 
-                    x + w / zoom2, y + h / zoom2))
-    return img.resize((w, h), Image.LANCZOS)
