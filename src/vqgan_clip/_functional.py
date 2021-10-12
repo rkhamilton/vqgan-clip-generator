@@ -12,6 +12,7 @@ from torchvision import transforms
 from omegaconf import OmegaConf
 from taming.models import cond_transformer, vqgan
 import glob, os
+import subprocess
 
 def sinc(x):
     return torch.where(x != 0, torch.sin(math.pi * x) / (math.pi * x), x.new_ones([]))
@@ -462,3 +463,77 @@ def split_prompt(prompt):
     vals = prompt.rsplit(':', 2)
     vals = vals + ['', '1', '-inf'][len(vals):]
     return vals[0], float(vals[1]), float(vals[2])
+
+def extract_video_frames(original_video, extraction_framerate, original_frames):
+    # Parse original video file into individual frames
+    # original_video = 'video_restyle\\original_video\\20211004_132008000_iOS.MOV'
+    # extraction_framerate = '30' # number of frames per second to extract from the original video
+
+    # # folder locations
+    # original_frames =  'video_restyle\\original_frames\\' # extracted original frames go here
+
+    # purge previously extracted original frames
+    if not os.path.exists(original_frames):
+        os.mkdir(original_frames)
+    else:
+        files = glob.glob(original_frames+os.sep+'*')
+        for f in files:
+            os.remove(f)
+
+    print("Extracting image frames from original video")
+    # extract original video frames
+    subprocess.call(['ffmpeg',
+        '-i', original_video,
+        '-filter:v', 'fps='+str(extraction_framerate),
+        original_frames+os.sep+'frame_%12d.jpg'])
+
+    return sorted(glob.glob(original_frames+os.sep+'*.jpg'))
+
+def filesize_matching_aspect_ratio(file_name, desired_x, desired_y):
+    """Calculate image sizes (X,Y) that have an area equal to the area of your desired_x, desired_y image, but with an aspect ratio matching the image in file_name.
+
+    Args:
+        file_name (str): Path to an image file. We want to match the aspect ratio of this file.
+        desired_x (int): Desired image size X, without knowing a target aspect ratio.
+        desired_y (int): Desired image size Y, without knowing a target aspect ratio.
+
+    Returns:
+        restyled_image_x (int) : Width of an image file matching the aspect ratio of the input image filename.
+        restyled_image_y (int) : Height of an image file matching the aspect ratio of the input image filename.
+    """
+    # get the source video file dimensions
+    files = glob.glob(file_name)
+    img=Image.open(files[0])
+    source_img_x,source_img_y=img.size
+    img.close()
+    source_aspect_ratio = source_img_x/source_img_y
+    # calculate the dimensions of the new restyled video such that it has an area that you can process in GAN
+    restyled_image_y = int(math.sqrt(desired_x*desired_y/source_aspect_ratio))
+    restyled_image_x = int(source_aspect_ratio * restyled_image_y)
+    return restyled_image_x, restyled_image_y
+
+def copy_video_audio(original_video, destination_file_without_audio, output_file):
+    extracted_original_audio = 'extracted_original_audio.aac' # audio file, if any, from the original video file
+
+    # extract original audio
+    try:
+        subprocess.call(['ffmpeg',
+            '-i', original_video,
+            '-vn', 
+            '-acodec', 'copy',
+            extracted_original_audio])
+    except:
+        print("Audio extraction failed")
+
+    # if there is extracted audio from the original file, re-merge it here
+    # note that in order for the audio to sync up, extracted_video_fps must have matched the original video framerate
+    subprocess.call(['ffmpeg',
+        '-i', destination_file_without_audio,
+        '-i', extracted_original_audio,
+        '-c', 'copy', 
+        '-map', '0:v:0',
+        '-map', '1:a:0',
+    output_file])
+    
+    # clean up
+    os.remove(extracted_original_audio)
