@@ -2,8 +2,8 @@ import pytest
 import vqgan_clip.generate
 from vqgan_clip.engine import VQGAN_CLIP_Config
 import os
-
-
+import vqgan_clip._functional as VF
+import glob
 
 @pytest.fixture
 def testing_config():
@@ -21,6 +21,7 @@ def test_single_image(testing_config, tmpdir):
     '''Generate a single image based on a text prompt
     '''
     config = testing_config
+    config.output_image_size = [128,128]
     output_filename = str(tmpdir.mkdir('output').join('output'))
     vqgan_clip.generate.single_image(config,
         text_prompts = 'A painting of flowers in the renaissance style:0.5|rembrandt:0.5^fish:0.2|love:1',
@@ -38,6 +39,7 @@ def test_single_image_story(testing_config, tmpdir):
     '''Generate a single image based on a text prompt changing every 10 iterations
     '''
     config = testing_config
+    config.output_image_size = [128,128]
     output_filename = str(tmpdir.mkdir('output').join('output'))
     vqgan_clip.generate.single_image(config,
         text_prompts = 'A painting of flowers in the renaissance style:0.5|rembrandt:0.5^fish:0.2|love:1',
@@ -53,6 +55,7 @@ def test_single_image_noise_prompt(testing_config, tmpdir):
     '''Generate a single image based on a noise prompt
     '''
     config = testing_config
+    config.output_image_size = [128,128]
     output_filename = str(tmpdir.mkdir('output').join('output'))
     vqgan_clip.generate.single_image(config,
         noise_prompts = '123:0.1|234:0.2|345:0.3',
@@ -67,6 +70,7 @@ def test_single_image_noise_prompt_story(testing_config, tmpdir):
     '''Generate a single image based on a noise prompt changing every 10 iterations
     '''
     config = testing_config
+    config.output_image_size = [128,128]
     output_filename = str(tmpdir.mkdir('output').join('output'))
     vqgan_clip.generate.single_image(config,
         noise_prompts = '123:0.1|234:0.2|345:0.3^700',
@@ -81,6 +85,7 @@ def test_single_image_image_prompt(testing_config, image_prompts, tmpdir):
     '''Generate a single image based on a image prompt
     '''
     config = testing_config
+    config.output_image_size = [128,128]
     output_filename = str(tmpdir.mkdir('output').join('output'))
     vqgan_clip.generate.single_image(config,
         image_prompts = image_prompts,
@@ -94,6 +99,7 @@ def test_single_image_image_prompt_story(testing_config, image_prompts, tmpdir):
     '''Generate a single image based on a image prompt prompt
     '''
     config = testing_config
+    config.output_image_size = [128,128]
     output_filename = str(tmpdir.mkdir('output').join('output'))
     vqgan_clip.generate.single_image(config,
         image_prompts = image_prompts,
@@ -108,6 +114,7 @@ def test_single_image_all_prompts(testing_config, image_prompts, tmpdir):
     '''Generate a single image based on a text prompt, image prompt, and noise prompt.
     '''
     config = testing_config
+    config.output_image_size = [128,128]
     output_filename = str(tmpdir.mkdir('output').join('output'))
     vqgan_clip.generate.single_image(config,
         text_prompts = 'A painting of flowers in the renaissance style:0.5|rembrandt:0.5^fish:0.2|love:1',
@@ -123,6 +130,7 @@ def test_single_image_all_prompts_story(testing_config, image_prompts, tmpdir):
     '''Generate a single image based on a text prompt, image prompt, and noise prompt.
     '''
     config = testing_config
+    config.output_image_size = [128,128]
     output_filename = str(tmpdir.mkdir('output').join('output'))
     vqgan_clip.generate.single_image(config,
         text_prompts = 'A painting of flowers in the renaissance style:0.5|rembrandt:0.5^fish:0.2|love:1',
@@ -135,13 +143,31 @@ def test_single_image_all_prompts_story(testing_config, image_prompts, tmpdir):
     assert os.path.exists(output)
     os.remove(output)
 
+def test_multiple_images(testing_config, tmpdir):
+    '''Generate multiple images based on the same text prompt, each with a different random seed
+    '''
+    config = testing_config
+    config.output_image_size = [128,128]
+    output_images_path = str(tmpdir.mkdir('video_frames'))
+    num_images_to_generate = 3
+    vqgan_clip.generate.multiple_images(config,
+        text_prompts = 'A painting of flowers in the renaissance style:0.5|rembrandt:0.5^fish:0.2|love:1',
+        iterations = 5,
+        save_every = 6,
+        num_images_to_generate=num_images_to_generate,
+        output_images_path=output_images_path)
+    output_files = glob.glob(output_images_path + os.sep + '*.png')
+    assert len(output_files) == num_images_to_generate
+    for f in output_files:
+        os.remove(f)
+
 def test_video_single_prompt(testing_config, tmpdir):
     '''Generate a video file based on a text prompt
     '''
     config = testing_config
     config.output_image_size = [128,128]
     output_filename = str(tmpdir.mkdir('output').join('output'))
-    steps_path = str(tmpdir.mkdir('steps'))
+    steps_path = str(tmpdir.mkdir('video_frames'))
     vqgan_clip.generate.video(config,
         text_prompts = 'A painting of flowers in the renaissance style',
         iterations = 100,
@@ -160,7 +186,7 @@ def test_video_single_prompt_interpolation(testing_config, tmpdir):
     config = testing_config
     config.output_image_size = [128,128]
     output_filename = str(tmpdir.mkdir('output').join('output'))
-    steps_path = str(tmpdir.mkdir('steps'))
+    steps_path = str(tmpdir.mkdir('video_frames'))
     vqgan_clip.generate.video(config,
         text_prompts = 'A painting of flowers in the renaissance style',
         iterations = 100,
@@ -179,7 +205,7 @@ def test_video_multiple_prompt_interpolation(testing_config, tmpdir):
     config = testing_config
     config.output_image_size = [128,128]
     output_filename = str(tmpdir.mkdir('output').join('output'))
-    steps_path = str(tmpdir.mkdir('steps'))
+    steps_path = str(tmpdir.mkdir('video_frames'))
     vqgan_clip.generate.video(config,
         text_prompts = 'A painting of flowers in the renaissance style^a black dog in a cave',
         iterations = 300,
@@ -199,7 +225,7 @@ def test_zoom_video(testing_config, tmpdir):
     config = testing_config
     config.output_image_size = [128,128]
     output_filename = str(tmpdir.mkdir('output').join('output'))
-    steps_path = str(tmpdir.mkdir('steps'))
+    steps_path = str(tmpdir.mkdir('video_frames'))
 
     vqgan_clip.generate.zoom_video(config,
         text_prompts = 'A painting of flowers in the renaissance style',
@@ -224,7 +250,7 @@ def test_zoom_video_all_prompts(testing_config, image_prompts, tmpdir):
     config = testing_config
     config.output_image_size = [128,128]
     output_filename = str(tmpdir.mkdir('output').join('output'))
-    steps_path = str(tmpdir.mkdir('steps'))
+    steps_path = str(tmpdir.mkdir('video_frames'))
 
     vqgan_clip.generate.zoom_video(config,
         text_prompts = 'A painting of flowers in the renaissance style:0.5|rembrandt:0.5^fish:0.2|love:1',
