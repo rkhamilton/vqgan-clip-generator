@@ -37,7 +37,7 @@ class VQGAN_CLIP_Config:
     * self.vqgan_config = f\'models/vqgan_imagenet_f16_16384.yaml\' # path to model yaml file  
     * self.vqgan_checkpoint = f\'models/vqgan_imagenet_f16_16384.ckpt\' # path to model checkpoint file  
     * self.learning_rate = 0.1  
-    * self.cut_method = \'latest\' # choices=[\'original\',\'updated\',\'nrupdated\',\'updatedpooling\',\'latest\'] default=\'latest\'  
+    * self.cut_method = \'latest\' # choices=[\'original\',\'updated\',\'nrupdated\',\'updatedpooling\',\'latest\',\'updatedpooling\'] default=\'latest\'  
     * self.num_cuts = 32  
     * self.cut_power = 1.0  
     * self.cudnn_determinism = False # if true, use algorithms that have reproducible, deterministic output. Performance will be lower.  
@@ -56,7 +56,7 @@ class VQGAN_CLIP_Config:
         self.vqgan_config = f'models/vqgan_imagenet_f16_16384.yaml' # path to model yaml file
         self.vqgan_checkpoint = f'models/vqgan_imagenet_f16_16384.ckpt' # path to model checkpoint file
         self.learning_rate = 0.1
-        self.cut_method = 'latest' # choices=['original','updated','nrupdated','updatedpooling','latest'] default='latest'
+        self.cut_method = 'latest' # choices=['original','updated','nrupdated','updatedpooling','latest', 'updatedpooling'] default='latest'
         self.num_cuts = 32
         self.cut_power = 1.0
         self.cudnn_determinism = False # if true, use algorithms that have reproducible, deterministic output. Performance will be lower.
