@@ -41,7 +41,7 @@ class VQGAN_CLIP_Config:
     * self.num_cuts = 32  
     * self.cut_power = 1.0  
     * self.cudnn_determinism = False # if true, use algorithms that have reproducible, deterministic output. Performance will be lower.  
-    * self.optimiser = \'Adam\' # choices=[\'Adam\',\'AdamW\',\'Adagrad\',\'Adamax\',\'DiffGrad\',\'AdamP\',\'RAdam\',\'RMSprop\'], default=\'Adam\'  
+    * self.optimizer = \'Adam\' # choices=[\'Adam\',\'AdamW\',\'Adagrad\',\'Adamax\',\'DiffGrad\',\'AdamP\',\'RAdam\',\'RMSprop\'], default=\'Adam\'  
     * self.augments = [[\'Af\', \'Pe\', \'Ji\', \'Er\']] # I have no idea what this does. choices=[\'Ji\',\'Sh\',\'Gn\',\'Pe\',\'Ro\',\'Af\',\'Et\',\'Ts\',\'Cr\',\'Er\',\'Re\']  
     * self.cuda_device = \'cuda:0\' # select your GPU. Default to the first gpu, device 0  
     """
@@ -59,9 +59,10 @@ class VQGAN_CLIP_Config:
         self.num_cuts = 32
         self.cut_power = 1.0
         self.cudnn_determinism = False # if true, use algorithms that have reproducible, deterministic output. Performance will be lower.
-        self.optimiser = 'Adam' # choices=['Adam','AdamW','Adagrad','Adamax','DiffGrad','AdamP','RAdam','RMSprop'], default='Adam'
+        self.optimizer = 'Adam' # choices=['Adam','AdamW','Adagrad','Adamax','DiffGrad','AdamP','RAdam','RMSprop'], default='Adam'
         self.augments = [['Af', 'Pe', 'Ji', 'Er']] # I have no idea what this does. choices=['Ji','Sh','Gn','Pe','Ro','Af','Et','Ts','Cr','Er','Re']
         self.cuda_device = 'cuda:0' # select your GPU. Default to the first gpu, device 0
+        self.adaptiveLR = False # If true, use an adaptive learning rate
 
 class Engine:
     def __init__(self, config=VQGAN_CLIP_Config()):
@@ -101,11 +102,11 @@ class Engine:
         self.seed = seed
         torch.manual_seed(seed)
 
-    # Set the optimiser
+    # Set the optimizer
     def configure_optimizer(self):
-        """Configure the optimization algorithm selected in self.conf.optimiser. This must be done immediately before training with train()
+        """Configure the optimization algorithm selected in self.conf.optimizer. This must be done immediately before training with train()
         """
-        opt_name = self.conf.optimiser
+        opt_name = self.conf.optimizer
         opt_lr = self.conf.learning_rate
         if opt_name == "Adam":
             self._optimizer = optim.Adam([self._z], lr=opt_lr)	# LR=0.1 (Default)
@@ -124,8 +125,11 @@ class Engine:
         elif opt_name == "RMSprop":
             self._optimizer = optim.RMSprop([self._z], lr=opt_lr)
         else:
-            print("Unknown optimiser.")
+            print("Unknown optimizer.")
             self._optimizer = optim.Adam([self._z], lr=opt_lr)
+
+        if self.conf.adaptiveLR:
+            self.LR_scheduler = optim.lr_scheduler.ExponentialLR(self._optimizer,gamma=0.9)
 
     def train(self, iteration_number):
         """Executes training of the already-initialized VQGAN-CLIP model to generate an image. After a user-desired number of calls to train(), use save_current_output() to save the generated image.
