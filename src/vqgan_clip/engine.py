@@ -44,6 +44,7 @@ class VQGAN_CLIP_Config:
     * self.optimizer = \'Adam\' # choices=[\'Adam\',\'AdamW\',\'Adagrad\',\'Adamax\',\'DiffGrad\',\'AdamP\',\'RAdam\',\'RMSprop\'], default=\'Adam\'  
     * self.augments = [[\'Af\', \'Pe\', \'Ji\', \'Er\']] # I have no idea what this does. choices=[\'Ji\',\'Sh\',\'Gn\',\'Pe\',\'Ro\',\'Af\',\'Et\',\'Ts\',\'Cr\',\'Er\',\'Re\']  
     * self.cuda_device = \'cuda:0\' # select your GPU. Default to the first gpu, device 0  
+    * self.adaptiveLR = False # If true, use an adaptive learning rate. If the quality of the image stops improving, it will change less with each iteration. Generate.zoom output is more stable.
     """
     def __init__(self):
         self.output_image_size = [256,256] # x/y dimensions of the output image in pixels. This will be adjusted slightly based on the GAN model used.
@@ -62,6 +63,7 @@ class VQGAN_CLIP_Config:
         self.optimizer = 'Adam' # choices=['Adam','AdamW','Adagrad','Adamax','DiffGrad','AdamP','RAdam','RMSprop'], default='Adam'
         self.augments = [['Af', 'Pe', 'Ji', 'Er']] # I have no idea what this does. choices=['Ji','Sh','Gn','Pe','Ro','Af','Et','Ts','Cr','Er','Re']
         self.cuda_device = 'cuda:0' # select your GPU. Default to the first gpu, device 0
+        self.adaptiveLR = False # If true, use an adaptive learning rate. If the quality of the image stops improving, it will change less with each iteration. Generate.zoom output is more stable.
 
 class Engine:
     def __init__(self, config=VQGAN_CLIP_Config()):
@@ -127,6 +129,10 @@ class Engine:
             print("Unknown optimizer.")
             self._optimizer = optim.Adam([self._z], lr=opt_lr)
 
+        # adaptive learning rate
+        if self.conf.adaptiveLR:
+            self.LR_scheduler = optim.lr_scheduler.ReduceLROnPlateau(self._optimizer)
+
     def train(self, iteration_number):
         """Executes training of the already-initialized VQGAN-CLIP model to generate an image. After a user-desired number of calls to train(), use save_current_output() to save the generated image.
 
@@ -143,6 +149,10 @@ class Engine:
         loss.backward()
         self._optimizer.step()
         
+        if self.conf.adaptiveLR:
+            self.LR_scheduler.step(loss)
+
+
         #with torch.no_grad():
         with torch.inference_mode():
             self._z.copy_(self._z.maximum(self.z_min).minimum(self.z_max))
