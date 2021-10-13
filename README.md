@@ -1,6 +1,6 @@
 # VQGAN-CLIP-GENERATOR Overview
 
-This is a package for running VQGAN+CLIP locally. This package started as a complete refactor of the code provided by [NerdyRodent](https://github.com/nerdyrodent/), which started out as a Katherine Crowson VQGAN+CLIP derived Google colab notebook.
+This is a package for running VQGAN+CLIP locally, with a focus on ease of use. This package started as a complete refactor of the code provided by [NerdyRodent](https://github.com/nerdyrodent/), which started out as a Katherine Crowson VQGAN+CLIP derived Google colab notebook.
 
 In addition to refactoring NerdyRodent's code into a more pythonic package to improve usability, this project adds unit tests, and adds improvements to the ability to restyle an existing video.
 
