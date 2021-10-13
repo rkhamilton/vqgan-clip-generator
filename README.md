@@ -235,7 +235,8 @@ vqgan_clip.generate.zoom_video(eng_config = config,
 ```
 
 ### Restyle Video
-The method generate.restyle_video will apply VQGAN+CLIP prompts to an existing video by extracting frames of video from the original and using them as inputs to create a frame of output video. The resulting frames are combined into an HEVC video, and the original audio is optionally copied to the new file.
+The method generate.restyle_video will apply VQGAN+CLIP prompts to an existing video by extracting frames of video from the original and using them as inputs to create a frame of output video. The resulting frames are combined into an HEVC video, and the original audio is optionally copied to the new file. As an example, here is a video of my face restyled with the prompt "A hairy ape" and an init_weight of 0.2.  
+<img src="./samples/Restyled video with initial weight 0.2.gif" width="256px"></img>
 
 ```python
 import vqgan_clip.generate
