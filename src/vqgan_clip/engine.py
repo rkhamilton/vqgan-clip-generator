@@ -62,7 +62,6 @@ class VQGAN_CLIP_Config:
         self.optimizer = 'Adam' # choices=['Adam','AdamW','Adagrad','Adamax','DiffGrad','AdamP','RAdam','RMSprop'], default='Adam'
         self.augments = [['Af', 'Pe', 'Ji', 'Er']] # I have no idea what this does. choices=['Ji','Sh','Gn','Pe','Ro','Af','Et','Ts','Cr','Er','Re']
         self.cuda_device = 'cuda:0' # select your GPU. Default to the first gpu, device 0
-        self.adaptiveLR = False # If true, use an adaptive learning rate
 
 class Engine:
     def __init__(self, config=VQGAN_CLIP_Config()):
@@ -127,9 +126,6 @@ class Engine:
         else:
             print("Unknown optimizer.")
             self._optimizer = optim.Adam([self._z], lr=opt_lr)
-
-        if self.conf.adaptiveLR:
-            self.LR_scheduler = optim.lr_scheduler.ExponentialLR(self._optimizer,gamma=0.9)
 
     def train(self, iteration_number):
         """Executes training of the already-initialized VQGAN-CLIP model to generate an image. After a user-desired number of calls to train(), use save_current_output() to save the generated image.

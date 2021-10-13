@@ -279,14 +279,14 @@ def video(eng_config=VQGAN_CLIP_Config(),
                 eng.encode_and_append_prompts(current_prompt_number, text_prompts, image_prompts, noise_prompts)
 
             if save_every and iteration_num % save_every == 0:
-                # save a frame of video every save_every iterations
+                # save a frame of video every .save_every iterations
                 # display some statistics about how the GAN training is going whever we save an interim image
                 losses_str = ', '.join(f'{loss.item():7.3f}' for loss in lossAll)
                 tqdm.write(f'iteration:{iteration_num:6d}\tvideo frame: {video_frame_num:6d}\tloss sum: {sum(lossAll).item():7.3f}\tloss for each prompt:{losses_str}')
 
                 # if making a video, save a frame named for the video step
                 eng.save_current_output(video_frames_path + os.sep + str(video_frame_num) + '.png')
-                video_frame_num += 1
+            video_frame_num += 1
         tqdm.write('Generating video...')
     except KeyboardInterrupt:
         pass
@@ -399,7 +399,7 @@ def zoom_video(eng_config=VQGAN_CLIP_Config(),
         output_framerate=output_framerate,
         assumed_input_framerate=assumed_input_framerate)
 
-def encode_video(output_file=f'.\\output\\output.mp4', path_to_stills=f'.\\video_frames', metadata='', output_framerate=30, assumed_input_framerate=None):
+def encode_video(output_file=f'.\\output\\output.mp4', path_to_stills=f'.\\steps', metadata='', output_framerate=30, assumed_input_framerate=None):
     """Encodes a folder of PNG images to a video in HEVC format using ffmpeg with optional interpolation. Input stills must be sequentially numbered png files starting from 1. E.g. 1.png 2.png etc.
 
     Args:
