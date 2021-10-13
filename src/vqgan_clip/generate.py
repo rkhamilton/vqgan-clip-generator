@@ -286,7 +286,7 @@ def video(eng_config=VQGAN_CLIP_Config(),
 
                 # if making a video, save a frame named for the video step
                 eng.save_current_output(video_frames_path + os.sep + str(video_frame_num) + '.png')
-            video_frame_num += 1
+                video_frame_num += 1
         tqdm.write('Generating video...')
     except KeyboardInterrupt:
         pass
