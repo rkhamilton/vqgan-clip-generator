@@ -249,10 +249,7 @@ class Engine:
             self.z_max = self._model.quantize.embedding.weight.max(dim=0).values[None, :, None, None]
 
         if self.conf.init_image:
-            if 'http' in self.conf.init_image:
-                self.convert_image_to_init_image(Image.open(urlopen(self.conf.init_image)))
-            else:
-                self.convert_image_to_init_image(Image.open(self.conf.init_image))
+            self.convert_image_to_init_image(Image.open(self.conf.init_image))
         elif self.conf.init_noise == 'pixels':
             self.convert_image_to_init_image(VF.make_random_noise_image(self.conf.image_size[0], self.conf.image_size[1]))
         elif self.conf.init_noise == 'gradient':
@@ -314,17 +311,29 @@ class Engine:
         example: encode_and_append_image_prompt('input\a_face.jpg:1.0|sample.png:0.2')
 
         Args:
-            prompt (list of strings): Takes as input a list of string prompts of the form 'image_file_path:weight'. The file path and weight are extracted and encoded by the CLIP perceptor, and stored by the Engine instance.
+            prompt (list of strings) : Takes as input a list of string prompts of the form 'image_file_path:weight'. The file path and weight are extracted and encoded by the CLIP perceptor, and stored by the Engine instance.
+            pil_image (PIL Image) : A PIL image can also be passed which will be encoded instead of a filename.
         """
         # given an image prompt that is a filename followed by a weight e.g. 'prompt_image.png:0.5', load the image, encode it with CLIP, and append it to the list of prompts used for image generation
-        output_image_size_X, output_image_size_Y = self.calculate_output_image_size()
         path, weight, stop = VF.split_prompt(prompt)
-        output_image = Image.open(path)
-        pil_image = output_image.convert('RGB')
+        pil_image = Image.open(path).convert('RGB')
+        self.encode_and_append_pil_image(pil_image, weight, stop)
+
+
+    def encode_and_append_pil_image(self, pil_image, weight=1.0, stop=float('-inf') ):
+        """Append a PIL image as an image prompt.
+
+        Args:
+            pil_image (PIL Image): PIL image (Image.open(path).convert('RGB')) 
+            weight (float, optional): Weight to use in CLIP loss calculation. Defaults to 1.0.
+            stop ([type], optional): Unknown. From original code. Defaults to float('-inf').
+        """
+        output_image_size_X, output_image_size_Y = self.calculate_output_image_size()
         output_image = VF.resize_image(pil_image, (output_image_size_X, output_image_size_Y))
         batch = self._make_cutouts(TF.to_tensor(output_image).unsqueeze(0).to(self._device))
         embed = self._perceptor.encode_image(VF.normalize(batch)).float()
         self.pMs.append(VF.Prompt(embed, weight, stop).to(self._device))
+
 
     def encode_and_append_text_prompt(self, prompt):
         """Encodes a list of text prompts using CLIP and appends those to the set of prompts being used by this model instance.
