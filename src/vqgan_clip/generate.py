@@ -150,7 +150,7 @@ def restyle_video(input_video_path,
         * text_prompts (str, optional) : Text that will be turned into a prompt via CLIP. Default = []  
         * image_prompts (str, optional) : Path to image that will be turned into a prompt via CLIP. Default = []
         * noise_prompts (str, optional) : Random number seeds can be used as prompts using the same format as a text prompt. E.g. \'123:0.1|234:0.2|345:0.3\' Stories (^) are supported. Default = []
-        * iterations (int, optional) : Number of iterations of train() to perform before stopping. Default = 100 
+        * iterations (int, optional) : Number of iterations of train() to perform for each frame of video. Default = 100 
         * output_filename (str, optional) : location to save the output image. Omit the file extension. Default = \'output\' + os.sep + \'output\'  
         * change_prompt_every (int, optional) : Serial prompts, sepated by ^, will be cycled through every change_prompt_every iterations. Prompts will loop if more cycles are requested than there are prompts. Default = 0
         * video_frames_path (str, optional) : Path where still images should be saved as they are generated before being combined into a video. Defaults to './video_frames'.
@@ -246,7 +246,8 @@ def restyle_video2(input_video_path,
         extracted_video_frames_path='./extracted_video_frames',
         output_framerate=30, 
         assumed_input_framerate=None,
-        copy_audio=False):
+        copy_audio=False,
+        current_frame_prompt_weight=0.5):
     """Apply a style to an existing video using VQGAN+CLIP. The still image frames from the original video are extracted, and used as initial images for VQGAN+CLIP. The resulting folder of stills are then encoded into an HEVC video file. The audio from the original may optionally be transferred.
     The configuration of the VQGAN+CLIP algorithms is done via a VQGAN_CLIP_Config instance. Unlike restyle_video, restyle_video2 uses the current frame of source
     video as an image prompt.
@@ -259,13 +260,14 @@ def restyle_video2(input_video_path,
         * text_prompts (str, optional) : Text that will be turned into a prompt via CLIP. Default = []  
         * image_prompts (str, optional) : Path to image that will be turned into a prompt via CLIP. Default = []
         * noise_prompts (str, optional) : Random number seeds can be used as prompts using the same format as a text prompt. E.g. \'123:0.1|234:0.2|345:0.3\' Stories (^) are supported. Default = []
-        * iterations (int, optional) : Number of iterations of train() to perform before stopping. Default = 100 
+        * iterations (int, optional) : Number of iterations of train() to perform for each frame of video. Default = 100 
         * output_filename (str, optional) : location to save the output image. Omit the file extension. Default = \'output\' + os.sep + \'output\'  
         * change_prompt_every (int, optional) : Serial prompts, sepated by ^, will be cycled through every change_prompt_every iterations. Prompts will loop if more cycles are requested than there are prompts. Default = 0
         * video_frames_path (str, optional) : Path where still images should be saved as they are generated before being combined into a video. Defaults to './video_frames'.
         * output_framerate (int, optional) : Desired framerate of the output video. Defaults to 30.
         * assumed_input_framerate (int, optional) : An assumed framerate to use for the still images. If an assumed input framerate is provided, the output video will be interpolated to the specified output framerate. Defaults to None.
         * copy_audio (boolean) : If True, attempt to copy the audio from the original video to the output video. The durations of the two videos should be the same.
+        * current_frame_prompt_weight (float) : Using the current frame of source video as an image prompt (as well as init_image), this assigns a weight to that image prompt. Default = 0.5
     """
     parsed_text_prompts, parsed_image_prompts, parsed_noise_prompts = VF.parse_all_prompts(text_prompts, image_prompts, noise_prompts)
     output_file = output_filename + '.mp4'
@@ -283,22 +285,22 @@ def restyle_video2(input_video_path,
     eng_config.output_image_size = [output_size_X, output_size_Y]
 
     # generate images
-    current_prompt_number = 0
     video_frame_num = 1
+
     try:
         for video_frame in tqdm(video_frames,unit='image'):
-            # load a fresh VQGAN model to train for the new image
-            # suppress stdout so the progressbar looks nice
+            # suppress stdout to keep the progress bar clear
             with open(os.devnull, 'w') as devnull:
                 with contextlib.redirect_stdout(devnull):
                     eng.load_model()
-            eng.encode_and_append_prompts(0, parsed_text_prompts, parsed_image_prompts, parsed_noise_prompts)
-            
             # Use the next frame of video as an initial image for VQGAN+CLIP
             pil_image = Image.open(video_frame).convert('RGB')
             eng.convert_image_to_init_image(pil_image)
             # Also use the current source video frame as an input prompt
-            eng.encode_and_append_pil_image(pil_image, weight=1)
+            eng.clear_all_prompts()
+            current_prompt_number = 0
+            eng.encode_and_append_prompts(current_prompt_number, parsed_text_prompts, parsed_image_prompts, parsed_noise_prompts)
+            eng.encode_and_append_pil_image(pil_image, weight=current_frame_prompt_weight)
             eng.configure_optimizer()
 
             # Generate a new image
@@ -310,6 +312,8 @@ def restyle_video2(input_video_path,
                     current_prompt_number += 1
                     eng.clear_all_prompts()
                     eng.encode_and_append_prompts(current_prompt_number, parsed_text_prompts, parsed_image_prompts, parsed_noise_prompts)
+                    eng.encode_and_append_pil_image(pil_image, weight=current_frame_prompt_weight)
+                    eng.configure_optimizer()
 
                 if save_every and iteration_num % save_every == 0:
                     # save a frame of video every .save_every iterations
