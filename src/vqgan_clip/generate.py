@@ -476,7 +476,7 @@ def zoom_video(eng_config=VQGAN_CLIP_Config(),
                 # change prompts if every change_prompt_every iterations
                 current_prompt_number += 1
                 eng.clear_all_prompts()
-                eng.encode_and_append_prompts(current_prompt_number, text_prompts, image_prompts, noise_prompts)
+                eng.encode_and_append_prompts(current_prompt_number, parsed_text_prompts, parsed_image_prompts, parsed_noise_prompts)
 
             if save_every and iteration_num % save_every == 0:
                 # Transform the current video frame
