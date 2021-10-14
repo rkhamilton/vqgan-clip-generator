@@ -248,7 +248,8 @@ def restyle_video2(input_video_path,
         assumed_input_framerate=None,
         copy_audio=False):
     """Apply a style to an existing video using VQGAN+CLIP. The still image frames from the original video are extracted, and used as initial images for VQGAN+CLIP. The resulting folder of stills are then encoded into an HEVC video file. The audio from the original may optionally be transferred.
-    The configuration of the VQGAN+CLIP algorithms is done via a VQGAN_CLIP_Config instance.
+    The configuration of the VQGAN+CLIP algorithms is done via a VQGAN_CLIP_Config instance. Unlike restyle_video, restyle_video2 uses the current frame of source
+    video as an image prompt.
 
     Args:
         Args:

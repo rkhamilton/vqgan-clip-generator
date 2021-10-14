@@ -37,12 +37,11 @@ class VQGAN_CLIP_Config:
     * self.vqgan_config = f\'models/vqgan_imagenet_f16_16384.yaml\' # path to model yaml file  
     * self.vqgan_checkpoint = f\'models/vqgan_imagenet_f16_16384.ckpt\' # path to model checkpoint file  
     * self.learning_rate = 0.1  
-    * self.cut_method = \'latest\' # choices=[\'original\',\'updated\',\'nrupdated\',\'updatedpooling\',\'latest\',\'updatedpooling\'] default=\'latest\'  
+    * self.cut_method = \'original\' # choices=[\'original\',\'kornia\','sg3'] default=\'original\'  
     * self.num_cuts = 32  
     * self.cut_power = 1.0  
     * self.cudnn_determinism = False # if true, use algorithms that have reproducible, deterministic output. Performance will be lower.  
     * self.optimizer = \'Adam\' # choices=[\'Adam\',\'AdamW\',\'Adagrad\',\'Adamax\',\'DiffGrad\',\'AdamP\',\'RAdam\',\'RMSprop\'], default=\'Adam\'  
-    * self.augments = [[\'Af\', \'Pe\', \'Ji\', \'Er\']] # I have no idea what this does. choices=[\'Ji\',\'Sh\',\'Gn\',\'Pe\',\'Ro\',\'Af\',\'Et\',\'Ts\',\'Cr\',\'Er\',\'Re\']  
     * self.cuda_device = \'cuda:0\' # select your GPU. Default to the first gpu, device 0  
     * self.adaptiveLR = False # If true, use an adaptive learning rate. If the quality of the image stops improving, it will change less with each iteration. Generate.zoom output is more stable.
     """
@@ -56,12 +55,11 @@ class VQGAN_CLIP_Config:
         self.vqgan_config = f'models/vqgan_imagenet_f16_16384.yaml' # path to model yaml file
         self.vqgan_checkpoint = f'models/vqgan_imagenet_f16_16384.ckpt' # path to model checkpoint file
         self.learning_rate = 0.1
-        self.cut_method = 'latest' # choices=['original','updated','nrupdated','updatedpooling','latest'] default='latest'
+        self.cut_method = 'original' # choices=['original','kornia','sg3'] default='original'
         self.num_cuts = 32
         self.cut_power = 1.0
         self.cudnn_determinism = False # if true, use algorithms that have reproducible, deterministic output. Performance will be lower.
         self.optimizer = 'Adam' # choices=['Adam','AdamW','Adagrad','Adamax','DiffGrad','AdamP','RAdam','RMSprop'], default='Adam'
-        self.augments = [['Af', 'Pe', 'Ji', 'Er']] # Machine vision algorithms for cutting out sections of the image to analyze with CLIP. choices=['Ji','Sh','Gn','Pe','Ro','Af','Et','Ts','Cr','Er','Re']
         self.cuda_device = 'cuda:0' # select your GPU. Default to the first gpu, device 0
         self.adaptiveLR = False # If true, use an adaptive learning rate. If the quality of the image stops improving, it will change less with each iteration. Generate.zoom output is more stable.
 
@@ -279,19 +277,14 @@ class Engine:
 
     def select_make_cutouts(self):
         # Cutout class options:
-        # 'latest','original','updated', 'nrupdated', or 'updatedpooling'
-        if self.conf.cut_method == 'latest':
-            self._make_cutouts = VF.MakeCutouts(self._perceptor.visual.input_resolution, self.conf.num_cuts, self.conf.augments, cut_pow=self.conf.cut_power)
-        elif self.conf.cut_method == 'original':
+        if self.conf.cut_method == 'original':
             self._make_cutouts = VF.MakeCutoutsOrig(self._perceptor.visual.input_resolution, self.conf.num_cuts, cut_pow=self.conf.cut_power)
-        elif self.conf.cut_method == 'updated':
-            self._make_cutouts = VF.MakeCutoutsUpdate(self._perceptor.visual.input_resolution, self.conf.num_cuts, cut_pow=self.conf.cut_power)
-        elif self.conf.cut_method == 'nrupdated':
-            self._make_cutouts = VF.MakeCutoutsNRUpdate(self._perceptor.visual.input_resolution, self.conf.num_cuts, self.conf.augments, cut_pow=self.conf.cut_power)
+        elif self.conf.cut_method == 'kornia':
+            self._make_cutouts = VF.MakeCutoutsKornia(self._perceptor.visual.input_resolution, self.conf.num_cuts, cut_pow=self.conf.cut_power)
         elif self.conf.cut_method == 'sg3':
             self._make_cutouts = VF.MakeCutoutsSG3(self._perceptor.visual.input_resolution, self.conf.num_cuts, cut_pow=self.conf.cut_power)
         else:
-            self._make_cutouts = VF.MakeCutoutsPoolingUpdate(self._perceptor.visual.input_resolution, self.conf.num_cuts, cut_pow=self.conf.cut_power)
+            self._make_cutouts = VF.MakeCutoutsOrig(self._perceptor.visual.input_resolution, self.conf.num_cuts, cut_pow=self.conf.cut_power)
 
     def convert_image_to_init_image(self, pil_image):
         output_image_size_X, output_image_size_Y = self.calculate_output_image_size()
