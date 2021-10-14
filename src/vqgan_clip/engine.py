@@ -217,7 +217,7 @@ class Engine:
         jit = True if float(torch.__version__[:3]) < 1.8 else False
         self._perceptor = clip.load(self.conf.clip_model, jit=jit)[0].eval().requires_grad_(False).to(self._device)
 
-        self.make_cutouts()    
+        self.select_make_cutouts()    
         self.initialize_z()
 
     def encode_and_append_noise_prompt(self, prompt):
@@ -277,7 +277,7 @@ class Engine:
         output_image_size_Y = (self.conf.output_image_size[1] // f) * f
         return output_image_size_X, output_image_size_Y
 
-    def make_cutouts(self):
+    def select_make_cutouts(self):
         # Cutout class options:
         # 'latest','original','updated', 'nrupdated', or 'updatedpooling'
         if self.conf.cut_method == 'latest':
@@ -288,6 +288,8 @@ class Engine:
             self._make_cutouts = VF.MakeCutoutsUpdate(self._perceptor.visual.input_resolution, self.conf.num_cuts, cut_pow=self.conf.cut_power)
         elif self.conf.cut_method == 'nrupdated':
             self._make_cutouts = VF.MakeCutoutsNRUpdate(self._perceptor.visual.input_resolution, self.conf.num_cuts, self.conf.augments, cut_pow=self.conf.cut_power)
+        elif self.conf.cut_method == 'sg3':
+            self._make_cutouts = VF.MakeCutoutsSG3(self._perceptor.visual.input_resolution, self.conf.num_cuts, cut_pow=self.conf.cut_power)
         else:
             self._make_cutouts = VF.MakeCutoutsPoolingUpdate(self._perceptor.visual.input_resolution, self.conf.num_cuts, cut_pow=self.conf.cut_power)
 
@@ -372,7 +374,7 @@ class Engine:
         if len(text_prompts) > 0:
             current_index = prompt_number % len(text_prompts)
             for prompt in text_prompts[current_index]:
-                tqdm.write(f'Text prompt: {prompt_number}\n {prompt}')
+                # tqdm.write(f'Text prompt: {prompt_number} {prompt}')
                 self.encode_and_append_text_prompt(prompt)
         
         # Split target images using the pipe character (weights are split later)
@@ -380,12 +382,12 @@ class Engine:
             # if we had image prompts, encode them with CLIP
             current_index = prompt_number % len(image_prompts)
             for prompt in image_prompts[current_index]:
-                tqdm.write(f'Image prompt: {prompt_number}\n {prompt}')
+                # tqdm.write(f'Image prompt: {prompt_number} {prompt}')
                 self.encode_and_append_image_prompt(prompt)
 
         # Split noise prompts using the pipe character (weights are split later)
         if len(noise_prompts) > 0:
             current_index = prompt_number % len(noise_prompts)
             for prompt in noise_prompts[current_index]:
-                tqdm.write(f'Noise prompt: {prompt_number}\n {prompt}')
+                # tqdm.write(f'Noise prompt: {prompt_number} {prompt}')
                 self.encode_and_append_noise_prompt(prompt)
