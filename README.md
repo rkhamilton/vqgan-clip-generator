@@ -1,6 +1,8 @@
 # VQGAN-CLIP-GENERATOR Overview
 
-This is a package for running VQGAN+CLIP locally, with a focus on ease of use. This package started as a complete refactor of the code provided by [NerdyRodent](https://github.com/nerdyrodent/), which started out as a Katherine Crowson VQGAN+CLIP derived Google colab notebook.
+This is a package for running VQGAN+CLIP locally, with a focus on ease of use. I was motivated to create a version of this tool that would let me mix and match functions so that I could more easily experiment with way to apply a GAN style to an existing video. The key feature in this package is generate.restyle_video(), which will create a smoothly animating, GAN-styled video from an existing video.
+
+This package started as a complete refactor of the code provided by [NerdyRodent](https://github.com/nerdyrodent/), which started out as a Katherine Crowson VQGAN+CLIP derived Google colab notebook.
 
 In addition to refactoring NerdyRodent's code into a more pythonic package to improve usability, this project adds unit tests, and adds improvements to the ability to restyle an existing video.
 
@@ -15,7 +17,9 @@ Some example images:
 
 <img src="./samples/A child throwing the ducks into a wood chipper painting by Rembrandt initial.png" width="256px"></img>
 <img src="./samples/Pastoral landscape painting in the impressionist style initial.png" width="256px"></img>
-<img src="./samples/The_sadness_of_Colonel_Sanders_by_Thomas_Kinkade.png" width="256px"></img>
+<img src="./samples/The_sadness_of_Colonel_Sanders_by_Thomas_Kinkade.png" width="256px"></img>  
+<img src="./samples/portrait on deviantart.gif" width="256px"></img>
+
 
 Environment:
 
@@ -34,7 +38,7 @@ This example uses [Anaconda](https://www.anaconda.com/products/individual#Downlo
 ```sh
 conda create --name vqgan python=3.9 pip ffmpeg numpy pytest tqdm git pytorch==1.9.0 torchvision==0.10.0 torchaudio==0.9.0 cudatoolkit=11.1 -c pytorch -c conda-forge
 conda activate vqgan
-pip install git+https://github.com/openai/CLIP.git taming-transformers ftfy regex tqdm pytorch-lightning kornia imageio omegaconf taming-transformers torch_optimizer
+pip install git+https://github.com/openai/CLIP.git taming-transformers ftfy regex tqdm pytorch-lightning kornia imageio omegaconf torch_optimizer
 pip install git+https://github.com/rkhamilton/vqgan-clip-generator.git
 ```
 
@@ -149,6 +153,10 @@ The parameters used for image generation are either passed to a method of genera
 |init_noise|None|Seed an image with noise. Options None, 'pixels' or 'gradient'|
 |vqgan_config|f'models/vqgan_imagenet_f16_16384.yaml'|Path to model yaml file. This must be customized to match the location where you downloaded the model file.|
 |vqgan_checkpoint|f'models/vqgan_imagenet_f16_16384.ckpt'|Path to model checkpoint file. This must be customized to match the location where you downloaded the model file.|
+|current_source_frame_prompt_weight|0.0| When restyling video, you can use the current frame of source video as an image prompt. This assigns a weight to that image prompt.|
+|previous_generated_frame_prompt_weight|0.0| When restyling video, you can use the previous generated frame of source video as an image prompt. This assigns a weight to that image prompt.|
+|generated_frame_init_blend|0.2| When restyling video, each original frame of video is used as an init_image for the new frame of generated video. This parameter lets you also blend the previous generated frame with the new source frame. This is an important feature for making the resulting video smooth, since the new frame will start with some elements that CLIP has determined are similar to the prompts.|
+
 
 Other configuration attributes can be seen in vqgan_clip.engine.VQGAN_CLIP_Config. Those options are related to the function of the algorithm itself. For example, you can change the learning rate of the GAN, or change the optimization algorithm used, or change the GPU used.
 
@@ -173,7 +181,7 @@ vqgan_clip.generate.single_image(eng_config = config,
 ```
 
 ### Multiple images for the same prompt
-You may want to generate a lot of images with the same prompts, but with different random seeds. This is a way to fish for interesting images. In order to avoid waiting for setup of VQGAN for each image, the multiple_images method is provided.
+You may want to generate a lot of images with the same prompts, but with different random seeds. This is a way to fish for interesting images. This is not doing anything different than running single_image() repeatedly.
 
 ```python
 import vqgan_clip.generate
@@ -212,7 +220,7 @@ vqgan_clip.generate.video(eng_config = config,
 ### Zoom video
 The method generate.zoom_video is provided create a video with movement. Every frame that is generated has a shift or zoom applied to it. This gives the appearance of motion in the result. These videos do not stabilize.
 
-This is one of the most interesting application of VQGAN+CLIP provided here.
+This is one of the more interesting application of VQGAN+CLIP provided here.
 
 ```python
 import vqgan_clip.generate
@@ -235,8 +243,16 @@ vqgan_clip.generate.zoom_video(eng_config = config,
 ```
 
 ### Restyle Video
-The method generate.restyle_video will apply VQGAN+CLIP prompts to an existing video by extracting frames of video from the original and using them as inputs to create a frame of output video. The resulting frames are combined into an HEVC video, and the original audio is optionally copied to the new file. As an example, here is a video of my face restyled with the prompt "A hairy ape" and an init_weight of 0.2.  
-<img src="./samples/Restyled video with initial weight 0.2.gif" width="256px"></img>
+The method generate.restyle_video will apply VQGAN+CLIP prompts to an existing video by extracting frames of video from the original and using them as inputs to create a frame of output video. The resulting frames are combined into an HEVC video, and the original audio is optionally copied to the new file. As an example, here is a video of my face restyled with the prompt "portrait on deviantart" and an init_weight of 1.0 (full code to generate this video is below).  
+<img src="./samples/portrait on deviantart.gif" width="256px"></img>
+
+The innovation in this approach is that each new frame of video uses several adjustable parameters.
+* The init_image used to seed each new frame is a blend of the current original frame, plus the previous generated frame. This is critical for having videos where each frame has similar GAN-generated features, and the video looks smooth and continuous.
+* Using a non-zero init_weight is important for causing the algorithm to hold on to the structure of the original video frame. If you want the result to look more like the original video, increase this init_weight.
+* You may elect to set the current source image frame as an image prompt. This will cause the resulting output frames to have more similarity (according to CLIP) to the source frame.
+* You may elect to set the previous output frame as an image prompt. This may amplify the rate of change of the source footage, or create interesting effects. It doesn't seem to contribute to smoothness of video.
+
+In the example below, each new frame is initialized with the new source frame with a 20% blend of the previous generated frame. Higher values of generated_frame_init_blend, combined with higher values of iterations, result in a runaway effect where the video diverges completely from the source material.
 
 ```python
 import vqgan_clip.generate
@@ -245,17 +261,20 @@ import os
 
 config = VQGAN_CLIP_Config()
 config.output_image_size = [448,448]
-config.init_weight = 0.2
-input_video_path = 'my_video.MOV'
-text_prompts = 'A hairy ape'
+config.init_weight = 1.0
+input_video_path = '20211004_132008000_iOS.MOV'
 vqgan_clip.generate.restyle_video(input_video_path,
-        extraction_framerate = 5,
+        extraction_framerate = 30,
         eng_config=config,
-        text_prompts = text_prompts,
-        iterations = 15,
-        output_filename = 'output' + os.sep + text_prompts,
-        output_framerate=30,
-        copy_audio=True)
+        text_prompts = 'portrait on deviantart',
+        iterations = 20,
+        save_every=None,
+        output_filename = 'output' + os.sep + 'portrait on deviantart',
+        output_framerate=60,
+        copy_audio=False,
+        current_source_frame_prompt_weight=0.1,
+        previous_generated_frame_prompt_weight=0.0,
+        generated_frame_init_blend=0.2)
 ```
 
 ## Troubleshooting

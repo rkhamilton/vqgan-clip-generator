@@ -124,7 +124,7 @@ def multiple_images(eng_config=VQGAN_CLIP_Config(),
     except KeyboardInterrupt:
         pass
 
-def restyle_video(input_video_path,
+def restyle_video_naive(input_video_path,
         extraction_framerate = 30,
         eng_config=VQGAN_CLIP_Config(),
         text_prompts = [],
@@ -140,7 +140,7 @@ def restyle_video(input_video_path,
         assumed_input_framerate=None,
         copy_audio=False):
     """Apply a style to an existing video using VQGAN+CLIP. The still image frames from the original video are extracted, and used as initial images for VQGAN+CLIP. The resulting folder of stills are then encoded into an HEVC video file. The audio from the original may optionally be transferred.
-    The configuration of the VQGAN+CLIP algorithms is done via a VQGAN_CLIP_Config instance.
+    The configuration of the VQGAN+CLIP algorithms is done via a VQGAN_CLIP_Config instance. This is the naive implementation where each source video frame is just used as an initial image for a fresh GAN instance. There is significant change from output frame to frame, makign the result jittery. This method is superceded by restyle_video().
 
     Args:
         Args:
@@ -232,25 +232,36 @@ def restyle_video(input_video_path,
         VF.copy_video_audio(input_video_path, 'original_no_audio.mp4', output_file)
         os.remove('original_no_audio.mp4')
 
-def restyle_video2(input_video_path,
-        extraction_framerate = 30,
-        eng_config=VQGAN_CLIP_Config(),
-        text_prompts = [],
-        image_prompts = [],
-        noise_prompts = [],
-        iterations = 100,
-        save_every = None,
-        output_filename = 'output' + os.sep + 'output',
-        change_prompt_every = 0,
-        video_frames_path='./video_frames',
-        extracted_video_frames_path='./extracted_video_frames',
-        output_framerate=30, 
-        assumed_input_framerate=None,
-        copy_audio=False,
-        current_frame_prompt_weight=0.5):
-    """Apply a style to an existing video using VQGAN+CLIP. The still image frames from the original video are extracted, and used as initial images for VQGAN+CLIP. The resulting folder of stills are then encoded into an HEVC video file. The audio from the original may optionally be transferred.
-    The configuration of the VQGAN+CLIP algorithms is done via a VQGAN_CLIP_Config instance. Unlike restyle_video, restyle_video2 uses the current frame of source
-    video as an image prompt.
+def restyle_video(input_video_path,
+    extraction_framerate = 30,
+    eng_config=VQGAN_CLIP_Config(),
+    text_prompts = 'Covered in spiders | Surreal:0.5',
+    image_prompts = [],
+    noise_prompts = [],
+    iterations = 30,
+    save_every = None,
+    output_filename = 'output' + os.sep + 'output',
+    change_prompt_every = 0,
+    video_frames_path='./video_frames',
+    extracted_video_frames_path='./extracted_video_frames',
+    output_framerate=30,
+    assumed_input_framerate=None,
+    copy_audio=False,
+    current_source_frame_prompt_weight=0.0,
+    previous_generated_frame_prompt_weight=0.0,
+    generated_frame_init_blend=0.2):
+    """Apply a style to an existing video using VQGAN+CLIP using a blended input frame method. The still image 
+    frames from the original video are extracted, and used as initial images for VQGAN+CLIP. The resulting 
+    folder of stills are then encoded into an HEVC video file. The audio from the original may optionally be 
+    transferred. The configuration of the VQGAN+CLIP algorithms is done via a VQGAN_CLIP_Config instance. 
+    Unlike restyle_video, in restyle_video_blended each new frame of video is initialized using a blend of the 
+    new source frame and the old *generated* frame. This results in an output video that transitions much more
+    smoothly between frames. Using the method parameter current_frame_prompt_weight lets you decide how much 
+    of the new source frame to use versus the previous generated frame.
+
+    It is suggested to also use a config.init_weight > 0 so that the resulting generated video will look more
+    like the original video frames.
+
 
     Args:
         Args:
@@ -267,12 +278,11 @@ def restyle_video2(input_video_path,
         * output_framerate (int, optional) : Desired framerate of the output video. Defaults to 30.
         * assumed_input_framerate (int, optional) : An assumed framerate to use for the still images. If an assumed input framerate is provided, the output video will be interpolated to the specified output framerate. Defaults to None.
         * copy_audio (boolean) : If True, attempt to copy the audio from the original video to the output video. The durations of the two videos should be the same.
-        * current_frame_prompt_weight (float) : Using the current frame of source video as an image prompt (as well as init_image), this assigns a weight to that image prompt. Default = 0.5
+        * current_frame_prompt_weight (float) : Using the current frame of source video as an image prompt (as well as init_image), this assigns a weight to that image prompt. Default = 0.0
+        * generated_frame_init_blend (float) : How much of the previous generated image to blend in to a new frame's init_image. 0 means no previous generated image, 1 means 100% previous generated image. Default = 0.2
     """
     parsed_text_prompts, parsed_image_prompts, parsed_noise_prompts = VF.parse_all_prompts(text_prompts, image_prompts, noise_prompts)
     output_file = output_filename + '.mp4'
-    eng = Engine(eng_config)
-    eng.initialize_VQGAN_CLIP()
 
     # if the location for the interim video frames doesn't exist, create it
     if not os.path.exists(video_frames_path):
@@ -288,32 +298,44 @@ def restyle_video2(input_video_path,
     video_frame_num = 1
 
     try:
-        for video_frame in tqdm(video_frames,unit='image'):
+        last_video_frame_generated = video_frames[0]
+        video_frames_loop = tqdm(video_frames,unit='image',desc='Style Transfer')
+        for video_frame in video_frames_loop:
             # suppress stdout to keep the progress bar clear
             with open(os.devnull, 'w') as devnull:
                 with contextlib.redirect_stdout(devnull):
-                    eng.load_model()
-            # Use the next frame of video as an initial image for VQGAN+CLIP
-            pil_image = Image.open(video_frame).convert('RGB')
-            eng.convert_image_to_init_image(pil_image)
+                    eng = Engine(eng_config)
+                    eng.initialize_VQGAN_CLIP()
+            pil_image_new_frame = Image.open(video_frame).convert('RGB').resize([output_size_X,output_size_Y], resample=Image.LANCZOS)
+
+            # Blend the new original frame with the most recent generated frame. Use that as the initial image for the upcoming frame.
+            if generated_frame_init_blend:
+                # open the last frame of generated video
+                pil_image_previous_generated_frame = Image.open(last_video_frame_generated).convert('RGB').resize([output_size_X,output_size_Y], resample=Image.LANCZOS)
+                pil_image_blend = Image.blend(pil_image_new_frame,pil_image_previous_generated_frame,generated_frame_init_blend)
+                eng.convert_image_to_init_image(pil_image_blend)
             # Also use the current source video frame as an input prompt
             eng.clear_all_prompts()
             current_prompt_number = 0
             eng.encode_and_append_prompts(current_prompt_number, parsed_text_prompts, parsed_image_prompts, parsed_noise_prompts)
-            eng.encode_and_append_pil_image(pil_image, weight=current_frame_prompt_weight)
+            if current_source_frame_prompt_weight:
+                eng.encode_and_append_pil_image(pil_image_new_frame, weight=current_source_frame_prompt_weight)
+            if previous_generated_frame_prompt_weight:
+                eng.encode_and_append_pil_image(pil_image_previous_generated_frame, weight=previous_generated_frame_prompt_weight)
+
             eng.configure_optimizer()
 
             # Generate a new image
             for iteration_num in range(1,iterations+1):
                 #perform iterations of train()
                 lossAll = eng.train(iteration_num)
-                if change_prompt_every and iteration_num % change_prompt_every == 0:
-                    # change prompts if every change_prompt_every iterations
-                    current_prompt_number += 1
-                    eng.clear_all_prompts()
-                    eng.encode_and_append_prompts(current_prompt_number, parsed_text_prompts, parsed_image_prompts, parsed_noise_prompts)
-                    eng.encode_and_append_pil_image(pil_image, weight=current_frame_prompt_weight)
-                    eng.configure_optimizer()
+                # if change_prompt_every and iteration_num % change_prompt_every == 0:
+                #     # change prompts if every change_prompt_every iterations
+                #     current_prompt_number += 1
+                #     eng.clear_all_prompts()
+                #     eng.encode_and_append_prompts(current_prompt_number, parsed_text_prompts, parsed_image_prompts, parsed_noise_prompts)
+                #     # eng.encode_and_append_pil_image(pil_image_new_frame, weight=current_frame_prompt_weight)
+                #     eng.configure_optimizer()
 
                 if save_every and iteration_num % save_every == 0:
                     # save a frame of video every .save_every iterations
@@ -327,7 +349,8 @@ def restyle_video2(input_video_path,
             tqdm.write(f'iteration:{iteration_num:6d}\tvideo frame: {video_frame_num:6d}\tloss sum: {sum(lossAll).item():7.3f}\tloss for each prompt:{losses_str}')
 
             # if making a video, save a frame named for the video step
-            eng.save_current_output(video_frames_path + os.sep + str(video_frame_num) + '.png')
+            last_video_frame_generated = video_frames_path + os.sep + str(video_frame_num) + '.png'
+            eng.save_current_output(last_video_frame_generated)
             video_frame_num += 1
         tqdm.write('Generating video...')
     except KeyboardInterrupt:
@@ -348,6 +371,7 @@ def restyle_video2(input_video_path,
         os.rename(output_file,'original_no_audio.mp4')
         VF.copy_video_audio(input_video_path, 'original_no_audio.mp4', output_file)
         os.remove('original_no_audio.mp4')
+
 
 def video(eng_config=VQGAN_CLIP_Config(),
         text_prompts = [],
