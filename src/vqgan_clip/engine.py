@@ -31,7 +31,7 @@ class VQGAN_CLIP_Config:
     * output_image_size (list of int) : x/y dimensions of the output image in pixels. This will be adjusted slightly based on the GAN model used. Default = [256,256]
     * init_image (str) : A seed image that can be used to start the training. Without an initial image, random noise will be used. Default = None  
     * init_noise (str) : Seed an image with noise. Options None, \'pixels\' or \'gradient\'  Default = None 
-    * init_weight (float) : Used to keep some similarity to the initial image. Not tested here. Default = 0.0
+    * init_weight (float) : Used to keep some similarity to the initial image. Default = 0.0
     * self.seed = None # Integer to use as seed for the random number generaor. If None, a random value will be chosen.  
     * self.clip_model = \'ViT-B/32\' # options \'ViT-B/32\', \'ViT-B/16)\', default to \'ViT-B/32\'  
     * self.vqgan_config = f\'models/vqgan_imagenet_f16_16384.yaml\' # path to model yaml file  

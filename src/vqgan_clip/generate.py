@@ -221,7 +221,7 @@ def restyle_video(input_video_path,
         assumed_input_framerate = extraction_framerate
    
     output_file = output_filename + '.mp4'
-    encode_video(output_file=output_file,
+    VF.encode_video(output_file=output_file,
         path_to_stills=video_frames_path, 
         metadata=text_prompts,
         output_framerate=output_framerate,
@@ -338,7 +338,7 @@ def restyle_video2(input_video_path,
         # The framerate used for encoding should match the framerate used for extraction, unless otherwise specified by the calling function. This ensures the output video is the same duration as the input.
         assumed_input_framerate = extraction_framerate
 
-    encode_video(output_file=output_file,
+    VF.encode_video(output_file=output_file,
         path_to_stills=video_frames_path, 
         metadata=text_prompts,
         output_framerate=output_framerate,
@@ -416,7 +416,7 @@ def video(eng_config=VQGAN_CLIP_Config(),
         pass
 
     # Encode the video even if the user aborts generating stills using CTRL+C
-    encode_video(output_file=output_file,
+    VF.encode_video(output_file=output_file,
         path_to_stills=video_frames_path, 
         metadata=text_prompts,
         output_framerate=output_framerate,
@@ -519,54 +519,9 @@ def zoom_video(eng_config=VQGAN_CLIP_Config(),
         pass
 
     # Encode the video even if the user aborts generating stills using CTRL+C
-    encode_video(output_file=output_file,
+    VF.encode_video(output_file=output_file,
         path_to_stills=video_frames_path, 
         metadata=text_prompts,
         output_framerate=output_framerate,
         assumed_input_framerate=assumed_input_framerate)
 
-def encode_video(output_file=f'.\\output\\output.mp4', path_to_stills=f'.\\steps', metadata='', output_framerate=30, assumed_input_framerate=None):
-    """Encodes a folder of PNG images to a video in HEVC format using ffmpeg with optional interpolation. Input stills must be sequentially numbered png files starting from 1. E.g. 1.png 2.png etc.
-
-    Args:
-        output_file (str, optional): Location to save the resulting mp4 video file. Defaults to f'.\output\output.mp4'.
-        path_to_stills (str, optional): Path to still images. Defaults to f'.\steps'.
-        metadata (str, optional): Metadata to be added to the comments field of the resulting video file. Defaults to ''.
-        output_framerate (int, optional): The desired framerate of the output video. Defaults to 30.
-        assumed_input_framerate (int, optional): An assumed framerate to use for the input stills. If the assumed input framerate is different than the desired output, then ffpmeg will interpolate to generate extra frames. For example, an assumed input of 10 and desired output of 60 will cause the resulting video to have five interpolated frames for every original frame. Defaults to [].
-    """
-    if assumed_input_framerate and assumed_input_framerate != output_framerate:
-        # Hardware encoding and video frame interpolation
-        print("Creating interpolated frames...")
-        ffmpeg_filter = f"minterpolate='mi_mode=mci:me=hexbs:me_mode=bidir:mc_mode=aobmc:vsbmc=1:mb_size=8:search_param=32:fps={str(output_framerate)}'"
-        subprocess.call(['ffmpeg',
-            '-y',
-            '-f', 'image2',
-            '-r', str(assumed_input_framerate),               
-            '-i', f'{path_to_stills+os.sep}%d.png',
-            '-vcodec', 'libx265',
-            '-pix_fmt', 'yuv420p',
-            '-strict', '-2',
-            '-filter:v', f'{ffmpeg_filter}',
-            '-metadata', f'comment={metadata}',
-            output_file])
-    else:
-        # no interpolation
-        subprocess.call(['ffmpeg',
-            '-y',
-            '-f', 'image2',
-            '-i', f'{path_to_stills+os.sep}%d.png',
-            '-r', str(output_framerate),
-            '-vcodec', 'libx265',
-            '-pix_fmt', 'yuv420p',
-            '-strict', '-2',
-            '-metadata', f'comment={metadata}',
-            output_file])
-
-
-def supress_stdout(func):
-    def wrapper(*a, **ka):
-        with open(os.devnull, 'w') as devnull:
-            with contextlib.redirect_stdout(devnull):
-                func(*a, **ka)
-    return wrapper
