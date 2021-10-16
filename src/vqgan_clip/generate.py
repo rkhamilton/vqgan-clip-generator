@@ -1,5 +1,6 @@
 # This module is the interface for creating images and video from text prompts
 # This should also serve as examples of how you can use the Engine class to create images and video using your own creativity.
+from logging import error
 from vqgan_clip.engine import Engine, VQGAN_CLIP_Config
 from tqdm import tqdm
 import glob, os, sys, io
@@ -291,6 +292,8 @@ def restyle_video(input_video_path,
         VF.delete_files(video_frames_path)
 
     video_frames = VF.extract_video_frames(input_video_path, extraction_framerate, extracted_video_frames_path)
+    if not len(video_frames):
+        raise NameError('No video frames were extracted')
     output_size_X, output_size_Y = VF.filesize_matching_aspect_ratio(video_frames[0], eng_config.output_image_size[0], eng_config.output_image_size[1])
     eng_config.output_image_size = [output_size_X, output_size_Y]
 
