@@ -6,13 +6,6 @@ This package started as a complete refactor of the code provided by [NerdyRodent
 
 In addition to refactoring NerdyRodent's code into a more pythonic package to improve usability, this project adds unit tests, and adds improvements to the ability to restyle an existing video.
 
-Original notebook: [![Open In Colab][colab-badge]][colab-notebook]
-
-[colab-notebook]: <https://colab.research.google.com/drive/1ZAus_gn2RhTZWzOWUpPERNC0Q8OhZRTZ>
-[colab-badge]: <https://colab.research.google.com/assets/colab-badge.svg>
-
-[NerdyRodent VQGAN+CLIP repository](https://github.com/nerdyrodent/)
-
 Some example images:
 
 <img src="./samples/A child throwing the ducks into a wood chipper painting by Rembrandt initial.png" width="256px"></img>
@@ -140,7 +133,7 @@ These methods may be used in any combination.
 The parameters used for image generation are either passed to a method of generate.py, or stored in a VQGAN_CLIP_Config instance. These two groups of configuration parameters are discussed below.
 
 ### vqgan_clip.generate function arguments
-These parameters are passed to the functions of vqgan_clip.generate: single_image(), multiple_images(), video(), restyle_video(), restyle_video_naive(), and zoom_video().
+These parameters are passed to the functions of vqgan_clip.generate: single_image(), multiple_images(), video_frames(), restyle_video_frames(), restyle_video_frames_naive(), and zoom_video_frames().
 |Attribute|Default|Meaning
 |---------|---------|---------|
 |text_prompts|'A painting of flowers in the renaissance style:0.5\|rembrandt:0.5^fish:0.2\|love:1'|Text prompt for image generation|
@@ -159,8 +152,8 @@ These parameters are passed to the functions of vqgan_clip.generate: single_imag
 |previous_generated_frame_prompt_weight|0.2| When restyling video, you can use the previous generated frame of source video as an image prompt. This assigns a weight to that image prompt.|
 |generated_frame_init_blend|0.2| When restyling video, each original frame of video is used as an init_image for the new frame of generated video. This parameter lets you also blend the previous generated frame with the new source frame. This is an important feature for making the resulting video smooth, since the new frame will start with some elements that CLIP has determined are similar to the prompts.|
 |extraction_framerate|30|When extracting video frames from an existing video, this sets how many frames per second will be extracted. Interpolation will be used if the video's native framerate differs.|
-|extracted_video_frames_path|'./extracted_video_frames'| Location where restyle_video() will save extracted frames of video from the source file.|
-|output_framerate|30|Desired framerate of the output video from video, zoom_video, and restyle_video.|
+|extracted_video_frames_path|'./extracted_video_frames'| Location where extract_video_frames will save extracted frames of video from the source file.|
+|output_framerate|30|Desired framerate of the output video from encode_video.|
 |assumed_input_framerate|None|When combining still images to make a video, this parameter can be used to force an assumed original framerate. For example, you coudl assume you started with 10fps, and interpolate to 60fps.|
 |copy_audio|False|When restyling a video, you can copy the audio from the original video to the result video.|
 
@@ -187,7 +180,7 @@ vqgan_clip.generate.single_image(eng_config = config)
 
 ## Examples
 ### Generating a single image from a text prompt
-Examples are provided in the examples folder. In the example below, an image is generated from two text prompts: "A pastoral landscape painting by Rembrandt" and "A blue fence." These prompts are given different weights during image genration, with the first weighted ten-fold more heavily than the second. This method of applying weights may optionally be used for all three types of prompts: text, images, and noise. If a weight is not specified, a weight of 1.0 is assumed.
+Examples are provided in [the examples folder](https://github.com/rkhamilton/vqgan-clip-generator/tree/main/examples). In the example below, an image is generated from two text prompts: "A pastoral landscape painting by Rembrandt" and "A blue fence." These prompts are given different weights during image genration, with the first weighted ten-fold more heavily than the second. This method of applying weights may optionally be used for all three types of prompts: text, images, and noise. If a weight is not specified, a weight of 1.0 is assumed.
 
 ```python
 # Generate a single image based on a text prompt
@@ -225,7 +218,7 @@ vqgan_clip.generate.single_image(eng_config = config,
 ```
 
 ### Multiple images for the same prompt
-You may want to generate a lot of images with the same prompts, but with different random seeds. This is a way to fish for interesting images. This is not doing anything different than running single_image() repeatedly.
+You may want to generate a lot of images with the same prompts, but with different random seeds. This is a way to fish for interesting images. This is not doing anything different than running generate.single_image() repeatedly.
 
 ```python
 import vqgan_clip.generate
@@ -243,22 +236,37 @@ vqgan_clip.generate.multiple_images(eng_config = config,
 ```
 
 ### Video
-The generate.video method is provided to create a video based on prompt(s). Note that the image will stabilize after a hundred or so iteration with the same prompt so this is most useful if you are changing prompts over time. In the exmaple below the prompt cycles between two every 300 iterations.
+The generate.video_frames method is provided to create a video based on prompt(s). Note that the image will stabilize after a hundred or so iteration with the same prompt so this is most useful if you are changing prompts over time. In the exmaple below the prompt cycles between two every 300 iterations.
 
 ```python
-import vqgan_clip.generate
+from vqgan_clip import generate, video_tools
 from vqgan_clip.engine import VQGAN_CLIP_Config
 import os
 
+#Let's generate a single image to initialize the video.
 config = VQGAN_CLIP_Config()
-config.output_image_size = [128,128]
+config.output_image_size = [448,448]
 text_prompts = 'A pastoral landscape painting by Rembrandt^A black dog with red eyes in a cave'
-vqgan_clip.generate.video(eng_config = config,
+init_image = os.path.join('output','init_image')
+generate.single_image(eng_config = config,
+        text_prompts = text_prompts,
+        iterations = 100,
+        save_every = None,
+        output_filename = init_image)
+
+# Now generate a zoom video starting from that initial frame.
+config.init_image = init_image+'.png'
+generate.video_frames(eng_config = config,
         text_prompts = text_prompts,
         iterations = 1000,
         save_every = 10,
-        output_filename = 'output' + os.sep + 'output',
         change_prompt_every = 300)
+
+# Use a wrapper for FFMPEG to encode the video.
+video_tools.encode_video(output_file=os.path.join('output','zoom_video.mp4'),
+        metadata=text_prompts,
+        output_framerate=60,
+        assumed_input_framerate=30)
 ```
 
 ### Zoom video
@@ -267,23 +275,37 @@ The method generate.zoom_video is provided create a video with movement. Every f
 This is one of the more interesting application of VQGAN+CLIP provided here.
 
 ```python
-import vqgan_clip.generate
+# This is one of the more interesting application of VQGAN+CLIP here.
+from vqgan_clip import generate, video_tools
 from vqgan_clip.engine import VQGAN_CLIP_Config
 import os
 
+#Let's generate a single image to initialize the video.
 config = VQGAN_CLIP_Config()
 config.output_image_size = [448,448]
-vqgan_clip.generate.zoom_video(eng_config = config,
-        text_prompts = 'An abandoned shopping mall haunted by wolves|The war of the worlds',
-        iterations = 2000,
+text_prompts = 'An abandoned shopping mall haunted by wolves^The war of the worlds'
+init_image = os.path.join('output','init_image')
+generate.single_image(eng_config = config,
+        text_prompts = text_prompts,
+        iterations = 100,
+        save_every = None,
+        output_filename = init_image)
+
+# Now generate a zoom video starting from that initial frame.
+config.init_image = init_image+'.png'
+generate.zoom_video_frames(eng_config = config,
+        text_prompts = text_prompts,
+        iterations = 1000,
         save_every = 5,
-        output_filename = 'output' + os.sep + 'zooming',
         change_prompt_every = 300,
-        output_framerate=30, 
-        assumed_input_framerate=10, 
         zoom_scale=1.02, 
         shift_x=1, 
         shift_y=1)
+
+video_tools.encode_video(output_file=os.path.join('output','zoom_video.mp4'),
+        metadata=text_prompts,
+        output_framerate=60,
+        assumed_input_framerate=30)
 ```
 
 ### Restyle Video
@@ -299,26 +321,47 @@ The innovation in this approach is that each new frame of video uses several adj
 In the example below, each new frame is initialized with the new source frame with a 20% blend of the previous generated frame. Higher values of generated_frame_init_blend, combined with higher values of iterations, result in a runaway effect where the video diverges completely from the source material.
 
 ```python
-import vqgan_clip.generate
+from vqgan_clip import generate, video_tools
 from vqgan_clip.engine import VQGAN_CLIP_Config
 import os
 
 config = VQGAN_CLIP_Config()
-config.output_image_size = [448,448]
+config.output_image_size = [256,256]
 config.init_weight = 1.0
-input_video_path = '20211004_132008000_iOS.MOV'
-vqgan_clip.generate.restyle_video(input_video_path,
-        extraction_framerate = 30,
+text_prompts = 'portrait on deviantart'
+input_video_path = 'original_video.MOV'
+final_output_filename = os.path.join('output','output.mp4')
+copy_audio = True
+extraction_framerate = 30
+output_framerate = 60
+
+# Use a wrapper for FFMPEG to extract stills from the original video.
+original_video_frames = video_tools.extract_video_frames(input_video_path, 
+        extraction_framerate = extraction_framerate)
+
+# Apply a style to the extracted video frames.
+generate.restyle_video_frames(original_video_frames,
         eng_config=config,
-        text_prompts = 'portrait on deviantart',
+        text_prompts = text_prompts,
         iterations = 20,
         save_every=None,
-        output_filename = 'output' + os.sep + 'portrait on deviantart',
-        output_framerate=60,
-        copy_audio=False,
         current_source_frame_prompt_weight=0.1,
         previous_generated_frame_prompt_weight=0.0,
         generated_frame_init_blend=0.2)
+
+# Use a wrapper for FFMPEG to encode the video.
+generated_video_no_audio=os.path.join('output','output_no_audio.mp4')
+video_tools.encode_video(output_file=generated_video_no_audio,
+        metadata=text_prompts,
+        output_framerate=output_framerate,
+        assumed_input_framerate=extraction_framerate)
+
+# Copy audio from the original file
+if copy_audio:
+        video_tools.copy_video_audio(input_video_path, generated_video_no_audio, final_output_filename)
+        os.remove(generated_video_no_audio)
+else:
+        os.rename(generated_video_no_audio,final_output_filename)
 ```
 
 ## Troubleshooting

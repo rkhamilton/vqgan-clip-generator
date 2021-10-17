@@ -125,52 +125,40 @@ def multiple_images(eng_config=VQGAN_CLIP_Config(),
     except KeyboardInterrupt:
         pass
 
-def restyle_video_naive(input_video_path,
-        extraction_framerate = 30,
+def restyle_video_frames_naive(video_frames,
         eng_config=VQGAN_CLIP_Config(),
         text_prompts = [],
         image_prompts = [],
         noise_prompts = [],
         iterations = 100,
         save_every = None,
-        output_filename = 'output' + os.sep + 'output',
         change_prompt_every = 0,
-        video_frames_path='./video_frames',
-        extracted_video_frames_path='./extracted_video_frames',
-        output_framerate=30, 
-        assumed_input_framerate=None,
-        copy_audio=False):
+        generated_video_frames_path='./video_frames'):
     """Apply a style to an existing video using VQGAN+CLIP. The still image frames from the original video are extracted, and used as initial images for VQGAN+CLIP. The resulting folder of stills are then encoded into an HEVC video file. The audio from the original may optionally be transferred.
     The configuration of the VQGAN+CLIP algorithms is done via a VQGAN_CLIP_Config instance. This is the naive implementation where each source video frame is just used as an initial image for a fresh GAN instance. There is significant change from output frame to frame, makign the result jittery. This method is superceded by restyle_video().
 
     Args:
         Args:
-        * input_video_path (str) : Path to the video that will be restyled.
-        * extraction_framerate (int) : The number of frames per second of original video to extract. Interpolation will be used to extract an arbitrary number of frames.
+        * video_frames (list of str) : List of paths to the video frames that will be restyled.
         * eng_config (VQGAN_CLIP_Config, optional): An instance of VQGAN_CLIP_Config with attributes customized for your use. See the documentation for VQGAN_CLIP_Config().
         * text_prompts (str, optional) : Text that will be turned into a prompt via CLIP. Default = []  
         * image_prompts (str, optional) : Path to image that will be turned into a prompt via CLIP. Default = []
         * noise_prompts (str, optional) : Random number seeds can be used as prompts using the same format as a text prompt. E.g. \'123:0.1|234:0.2|345:0.3\' Stories (^) are supported. Default = []
         * iterations (int, optional) : Number of iterations of train() to perform for each frame of video. Default = 100 
-        * output_filename (str, optional) : location to save the output image. Omit the file extension. Default = \'output\' + os.sep + \'output\'  
         * change_prompt_every (int, optional) : Serial prompts, sepated by ^, will be cycled through every change_prompt_every iterations. Prompts will loop if more cycles are requested than there are prompts. Default = 0
         * video_frames_path (str, optional) : Path where still images should be saved as they are generated before being combined into a video. Defaults to './video_frames'.
-        * output_framerate (int, optional) : Desired framerate of the output video. Defaults to 30.
-        * assumed_input_framerate (int, optional) : An assumed framerate to use for the still images. If an assumed input framerate is provided, the output video will be interpolated to the specified output framerate. Defaults to None.
-        * copy_audio (boolean) : If True, attempt to copy the audio from the original video to the output video. The durations of the two videos should be the same.
     """
     eng = Engine(eng_config)
     parsed_text_prompts, parsed_image_prompts, parsed_noise_prompts = VF.parse_all_prompts(text_prompts, image_prompts, noise_prompts)
     eng.initialize_VQGAN_CLIP()
     eng.encode_and_append_prompts(0, parsed_text_prompts, parsed_image_prompts, parsed_noise_prompts)
 
-    # if the location for the interim video frames doesn't exist, create it
-    if not os.path.exists(video_frames_path):
-        os.mkdir(video_frames_path)
+    # if the location for the generated video frames doesn't exist, create it
+    if not os.path.exists(generated_video_frames_path):
+        os.mkdir(generated_video_frames_path)
     else:
-        VF.delete_files(video_frames_path)
+        VF.delete_files(generated_video_frames_path)
 
-    video_frames = VF.extract_video_frames(input_video_path, extraction_framerate, extracted_video_frames_path)
     output_size_X, output_size_Y = VF.filesize_matching_aspect_ratio(video_frames[0], eng_config.output_image_size[0], eng_config.output_image_size[1])
     eng_config.output_image_size = [output_size_X, output_size_Y]
 
@@ -202,7 +190,7 @@ def restyle_video_naive(input_video_path,
                     # save a frame of video every .save_every iterations
                     losses_str = ', '.join(f'{loss.item():7.3f}' for loss in lossAll)
                     tqdm.write(f'iteration:{iteration_num:6d}\tvideo frame: {video_frame_num:6d}\tloss sum: {sum(lossAll).item():7.3f}\tloss for each prompt:{losses_str}')
-                    eng.save_current_output(video_frames_path + os.sep + str(video_frame_num) + '.png')
+                    eng.save_current_output(generated_video_frames_path + os.sep + str(video_frame_num) + '.png')
 
             # save a frame of video every iterations
             # display some statistics about how the GAN training is going whever we save an image
@@ -210,44 +198,20 @@ def restyle_video_naive(input_video_path,
             tqdm.write(f'iteration:{iteration_num:6d}\tvideo frame: {video_frame_num:6d}\tloss sum: {sum(lossAll).item():7.3f}\tloss for each prompt:{losses_str}')
 
             # if making a video, save a frame named for the video step
-            eng.save_current_output(video_frames_path + os.sep + str(video_frame_num) + '.png')
+            eng.save_current_output(generated_video_frames_path + os.sep + str(video_frame_num) + '.png')
             video_frame_num += 1
         tqdm.write('Generating video...')
     except KeyboardInterrupt:
         pass
 
-    # Encode the video even if the user aborts generating stills using CTRL+C
-    if not assumed_input_framerate:
-        # The framerate used for encoding should match the framerate used for extraction, unless otherwise specified by the calling function. This ensures the output video is the same duration as the input.
-        assumed_input_framerate = extraction_framerate
-   
-    output_file = output_filename + '.mp4'
-    VF.encode_video(output_file=output_file,
-        path_to_stills=video_frames_path, 
-        metadata=text_prompts,
-        output_framerate=output_framerate,
-        assumed_input_framerate=assumed_input_framerate)
-
-    if copy_audio:
-        os.rename(output_file,'original_no_audio.mp4')
-        VF.copy_video_audio(input_video_path, 'original_no_audio.mp4', output_file)
-        os.remove('original_no_audio.mp4')
-
-def restyle_video(input_video_path,
-    extraction_framerate = 30,
+def restyle_video_frames(video_frames,
     eng_config=VQGAN_CLIP_Config(),
     text_prompts = 'Covered in spiders | Surreal:0.5',
     image_prompts = [],
     noise_prompts = [],
     iterations = 30,
     save_every = None,
-    output_filename = 'output' + os.sep + 'output',
-    change_prompt_every = 0,
-    video_frames_path='./video_frames',
-    extracted_video_frames_path='./extracted_video_frames',
-    output_framerate=30,
-    assumed_input_framerate=None,
-    copy_audio=False,
+    generated_video_frames_path='./video_frames',
     current_source_frame_prompt_weight=0.0,
     previous_generated_frame_prompt_weight=0.0,
     generated_frame_init_blend=0.2):
@@ -266,35 +230,25 @@ def restyle_video(input_video_path,
 
     Args:
         Args:
-        * input_video_path (str) : Path to the video that will be restyled.
-        * extraction_framerate (int) : The number of frames per second of original video to extract. Interpolation will be used to extract an arbitrary number of frames.
+        * video_frames (list of str) : List of paths to the video frames that will be restyled.
         * eng_config (VQGAN_CLIP_Config, optional): An instance of VQGAN_CLIP_Config with attributes customized for your use. See the documentation for VQGAN_CLIP_Config().
         * text_prompts (str, optional) : Text that will be turned into a prompt via CLIP. Default = []  
         * image_prompts (str, optional) : Path to image that will be turned into a prompt via CLIP. Default = []
         * noise_prompts (str, optional) : Random number seeds can be used as prompts using the same format as a text prompt. E.g. \'123:0.1|234:0.2|345:0.3\' Stories (^) are supported. Default = []
         * iterations (int, optional) : Number of iterations of train() to perform for each frame of video. Default = 100 
-        * output_filename (str, optional) : location to save the output image. Omit the file extension. Default = \'output\' + os.sep + \'output\'  
         * change_prompt_every (int, optional) : Serial prompts, sepated by ^, will be cycled through every change_prompt_every iterations. Prompts will loop if more cycles are requested than there are prompts. Default = 0
-        * video_frames_path (str, optional) : Path where still images should be saved as they are generated before being combined into a video. Defaults to './video_frames'.
-        * extracted_video_frames_path (str, optional) : Location to save extracted frames of video from the source file. 
-        * output_framerate (int, optional) : Desired framerate of the output video. Defaults to 30.
-        * assumed_input_framerate (int, optional) : An assumed framerate to use for the still images. If an assumed input framerate is provided, the output video will be interpolated to the specified output framerate. Defaults to None.
-        * copy_audio (boolean) : If True, attempt to copy the audio from the original video to the output video. The durations of the two videos should be the same.
+        * generated_video_frames_path (str, optional) : Path where still images should be saved as they are generated before being combined into a video. Defaults to './video_frames'.
         * current_frame_prompt_weight (float) : Using the current frame of source video as an image prompt (as well as init_image), this assigns a weight to that image prompt. Default = 0.0
         * generated_frame_init_blend (float) : How much of the previous generated image to blend in to a new frame's init_image. 0 means no previous generated image, 1 means 100% previous generated image. Default = 0.2
     """
     parsed_text_prompts, parsed_image_prompts, parsed_noise_prompts = VF.parse_all_prompts(text_prompts, image_prompts, noise_prompts)
-    output_file = output_filename + '.mp4'
 
-    # if the location for the interim video frames doesn't exist, create it
-    if not os.path.exists(video_frames_path):
-        os.mkdir(video_frames_path)
+    # if the location for the generated video frames doesn't exist, create it
+    if not os.path.exists(generated_video_frames_path):
+        os.mkdir(generated_video_frames_path)
     else:
-        VF.delete_files(video_frames_path)
+        VF.delete_files(generated_video_frames_path)
 
-    video_frames = VF.extract_video_frames(input_video_path, extraction_framerate, extracted_video_frames_path)
-    if not len(video_frames):
-        raise NameError('No video frames were extracted')
     output_size_X, output_size_Y = VF.filesize_matching_aspect_ratio(video_frames[0], eng_config.output_image_size[0], eng_config.output_image_size[1])
     eng_config.output_image_size = [output_size_X, output_size_Y]
 
@@ -345,7 +299,7 @@ def restyle_video(input_video_path,
                     # save a frame of video every .save_every iterations
                     losses_str = ', '.join(f'{loss.item():7.3f}' for loss in lossAll)
                     tqdm.write(f'iteration:{iteration_num:6d}\tvideo frame: {video_frame_num:6d}\tloss sum: {sum(lossAll).item():7.3f}\tloss for each prompt:{losses_str}')
-                    eng.save_current_output(video_frames_path + os.sep + str(video_frame_num) + '.png')
+                    eng.save_current_output(generated_video_frames_path + os.sep + str(video_frame_num) + '.png')
 
             # save a frame of video every iterations
             # display some statistics about how the GAN training is going whever we save an image
@@ -353,41 +307,21 @@ def restyle_video(input_video_path,
             tqdm.write(f'iteration:{iteration_num:6d}\tvideo frame: {video_frame_num:6d}\tloss sum: {sum(lossAll).item():7.3f}\tloss for each prompt:{losses_str}')
 
             # if making a video, save a frame named for the video step
-            last_video_frame_generated = video_frames_path + os.sep + str(video_frame_num) + '.png'
+            last_video_frame_generated = generated_video_frames_path + os.sep + str(video_frame_num) + '.png'
             eng.save_current_output(last_video_frame_generated)
             video_frame_num += 1
         tqdm.write('Generating video...')
     except KeyboardInterrupt:
         pass
 
-    # Encode the video even if the user aborts generating stills using CTRL+C
-    if not assumed_input_framerate:
-        # The framerate used for encoding should match the framerate used for extraction, unless otherwise specified by the calling function. This ensures the output video is the same duration as the input.
-        assumed_input_framerate = extraction_framerate
-
-    VF.encode_video(output_file=output_file,
-        path_to_stills=video_frames_path, 
-        metadata=text_prompts,
-        output_framerate=output_framerate,
-        assumed_input_framerate=assumed_input_framerate)
-
-    if copy_audio:
-        os.rename(output_file,'original_no_audio.mp4')
-        VF.copy_video_audio(input_video_path, 'original_no_audio.mp4', output_file)
-        os.remove('original_no_audio.mp4')
-
-
-def video(eng_config=VQGAN_CLIP_Config(),
+def video_frames(eng_config=VQGAN_CLIP_Config(),
         text_prompts = [],
         image_prompts = [],
         noise_prompts = [],
         iterations = 100,
         save_every = 50,
-        output_filename = 'output' + os.sep + 'output',
         change_prompt_every = 0,
-        video_frames_path='./video_frames', 
-        output_framerate=30, 
-        assumed_input_framerate=None):
+        video_frames_path='./video_frames'):
     """Generate a video using VQGAN+CLIP. The configuration of the VQGAN+CLIP algorithms is done via a VQGAN_CLIP_Config instance.
 
     Args:
@@ -409,7 +343,6 @@ def video(eng_config=VQGAN_CLIP_Config(),
     parsed_text_prompts, parsed_image_prompts, parsed_noise_prompts = VF.parse_all_prompts(text_prompts, image_prompts, noise_prompts)
     eng.encode_and_append_prompts(0, parsed_text_prompts, parsed_image_prompts, parsed_noise_prompts)
     eng.configure_optimizer()
-    output_file = output_filename + '.mp4'
 
     # if the location for the interim video frames doesn't exist, create it
     if not os.path.exists(video_frames_path):
@@ -443,24 +376,14 @@ def video(eng_config=VQGAN_CLIP_Config(),
     except KeyboardInterrupt:
         pass
 
-    # Encode the video even if the user aborts generating stills using CTRL+C
-    VF.encode_video(output_file=output_file,
-        path_to_stills=video_frames_path, 
-        metadata=text_prompts,
-        output_framerate=output_framerate,
-        assumed_input_framerate=assumed_input_framerate)
-
-def zoom_video(eng_config=VQGAN_CLIP_Config(),
+def zoom_video_frames(eng_config=VQGAN_CLIP_Config(),
         text_prompts = [],
         image_prompts = [],
         noise_prompts = [],
         iterations = 100,
         save_every = 50,
-        output_filename = 'output' + os.sep + 'output',
         change_prompt_every = 0,
         video_frames_path='./video_frames',
-        output_framerate=30,
-        assumed_input_framerate=None,
         zoom_scale=1.0,
         shift_x=0, 
         shift_y=0):
@@ -473,11 +396,8 @@ def zoom_video(eng_config=VQGAN_CLIP_Config(),
         * noise_prompts (str, optional) : Random number seeds can be used as prompts using the same format as a text prompt. E.g. \'123:0.1|234:0.2|345:0.3\' Stories (^) are supported. Default = []
         * iterations (int, optional) : Number of iterations of train() to perform before stopping. Default = 100 
         * save_every (int, optional) : An interim image will be saved to the output location every save_every iterations, and training stats will be displayed. Default = 50  
-        * output_filename (str, optional) : location to save the output image. Omit the file extension. Default = \'output\' + os.sep + \'output\'  
         * change_prompt_every (int, optional) : Serial prompts, sepated by ^, will be cycled through every change_prompt_every iterations. Prompts will loop if more cycles are requested than there are prompts. Default = 0
         * video_frames_path (str, optional) : Path where still images should be saved as they are generated before being combined into a video. Defaults to './video_frames'.
-        * output_framerate (int, optional) : Desired framerate of the output video. Defaults to 30.
-        * assumed_input_framerate (int, optional) : An assumed framerate to use for the still images. If an assumed input framerate is provided, the output video will be interpolated to the specified output framerate. Defaults to None.
         * zoom_scale (float) : Every save_every iterations, a video frame is saved. That frame is shifted scaled by a factor of zoom_scale, and used as the initial image to generate the next frame. Default = 1.0
         * shift_x (int) : Every save_every iterations, a video frame is saved. That frame is shifted shift_x pixels in the x direction, and used as the initial image to generate the next frame. Default = 0
         * shift_y (int) : Every save_every iterations, a video frame is saved. That frame is shifted shift_y pixels in the y direction, and used as the initial image to generate the next frame. Default = 0
@@ -487,7 +407,6 @@ def zoom_video(eng_config=VQGAN_CLIP_Config(),
     eng.initialize_VQGAN_CLIP()
     eng.encode_and_append_prompts(0, parsed_text_prompts, parsed_image_prompts, parsed_noise_prompts)
     eng.configure_optimizer()
-    output_file = output_filename + '.mp4'
 
     # if the location for the interim video frames doesn't exist, create it
     if not os.path.exists(video_frames_path):
@@ -545,11 +464,4 @@ def zoom_video(eng_config=VQGAN_CLIP_Config(),
         tqdm.write('Generating video...')
     except KeyboardInterrupt:
         pass
-
-    # Encode the video even if the user aborts generating stills using CTRL+C
-    VF.encode_video(output_file=output_file,
-        path_to_stills=video_frames_path, 
-        metadata=text_prompts,
-        output_framerate=output_framerate,
-        assumed_input_framerate=assumed_input_framerate)
 
