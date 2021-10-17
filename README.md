@@ -137,7 +137,10 @@ These methods may be used in any combination.
 ```
 
 ### Image generation parameters
-The parameters used for image generation are either passed to a method of generate.py, or stored in a VQGAN_CLIP_Config instance. Instantiate this class and customize the attributes as needed, then pass this configuratio object to a method of vqgan_clip.generate.
+The parameters used for image generation are either passed to a method of generate.py, or stored in a VQGAN_CLIP_Config instance. These two groups of configuration parameters are discussed below.
+
+### vqgan_clip.generate function arguments
+These parameters are passed to the functions of vqgan_clip.generate: single_image(), multiple_images(), video(), restyle_video(), restyle_video_naive(), and zoom_video().
 |Attribute|Default|Meaning
 |---------|---------|---------|
 |text_prompts|'A painting of flowers in the renaissance style:0.5\|rembrandt:0.5^fish:0.2\|love:1'|Text prompt for image generation|
@@ -146,19 +149,41 @@ The parameters used for image generation are either passed to a method of genera
 |iterations|100|Number of iterations of train() to perform before stopping and outputing the image. The resulting still image will eventually converge to an image that doesn't perceptually change much in content.|
 |save_every|50|An interim image will be saved to the output location every save_every iterations. If you are generating a video, a frame of video will be created every save_every iterations.|
 |change_prompt_every|0|Serial prompts, sepated by ^, will be cycled through every change_prompt_every iterations. Prompts will loop if more cycles are requested than there are prompts.|
-|output_image_size|[256,256]|x/y dimensions of the output image in pixels. This will be adjusted slightly based on the GAN model used. VRAM requirements increase steeply with image size. A video card with 10GB of VRAM can handle a size of [448,448]|
 |output_filename|'output.png'|Location to save the output image file when a single file is being created.|
+|num_images_to_generate|10|How many images multiple_images() will generate.|
+|output_images_path|'./video_frames'|Location where multiple_images() will save output.|
+|zoom_scale|1.0|When using zoom_video(), this parameter sets the ratio by which each frame will be zoomed in relative to the previous.|
+|shift_x|0| | When using zoom_video(), this parameter sets how many pixels each new frame will be shifted in the x direction.|
+|shift_y|0| | When using zoom_video(), this parameter sets how many pixels each new frame will be shifted in the x direction.|
+|current_source_frame_prompt_weight|0.0| When restyling video, you can use the current frame of source video as an image prompt. This assigns a weight to that image prompt.|
+|previous_generated_frame_prompt_weight|0.2| When restyling video, you can use the previous generated frame of source video as an image prompt. This assigns a weight to that image prompt.|
+|generated_frame_init_blend|0.2| When restyling video, each original frame of video is used as an init_image for the new frame of generated video. This parameter lets you also blend the previous generated frame with the new source frame. This is an important feature for making the resulting video smooth, since the new frame will start with some elements that CLIP has determined are similar to the prompts.|
+|extraction_framerate|30|When extracting video frames from an existing video, this sets how many frames per second will be extracted. Interpolation will be used if the video's native framerate differs.|
+|extracted_video_frames_path|'./extracted_video_frames'| Location where restyle_video() will save extracted frames of video from the source file.|
+|output_framerate|30|Desired framerate of the output video from video, zoom_video, and restyle_video.|
+|assumed_input_framerate|None|When combining still images to make a video, this parameter can be used to force an assumed original framerate. For example, you coudl assume you started with 10fps, and interpolate to 60fps.|
+|copy_audio|False|When restyling a video, you can copy the audio from the original video to the result video.|
+
+
+### VQGAN_CLIP_Config
+Other configuration attributes can be seen in vqgan_clip.engine.VQGAN_CLIP_Config. Those options are related to the function of the algorithm itself. For example, you can change the learning rate of the GAN, or change the optimization algorithm used, or change the GPU used. Instantiate this class and customize the attributes as needed, then pass this configuratio object to a method of vqgan_clip.generate. For example:
+```python
+config = VQGAN_CLIP_Config()
+config.output_image_size = [448,448]
+config.init_image = 'my_image.jpg'
+vqgan_clip.generate.single_image(eng_config = config)
+```
+|Attribute|Default|Meaning
+|---------|---------|---------|
+|output_image_size|[256,256]|x/y dimensions of the output image in pixels. This will be adjusted slightly based on the GAN model used. VRAM requirements increase steeply with image size. A video card with 10GB of VRAM can handle a size of [448,448]|
 |init_image|None|A Seed image that can be used to start the training. Without an initial image, random noise will be used.|
+|init_noise|None|Seed an image with noise. Options None, 'pixels' or 'gradient' |
 |init_weight|0.0|A weight can be given to the initial image used so that the result will 'hold on to' the look of the starting point.
 |init_noise|None|Seed an image with noise. Options None, 'pixels' or 'gradient'|
 |vqgan_config|f'models/vqgan_imagenet_f16_16384.yaml'|Path to model yaml file. This must be customized to match the location where you downloaded the model file.|
 |vqgan_checkpoint|f'models/vqgan_imagenet_f16_16384.ckpt'|Path to model checkpoint file. This must be customized to match the location where you downloaded the model file.|
-|current_source_frame_prompt_weight|0.0| When restyling video, you can use the current frame of source video as an image prompt. This assigns a weight to that image prompt.|
-|previous_generated_frame_prompt_weight|0.0| When restyling video, you can use the previous generated frame of source video as an image prompt. This assigns a weight to that image prompt.|
-|generated_frame_init_blend|0.2| When restyling video, each original frame of video is used as an init_image for the new frame of generated video. This parameter lets you also blend the previous generated frame with the new source frame. This is an important feature for making the resulting video smooth, since the new frame will start with some elements that CLIP has determined are similar to the prompts.|
+|optimizer|'Adam'|Different optimizers are provided for training the GAN. These all perform differently, and may give you a different result. See [torch.optim documentation](https://pytorch.org/docs/stable/optim.html).|
 
-
-Other configuration attributes can be seen in vqgan_clip.engine.VQGAN_CLIP_Config. Those options are related to the function of the algorithm itself. For example, you can change the learning rate of the GAN, or change the optimization algorithm used, or change the GPU used.
 
 ## Examples
 ### Generating a single image from a text prompt
@@ -172,6 +197,25 @@ import os
 
 config = VQGAN_CLIP_Config()
 config.output_image_size = [448,448]
+text_prompts = 'A pastoral landscape painting by Rembrandt:1.0 | A blue fence:0.1'
+vqgan_clip.generate.single_image(eng_config = config,
+        text_prompts = text_prompts,
+        iterations = 100,
+        save_every = 50,
+        output_filename = 'output' + os.sep + text_prompts)
+```
+
+### Generating a single image from a text prompt and initial image
+In this example, an initial image is added to the code above, so that the GAN is seeded with this starting point. The initial image is part of the model configuration, not a parameter for generate.single_image().
+
+```python
+import vqgan_clip.generate
+from vqgan_clip.engine import VQGAN_CLIP_Config
+import os
+
+config = VQGAN_CLIP_Config()
+config.output_image_size = [448,448]
+config.init_image = 'starting_image.jpg'
 text_prompts = 'A pastoral landscape painting by Rembrandt:1.0 | A blue fence:0.1'
 vqgan_clip.generate.single_image(eng_config = config,
         text_prompts = text_prompts,
