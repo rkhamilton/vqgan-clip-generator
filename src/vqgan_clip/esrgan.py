@@ -24,7 +24,8 @@ def inference_realesrgan(input='./video_frames',
                          face_enhance=False,
                          half=True,
                          block=23,
-                         ext='auto'):
+                         ext='auto',
+                         model_dir=None):
     """Applies a machine learning image restoration model using Real-ESRGAN. The default is a general purpose upscaler, but many 
     models are available that are trained for different types of content. See https://upscale.wiki/wiki/Model_Database.
 
@@ -44,9 +45,10 @@ def inference_realesrgan(input='./video_frames',
         * block (int, optional): num_block in RRDB. Defaults to 23.
         * alpha_upsampler (str, optional): The upsampler for the alpha channels. Options: realesrgan | bicubic. Defaults to 'realesrgan'
         * ext (str, optional): Image extension. Options: auto | jpg | png, auto means using the same extension as inputs. Defaults to 'auto'
+        * model_dir (str, optional): If set to a folder name (e.g. 'models') then model files will be downloaded to a subfolder of the current working directory. Defaults to None.
     """
     # load the file from disk if available, otherwise download it.
-    model_filename = load_file_from_url(model_url, model_dir=None, progress=True, file_name=model_filename)
+    model_filename = load_file_from_url(model_url, model_dir=model_dir, progress=True, file_name=model_filename)
 
     if 'RealESRGAN_x4plus_anime_6B.pth' in model_filename:
         block = 6

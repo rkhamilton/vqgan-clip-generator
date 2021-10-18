@@ -46,6 +46,8 @@ class VQGAN_CLIP_Config:
     * self.optimizer (str, optional): Optimizer used when training VQGAN. choices=[\'Adam\',\'AdamW\',\'Adagrad\',\'Adamax\',\'DiffGrad\',\'AdamP\',\'RAdam\',\'RMSprop\']. Defaults to \'Adam\' 
     * self.cuda_device (str, optional): Select your GPU. Default to the first gpu, device 0.  Defaults to \'cuda:0\'
     * self.adaptiveLR (boolean, optional): If true, use an adaptive learning rate. If the quality of the image stops improving, it will change less with each iteration. Generate.zoom output is more stable. Defaults to False.
+    * self.conf.model_dir (str, optional): If set to a folder name (e.g. 'models') then model files will be downloaded to a subfolder of the current working directory. Defaults to None.
+
     """
     def __init__(self):
         self.output_image_size = [256,256] # x/y dimensions of the output image in pixels. This will be adjusted slightly based on the GAN model used.
@@ -65,6 +67,7 @@ class VQGAN_CLIP_Config:
         self.optimizer = 'Adam' # choices=['Adam','AdamW','Adagrad','Adamax','DiffGrad','AdamP','RAdam','RMSprop'], default='Adam'
         self.cuda_device = 'cuda:0' # select your GPU. Default to the first gpu, device 0
         self.adaptiveLR = False # If true, use an adaptive learning rate. If the quality of the image stops improving, it will change less with each iteration. Generate.zoom output is more stable.
+        self.model_dir = None # If set to a folder name (e.g. 'models') then model files will be downloaded to a subfolder of the current working directory.
 
 class Engine:
     def __init__(self, config=VQGAN_CLIP_Config()):
@@ -348,8 +351,8 @@ class Engine:
 
     def load_model(self):
         # This step is slow, and does not need to be done each time an image is generated.
-        model_yaml_path = load_file_from_url(self.conf.vqgan_model_yaml_url, model_dir=None, progress=True, file_name=self.conf.vqgan_model_name+'.yaml')
-        model_ckpt_path = load_file_from_url(self.conf.vqgan_model_ckpt_url, model_dir=None, progress=True, file_name=self.conf.vqgan_model_name+'.ckpt')
+        model_yaml_path = load_file_from_url(self.conf.vqgan_model_yaml_url, model_dir=self.conf.model_dir, progress=True, file_name=self.conf.vqgan_model_name+'.yaml')
+        model_ckpt_path = load_file_from_url(self.conf.vqgan_model_ckpt_url, model_dir=self.conf.model_dir, progress=True, file_name=self.conf.vqgan_model_name+'.ckpt')
         self._model = VF.load_vqgan_model(model_yaml_path, model_ckpt_path).to(self._device)
 
       

@@ -13,8 +13,10 @@ def load_file_from_url(url, model_dir=None, progress=True, file_name=None):
     if model_dir is None:
         hub_dir = get_dir()
         model_dir = os.path.join(hub_dir, 'models')
-
-    os.makedirs(os.path.join(ROOT_DIR, model_dir), exist_ok=True)
+    else:
+        model_dir = os.path.join(ROOT_DIR, model_dir)
+    
+    os.makedirs(model_dir, exist_ok=True)
 
     url_parts = urlparse(url)
     url_filename = os.path.basename(url_parts.path)

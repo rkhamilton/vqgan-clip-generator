@@ -1,3 +1,21 @@
+# v1.1.1
+By user request, it is now possible to set an Engine.conf.model_dir to store downloaded models in a subfolder of the current working directory.
+```python
+esrgan.inference_realesrgan(input='.\\video_frames',
+        output_images_path='upscaled_video_frames',
+        face_enhance=False,
+        model_dir='models')
+
+config = VQGAN_CLIP_Config()
+config.model_dir = 'models'
+generate.single_image(eng_config = config,
+        image_prompts = 'input_image.jpg',
+        iterations = 500,
+        save_every = 10,
+        output_filename = output_filename)
+```
+
+
 # v1.1.0
 **This is a significant change that breaks compatibility.**
 
