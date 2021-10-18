@@ -113,20 +113,13 @@ esrgan.inference_realesrgan(input=extracted_video_frames_path,
         netscale=4,
         outscale=4)
 
-# Use a wrapper for FFMPEG to encode the video.
+# Encode the video.
 generated_video_no_audio=os.path.join('output','output_no_audio.mp4')
-video_tools.encode_video(output_file=generated_video_no_audio,
-        path_to_stills=upscaled_video_frames_path,
-        metadata='',
-        output_framerate=extraction_framerate,
-        assumed_input_framerate=extraction_framerate)
-
-# This is equivalent to
-# os.system(f'ffmpeg -y -f image2 -i upscaled_video_frames\\frame_%12d.jpg -r 30 -vcodec libx264 -crf 23 -pix_fmt yuv420p -strict -2 output_no_audio.mp4')
+os.system(f'ffmpeg -y -f image2 -i upscaled_video_frames\\frame_%12d.jpg -r 30 -vcodec libx264 -crf 23 -pix_fmt yuv420p -strict -2 output_no_audio.mp4')
 
 # Copy audio from the original file
-# video_tools.copy_video_audio(input_video_path, generated_video_no_audio, final_output_filename)
-# os.remove(generated_video_no_audio)
+video_tools.copy_video_audio(input_video_path, generated_video_no_audio, final_output_filename)
+os.remove(generated_video_no_audio)
 
 # This is equiavalent to
 # os.system(f'ffmpeg -i small_video.mp4 -vn -acodec copy extracted_original_audio.aac')
