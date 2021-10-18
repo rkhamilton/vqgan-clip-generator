@@ -20,13 +20,13 @@ Environment:
 * GPU: Nvidia RTX 3080
 * CPU: AMD 5900X
 * Typical VRAM requirements:
-  * 24 GB for a 900x900 image
-  * 10 GB for a 512x512 image
-  * 8 GB for a 380x380 image
+  * 24 GB for a 900x900 image (1200x675 in 16:9 format)
+  * 10 GB for a 512x512 image (684x384 in 16:9 format)
+  * 8 GB for a 380x380 image (507x285 in 16:9 format)
 
 ## Setup
 ### Virtual environment
-This example uses [Anaconda](https://www.anaconda.com/products/individual#Downloads) to manage virtual Python environments. Create a new virtual Python environment for VQGAN-CLIP-GENERATOR. Then, install the VQGAN-CLIP-GENERATOR package using pip.
+This example uses [Anaconda](https://docs.conda.io/en/latest/miniconda.html) to manage virtual Python environments. Create a new virtual Python environment for VQGAN-CLIP-GENERATOR. Then, install the VQGAN-CLIP-GENERATOR package using pip. If you are completely new to python and just want to make some art, I have a [quick start guide](BEGINNERS.md).
 
 ```sh
 conda create --name vqgan python=3.9 pip ffmpeg numpy pytest tqdm git pytorch==1.9.0 torchvision==0.10.0 torchaudio==0.9.0 cudatoolkit=11.1 -c pytorch -c conda-forge
@@ -49,7 +49,7 @@ vqgan_clip.generate.single_image(eng_config = config,
         text_prompts = text_prompts,
         iterations = 100,
         save_every = 10,
-        output_filename = os.path.join('output','output.jpg'))
+        output_filename = 'output.jpg')
 ```
 
 ### Optionally, install and configure Real-ESRGAN for image upscaling
@@ -156,12 +156,12 @@ These parameters are passed to the functions of vqgan_clip.generate: single_imag
 Other configuration attributes can be seen in vqgan_clip.engine.VQGAN_CLIP_Config. Those options are related to the function of the algorithm itself. For example, you can change the learning rate of the GAN, or change the optimization algorithm used, or change the GPU used. Instantiate this class and customize the attributes as needed, then pass this configuratio object to a method of vqgan_clip.generate. For example:
 ```python
 config = VQGAN_CLIP_Config()
-config.output_image_size = [448,448]
+config.output_image_size = [587,330]
 vqgan_clip.generate.single_image(eng_config = config)
 ```
 |VQGAN_CLIP_Config Attribute|Default|Meaning
 |---------|---------|---------|
-|output_image_size|[256,256]|x/y dimensions of the output image in pixels. This will be adjusted slightly based on the GAN model used. VRAM requirements increase steeply with image size. A video card with 10GB of VRAM can handle a size of [448,448]|
+|output_image_size|[256,256]|x/y dimensions of the output image in pixels. This will be adjusted slightly based on the GAN model used. VRAM requirements increase steeply with image size. My video card with 10GB of VRAM can handle a size of [448,448], or [587,330] in 16:9 aspect ratio.|
 |init_noise|None|Seed an image with noise. Options None, 'pixels' or 'gradient' |
 |init_weight|0.0|A weight can be given to the initial image used so that the result will 'hold on to' the look of the starting point.
 |init_noise|None|Seed an image with noise. Options None, 'pixels' or 'gradient'|
@@ -207,7 +207,7 @@ from vqgan_clip.engine import VQGAN_CLIP_Config
 import os
 
 config = VQGAN_CLIP_Config()
-config.output_image_size = [448,448]
+config.output_image_size = [587,330]
 text_prompts = 'A pastoral landscape painting by Rembrandt:1.0 | A blue fence:0.1'
 vqgan_clip.generate.single_image(eng_config = config,
         text_prompts = text_prompts,
@@ -225,7 +225,7 @@ from vqgan_clip.engine import VQGAN_CLIP_Config
 import os
 
 config = VQGAN_CLIP_Config()
-config.output_image_size = [448,448]
+config.output_image_size = [587,330]
 text_prompts = 'A pastoral landscape painting by Rembrandt:1.0 | A blue fence:0.1'
 vqgan_clip.generate.single_image(eng_config = config,
         text_prompts = text_prompts,
@@ -244,7 +244,7 @@ from vqgan_clip.engine import VQGAN_CLIP_Config
 import os
 
 config = VQGAN_CLIP_Config()
-config.output_image_size = [128,128]
+config.output_image_size = [587,330]
 text_prompts = 'A pastoral landscape painting by Rembrandt'
 vqgan_clip.generate.multiple_images(eng_config = config,
         text_prompts = text_prompts,
@@ -263,7 +263,7 @@ import os
 
 #Let's generate a single image to initialize the video.
 config = VQGAN_CLIP_Config()
-config.output_image_size = [448,448]
+config.output_image_size = [587,330]
 text_prompts = 'A pastoral landscape painting by Rembrandt^A black dog with red eyes in a cave'
 init_image = os.path.join('output','init_image')
 generate.single_image(eng_config = config,
@@ -300,7 +300,7 @@ import os
 
 #Let's generate a single image to initialize the video.
 config = VQGAN_CLIP_Config()
-config.output_image_size = [448,448]
+config.output_image_size = [587,330]
 text_prompts = 'An abandoned shopping mall haunted by wolves^The war of the worlds'
 init_image = os.path.join('output','init_image')
 generate.single_image(eng_config = config,
@@ -344,7 +344,7 @@ from vqgan_clip.engine import VQGAN_CLIP_Config
 import os
 
 config = VQGAN_CLIP_Config()
-config.output_image_size = [256,256]
+config.output_image_size = [587,330]
 config.init_weight = 1.0
 text_prompts = 'portrait on deviantart'
 input_video_path = 'original_video.MOV'
