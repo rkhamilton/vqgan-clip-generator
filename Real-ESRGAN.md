@@ -54,6 +54,7 @@ A few key arguments are discussed below. See [the original Real-ESRGAN repositor
 
 A simple example is shown below for upscaling a single image. The output file will be saved to the output_images folder with the same filename as the input. If you attempt to save to the same folder as the original image, the filename will be appended with '_upscaled'. If the input argument is a folder name, all images in the input folder will be upscaled and saved to output.
 ```python
+from vqgan_clip import esrgan
 esrgan.inference_realesrgan(input='my_original_image.png',
                 output_images_path='output',
                 face_enhance=False)
@@ -81,4 +82,53 @@ if upscale_image:
         esrgan.inference_realesrgan(input=output_filename+'.png',
                 output_images_path='output',
                 face_enhance=True)
+```
+
+Here is an example of upscaling an existing video. This may not be the best way to do it, but it works using the tools provided here.
+
+```python
+from vqgan_clip import esrgan, video_tools
+import os
+
+input_video_path = 'small_video.mp4'
+final_output_filename = 'upscaled_video.mp4'
+extracted_video_frames_path = 'video_frames'
+extraction_framerate = 30
+
+
+# # Use a wrapper for FFMPEG to extract stills from the original video.
+original_video_frames = video_tools.extract_video_frames(input_video_path, 
+        extraction_framerate = extraction_framerate,
+        extracted_video_frames_path=extracted_video_frames_path)
+
+# This is equivalent to
+# os.system(f'ffmpeg -i small_video.mp4 -filter:v fps=30 video_frames\\frame_%12d.jpg')
+
+# Upscale using Real-ESRGAN
+upscaled_video_frames_path='upscaled_video_frames'
+esrgan.inference_realesrgan(input=extracted_video_frames_path,
+        output_images_path=upscaled_video_frames_path,
+        face_enhance=False,
+        purge_existing_files=True, # Careful! This will delete everything in the output_images_path!
+        netscale=4,
+        outscale=4)
+
+# Use a wrapper for FFMPEG to encode the video.
+generated_video_no_audio=os.path.join('output','output_no_audio.mp4')
+video_tools.encode_video(output_file=generated_video_no_audio,
+        path_to_stills=upscaled_video_frames_path,
+        metadata='',
+        output_framerate=extraction_framerate,
+        assumed_input_framerate=extraction_framerate)
+
+# This is equivalent to
+# os.system(f'ffmpeg -y -f image2 -i upscaled_video_frames\\frame_%12d.jpg -r 30 -vcodec libx264 -crf 23 -pix_fmt yuv420p -strict -2 output_no_audio.mp4')
+
+# Copy audio from the original file
+# video_tools.copy_video_audio(input_video_path, generated_video_no_audio, final_output_filename)
+# os.remove(generated_video_no_audio)
+
+# This is equiavalent to
+# os.system(f'ffmpeg -i small_video.mp4 -vn -acodec copy extracted_original_audio.aac')
+# os.system(f'ffmpeg -i output_no_audio.mp4 -i extracted_original_audio.aac -c copy -map 0:v:0 -map 1:a:0 upscaled_video.mp4')
 ```
