@@ -36,29 +36,6 @@ pip install git+https://github.com/openai/CLIP.git taming-transformers ftfy rege
 pip install git+https://github.com/rkhamilton/vqgan-clip-generator.git
 ```
 
-### Download model
-
-The VQGAN algorithm requires use of a compatible model file. These files are not provided with the pip intallation, and must be downloaded separately. Note that when using this package you must specify the location where you've saved these model files if you don't use the default location of .\models in your working directory.
-
-```sh
-mkdir models
-
-curl -L -o models/vqgan_imagenet_f16_16384.yaml -C - 'https://heibox.uni-heidelberg.de/d/a7530b09fed84f80a887/files/?p=%2Fconfigs%2Fmodel.yaml&dl=1' #ImageNet 16384
-curl -L -o models/vqgan_imagenet_f16_16384.ckpt -C - 'https://heibox.uni-heidelberg.de/d/a7530b09fed84f80a887/files/?p=%2Fckpts%2Flast.ckpt&dl=1' #ImageNet 16384
-```
-
-Other compatible models
-```sh
-curl -L -o models/vqgan_gumbel_f8_8192.yaml -C - 'https://heibox.uni-heidelberg.de/d/2e5662443a6b4307b470/files/?p=%2Fconfigs%2Fmodel.yaml&dl=1' 
-curl -L -o models/vqgan_gumbel_f8_8192.ckpt -C - 'https://heibox.uni-heidelberg.de/d/2e5662443a6b4307b470/files/?p=%2Fckpts%2Flast.ckpt&dl=1' 
-
-curl -L -o models/sflckr.yaml -C - 'https://heibox.uni-heidelberg.de/d/73487ab6e5314cb5adba/files/?p=%2Fconfigs%2F2020-11-09T13-31-51-project.yaml&dl=1'
-curl -L -o models/sflckr.ckpt -C - 'https://heibox.uni-heidelberg.de/d/73487ab6e5314cb5adba/files/?p=%2Fcheckpoints%2Flast.ckpt&dl=1'
-
-curl -L -o models/wikiart_16384.yaml -C - 'http://eaidata.bmk.sh/data/Wikiart_16384/wikiart_f16_16384_8145600.yaml'
-curl -L -o models/wikiart_16384.ckpt -C - 'http://eaidata.bmk.sh/data/Wikiart_16384/wikiart_f16_16384_8145600.ckpt'
-```
-
 ### Quick example to confirm that it works
 ```python
 import vqgan_clip.generate
@@ -72,7 +49,20 @@ vqgan_clip.generate.single_image(eng_config = config,
         text_prompts = text_prompts,
         iterations = 100,
         save_every = 10,
-        output_filename = 'output' + os.sep + text_prompts)
+        output_filename = os.path.join('output','output.jpg'))
+```
+
+### Optionally, install and configure Real-ESRGAN for image upscaling
+[Real-ESRGAN](https://github.com/xinntao/Real-ESRGAN) is a package that uses machine learning for image restoration, including upscaling and cleaning up noisy images. Given that VQGAN+CLIP can only generate lower-resolution images (significantly limited by available VRAM), applying ESRGAN for upscaling can be useful. 
+
+See [Real-ESRGAN.md](https://github.com/rkhamilton/vqgan-clip-generator/blob/main/Real-ESRGAN.md) for installation instructions for use with this package.
+```sh
+conda activate vqgan
+pip install opencv-python scipy
+pip install basicsr
+pip install facexlib
+pip install gfpgan
+pip install git+https://github.com/xinntao/Real-ESRGAN
 ```
 
 ### If using an AMD graphics card
@@ -105,6 +95,8 @@ Remove the Python enviroment:
 conda deactivate
 conda remove --name vqgan --all
 ```
+Remove any cached model files at ~
+
 ## Generating images and video
 
 ### Prompts
@@ -140,6 +132,7 @@ These parameters are passed to the functions of vqgan_clip.generate: single_imag
 |text_prompts|'A painting of flowers in the renaissance style:0.5\|rembrandt:0.5^fish:0.2\|love:1'|Text prompt for image generation|
 |image_prompts|[]|Path to image(s) that will be turned into a prompt via CLIP. The contents of the resulting image will have simiar content to the prompt image(s) as evaluated by CLIP.|
 |noise_prompts|[]|Random number seeds can be used as prompts using the same format as a text prompt. E.g. '123:0.1\|234:0.2\|345:0.\|3' Stories (^) are supported. |
+|init_image|None|A Seed image that can be used to start the training. Without an initial image, random noise will be used.|
 |iterations|100|Number of iterations of train() to perform before stopping and outputing the image. The resulting still image will eventually converge to an image that doesn't perceptually change much in content.|
 |save_every|50|An interim image will be saved to the output location every save_every iterations. If you are generating a video, a frame of video will be created every save_every iterations.|
 |change_prompt_every|0|Serial prompts, sepated by ^, will be cycled through every change_prompt_every iterations. Prompts will loop if more cycles are requested than there are prompts.|
@@ -164,20 +157,44 @@ Other configuration attributes can be seen in vqgan_clip.engine.VQGAN_CLIP_Confi
 ```python
 config = VQGAN_CLIP_Config()
 config.output_image_size = [448,448]
-config.init_image = 'my_image.jpg'
 vqgan_clip.generate.single_image(eng_config = config)
 ```
 |VQGAN_CLIP_Config Attribute|Default|Meaning
 |---------|---------|---------|
 |output_image_size|[256,256]|x/y dimensions of the output image in pixels. This will be adjusted slightly based on the GAN model used. VRAM requirements increase steeply with image size. A video card with 10GB of VRAM can handle a size of [448,448]|
-|init_image|None|A Seed image that can be used to start the training. Without an initial image, random noise will be used.|
 |init_noise|None|Seed an image with noise. Options None, 'pixels' or 'gradient' |
 |init_weight|0.0|A weight can be given to the initial image used so that the result will 'hold on to' the look of the starting point.
 |init_noise|None|Seed an image with noise. Options None, 'pixels' or 'gradient'|
-|vqgan_config|f'models/vqgan_imagenet_f16_16384.yaml'|Path to model yaml file. This must be customized to match the location where you downloaded the model file.|
-|vqgan_checkpoint|f'models/vqgan_imagenet_f16_16384.ckpt'|Path to model checkpoint file. This must be customized to match the location where you downloaded the model file.|
+|vqgan_model_name|f'models/vqgan_imagenet_f16_16384.yaml'|Path to model yaml file. This must be customized to match the location where you downloaded the model file.|
+|vqgan_checkpoint|f'models/vqgan_imagenet_f16_16384.ckpt'|Name of the pre-trained VQGAN model to be used. Select a valid model name.|
+|vqgan_model_yaml_url|f'https://heibox.uni-heidelberg.de/d/a7530b09fed84f80a887/files/?p=%2Fconfigs%2Fmodel.yaml&dl=1'|Name of the pre-trained VQGAN model to be used. [Select a valid model name](#dynamic-model-download-and-caching).|
+|vqgan_model_ckpt_url|f'https://heibox.uni-heidelberg.de/d/a7530b09fed84f80a887/files/?p=%2Fckpts%2Flast.ckpt&dl=1'|Name of the pre-trained VQGAN model to be used. [Select a valid model name](#dynamic-model-download-and-caching).|
 |optimizer|'Adam'|Different optimizers are provided for training the GAN. These all perform differently, and may give you a different result. See [torch.optim documentation](https://pytorch.org/docs/stable/optim.html).|
 
+### Dynamic model download and caching
+
+The VQGAN algorithm requires use of a compatible model. These models consist of a configuration file (.yaml) and a checkpoint file (.ckpt). These files are not provided with the pip intallation, and must be downloaded separately. As of version 1.1 of VQGAN_CLIP_GENERATOR, these files are downloaded the first time they are used, and cached locally in the users ~/.cache/torch/hub/models folder. Depending on the models you've used, these can take up several gigabytes of storage, so be aware that they are cached in this location. Uninstallation of this package does not remove cached files.
+
+
+The [pretrained models are discussed in more detail by CompVis](https://github.com/CompVis/taming-transformers#overview-of-pretrained-models). The default model used in this package is vqgan_imagenet_f16_16384. Other models that seem to be in frequent use with VQGAN+CLIP implementaitons are shown below, and are all expected to be compatible. These models will have different abilities to generate content based on their training sets.
+
+|Dataset|Model Config|Model Checkpoint|
+|-------|------------|----------------|
+|VQGAN ImageNet (f=16), 1024|[vqgan_imagenet_f16_1024.yaml](https://heibox.uni-heidelberg.de/d/8088892a516d4e3baf92/files/?p=%2Fconfigs%2Fmodel.yaml&dl=1)|[vqgan_imagenet_f16_1024.ckpt](https://heibox.uni-heidelberg.de/d/8088892a516d4e3baf92/files/?p=%2Fckpts%2Flast.ckpt&dl=)|
+|VQGAN ImageNet (f=16), 16384|[vqgan_imagenet_f16_16384.yaml](https://heibox.uni-heidelberg.de/d/a7530b09fed84f80a887/files/?p=%2Fconfigs%2Fmodel.yaml&dl=1)|[vqgan_imagenet_f16_16384.ckpt](https://heibox.uni-heidelberg.de/d/a7530b09fed84f80a887/files/?p=%2Fckpts%2Flast.ckpt&dl=1)|
+|VQGAN OpenImages (f=8), 8192, GumbelQuantization|[vqgan_gumbel_f8.yaml](https://heibox.uni-heidelberg.de/d/2e5662443a6b4307b470/files/?p=%2Fconfigs%2Fmodel.yaml&dl=1)|[vqgan_gumbel_f8.ckpt](https://heibox.uni-heidelberg.de/d/2e5662443a6b4307b470/files/?p=%2Fckpts%2Flast.ckpt&dl=1)|
+|S-FLCKR (f=16)|[sflckr.yaml](https://heibox.uni-heidelberg.de/d/73487ab6e5314cb5adba/files/?p=%2Fconfigs%2F2020-11-09T13-31-51-project.yaml&dl=1)|[sflckr.ckpt](https://heibox.uni-heidelberg.de/d/73487ab6e5314cb5adba/files/?p=%2Fcheckpoints%2Flast.ckpt&dl=1)|
+|COCO-Stuff (f=16)|[coco_transformer.yaml](https://dl.nmkd.de/ai/clip/coco/coco.yaml)|[coco_transformer.ckpt](https://dl.nmkd.de/ai/clip/coco/coco.ckpt)|
+
+In order to use a non-default model, configure the VQGAN_CLIP_GENERATOR engine as in the example below:
+```python
+config = VQGAN_CLIP_Config()
+config.vqgan_model_name = 'sflckr'
+config.vqgan_model_yaml_url = f'https://heibox.uni-heidelberg.de/d/73487ab6e5314cb5adba/files/?p=%2Fconfigs%2F2020-11-09T13-31-51-project.yaml&dl=1'
+config.vqgan_model_ckpt_url = f'https://heibox.uni-heidelberg.de/d/73487ab6e5314cb5adba/files/?p=%2Fcheckpoints%2Flast.ckpt&dl=1'
+vqgan_clip.generate.single_image(eng_config = config,
+        text_prompts='an apple')
+```
 
 ## Examples
 ### Generating a single image from a text prompt
@@ -196,7 +213,7 @@ vqgan_clip.generate.single_image(eng_config = config,
         text_prompts = text_prompts,
         iterations = 100,
         save_every = 50,
-        output_filename = 'output' + os.sep + text_prompts)
+        output_filename = os.path.join('output','output.jpg'))
 ```
 
 ### Generating a single image from a text prompt and initial image
@@ -209,13 +226,13 @@ import os
 
 config = VQGAN_CLIP_Config()
 config.output_image_size = [448,448]
-config.init_image = 'starting_image.jpg'
 text_prompts = 'A pastoral landscape painting by Rembrandt:1.0 | A blue fence:0.1'
 vqgan_clip.generate.single_image(eng_config = config,
         text_prompts = text_prompts,
+        init_image = 'starting_image.jpg',
         iterations = 100,
         save_every = 50,
-        output_filename = 'output' + os.sep + text_prompts)
+        output_filename = os.path.join('output','output.jpg'))
 ```
 
 ### Multiple images for the same prompt
@@ -256,9 +273,9 @@ generate.single_image(eng_config = config,
         output_filename = init_image)
 
 # Now generate a zoom video starting from that initial frame.
-config.init_image = init_image+'.png'
 generate.video_frames(eng_config = config,
         text_prompts = text_prompts,
+        init_image = init_image+'.png',
         iterations = 1000,
         save_every = 10,
         change_prompt_every = 300)
@@ -293,9 +310,9 @@ generate.single_image(eng_config = config,
         output_filename = init_image)
 
 # Now generate a zoom video starting from that initial frame.
-config.init_image = init_image+'.png'
 generate.zoom_video_frames(eng_config = config,
         text_prompts = text_prompts,
+        init_image = init_image+'.png',
         iterations = 1000,
         save_every = 5,
         change_prompt_every = 300,

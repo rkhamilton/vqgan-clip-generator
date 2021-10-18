@@ -16,6 +16,7 @@ def single_image(eng_config=VQGAN_CLIP_Config(),
         text_prompts = [],
         image_prompts = [],
         noise_prompts = [],
+        init_image = None,
         iterations = 100,
         save_every = 50,
         output_filename = 'output' + os.sep + 'output',
@@ -25,13 +26,16 @@ def single_image(eng_config=VQGAN_CLIP_Config(),
     Args:
         * eng_config (VQGAN_CLIP_Config, optional): An instance of VQGAN_CLIP_Config with attributes customized for your use. See the documentation for VQGAN_CLIP_Config().
         * text_prompts (str, optional) : Text that will be turned into a prompt via CLIP. Default = []  
-        * image_prompts (str, optional) : Path to image that will be turned into a prompt via CLIP. Default = []
+        * image_prompts (str, optional) : Path to image that will be turned into a prompt via CLIP (analyzed for content). Default = []
         * noise_prompts (str, optional) : Random number seeds can be used as prompts using the same format as a text prompt. E.g. \'123:0.1|234:0.2|345:0.3\' Stories (^) are supported. Default = []
+        * init_image (str, optional) : Path to an image file that will be used as the seed to generate output (analyzed for pixels).
         * iterations (int, optional) : Number of iterations of train() to perform before stopping. Default = 100 
         * save_every (int, optional) : An interim image will be saved to the output location every save_every iterations, and training stats will be displayed. Default = 50  
         * output_filename (str, optional) : location to save the output image. Omit the file extension. Default = \'output\' + os.sep + \'output\'  
         * change_prompt_every (int, optional) : Serial prompts, sepated by ^, will be cycled through every change_prompt_every iterations. Prompts will loop if more cycles are requested than there are prompts. Default = 0
     """
+    if init_image:
+        eng_config.init_image = init_image
     eng = Engine(eng_config)
     eng.initialize_VQGAN_CLIP()
     parsed_text_prompts, parsed_image_prompts, parsed_noise_prompts = VF.parse_all_prompts(text_prompts, image_prompts, noise_prompts)
@@ -41,7 +45,7 @@ def single_image(eng_config=VQGAN_CLIP_Config(),
     # generate the image
     current_prompt_number = 0
     try:
-        for iteration_num in tqdm(range(1,iterations+1),unit='iteration'):
+        for iteration_num in tqdm(range(1,iterations+1),unit='iteration',desc='single image'):
             #perform iterations of train()
             lossAll = eng.train(iteration_num)
             if change_prompt_every and iteration_num % change_prompt_every == 0:
@@ -65,6 +69,7 @@ def multiple_images(eng_config=VQGAN_CLIP_Config(),
         text_prompts = [],
         image_prompts = [],
         noise_prompts = [],
+        init_image = None,
         iterations = 100,
         save_every = 101,
         change_prompt_every = 0,
@@ -78,12 +83,16 @@ def multiple_images(eng_config=VQGAN_CLIP_Config(),
         * text_prompts (str, optional) : Text that will be turned into a prompt via CLIP. Default = []  
         * image_prompts (str, optional) : Path to image that will be turned into a prompt via CLIP. Default = []
         * noise_prompts (str, optional) : Random number seeds can be used as prompts using the same format as a text prompt. E.g. \'123:0.1|234:0.2|345:0.3\' Stories (^) are supported. Default = []
+        * init_image (str, optional) : Path to an image file that will be used as the seed to generate output (analyzed for pixels).
         * iterations (int, optional) : Number of iterations of train() to perform before stopping. Default = 100 
         * save_every (int, optional) : An interim image will be saved to the output location every save_every iterations, and training stats will be displayed. Default = 50  
         * change_prompt_every (int, optional) : Serial prompts, sepated by ^, will be cycled through every change_prompt_every iterations. Prompts will loop if more cycles are requested than there are prompts. Default = 0
         * num_images_to_generate (int, optional) : Number of images to generates. Default = 10
         * output_images_path (str, optional) : Path to save all generated images. Default = './video_frames'
     """
+    if init_image:
+        eng_config.init_image = init_image
+
     parsed_text_prompts, parsed_image_prompts, parsed_noise_prompts = VF.parse_all_prompts(text_prompts, image_prompts, noise_prompts)
 
     # if the location for the images doesn't exist, create it
@@ -95,7 +104,7 @@ def multiple_images(eng_config=VQGAN_CLIP_Config(),
     # generate the image
     current_prompt_number = 0
     try:
-        files = tqdm(range(1,num_images_to_generate+1),unit='file')
+        files = tqdm(range(1,num_images_to_generate+1),unit='file',desc='multiple images')
         for file_num in files:
             # files.desc = f'Multiple Files {file_num}'
             # load a fresh copy of the VQGAN model for training on the new image
@@ -166,7 +175,7 @@ def restyle_video_frames_naive(video_frames,
     current_prompt_number = 0
     video_frame_num = 1
     try:
-        for video_frame in tqdm(video_frames,unit='image'):
+        for video_frame in tqdm(video_frames,unit='image',desc='style transfer naive'):
             # suppress stdout to keep the progress bar clear
             with open(os.devnull, 'w') as devnull:
                 with contextlib.redirect_stdout(devnull):
@@ -257,7 +266,7 @@ def restyle_video_frames(video_frames,
 
     try:
         last_video_frame_generated = video_frames[0]
-        video_frames_loop = tqdm(video_frames,unit='image',desc='Style Transfer')
+        video_frames_loop = tqdm(video_frames,unit='image',desc='style transfer')
         for video_frame in video_frames_loop:
             # suppress stdout to keep the progress bar clear
             with open(os.devnull, 'w') as devnull:
@@ -318,6 +327,7 @@ def video_frames(eng_config=VQGAN_CLIP_Config(),
         text_prompts = [],
         image_prompts = [],
         noise_prompts = [],
+        init_image = None,
         iterations = 100,
         save_every = 50,
         change_prompt_every = 0,
@@ -330,6 +340,7 @@ def video_frames(eng_config=VQGAN_CLIP_Config(),
         * text_prompts (str, optional) : Text that will be turned into a prompt via CLIP. Default = []  
         * image_prompts (str, optional) : Path to image that will be turned into a prompt via CLIP. Default = []
         * noise_prompts (str, optional) : Random number seeds can be used as prompts using the same format as a text prompt. E.g. \'123:0.1|234:0.2|345:0.3\' Stories (^) are supported. Default = []
+        * init_image (str, optional) : Path to an image file that will be used as the seed to generate output (analyzed for pixels).
         * iterations (int, optional) : Number of iterations of train() to perform before stopping. Default = 100 
         * save_every (int, optional) : An interim image will be saved to the output location every save_every iterations, and training stats will be displayed. Default = 50  
         * output_filename (str, optional) : location to save the output image. Omit the file extension. Default = \'output\' + os.sep + \'output\'  
@@ -338,6 +349,8 @@ def video_frames(eng_config=VQGAN_CLIP_Config(),
         * output_framerate (int, optional) : Desired framerate of the output video. Defaults to 30.
         * assumed_input_framerate (int, optional) : An assumed framerate to use for the still images. If an assumed input framerate is provided, the output video will be interpolated to the specified output framerate. Defaults to None.
     """
+    if init_image:
+        eng_config.init_image = init_image
     eng = Engine(eng_config)
     eng.initialize_VQGAN_CLIP()
     parsed_text_prompts, parsed_image_prompts, parsed_noise_prompts = VF.parse_all_prompts(text_prompts, image_prompts, noise_prompts)
@@ -354,7 +367,7 @@ def video_frames(eng_config=VQGAN_CLIP_Config(),
     current_prompt_number = 0
     video_frame_num = 1
     try:
-        for iteration_num in tqdm(range(1,iterations+1),unit='iteration'):
+        for iteration_num in tqdm(range(1,iterations+1),unit='iteration',desc='video'):
             #perform iterations of train()
             lossAll = eng.train(iteration_num)
             if change_prompt_every and iteration_num % change_prompt_every == 0:
@@ -380,6 +393,7 @@ def zoom_video_frames(eng_config=VQGAN_CLIP_Config(),
         text_prompts = [],
         image_prompts = [],
         noise_prompts = [],
+        init_image = None,
         iterations = 100,
         save_every = 50,
         change_prompt_every = 0,
@@ -394,6 +408,7 @@ def zoom_video_frames(eng_config=VQGAN_CLIP_Config(),
         * text_prompts (str, optional) : Text that will be turned into a prompt via CLIP. Default = []  
         * image_prompts (str, optional) : Path to image that will be turned into a prompt via CLIP. Default = []
         * noise_prompts (str, optional) : Random number seeds can be used as prompts using the same format as a text prompt. E.g. \'123:0.1|234:0.2|345:0.3\' Stories (^) are supported. Default = []
+        * init_image (str, optional) : Path to an image file that will be used as the seed to generate output (analyzed for pixels).
         * iterations (int, optional) : Number of iterations of train() to perform before stopping. Default = 100 
         * save_every (int, optional) : An interim image will be saved to the output location every save_every iterations, and training stats will be displayed. Default = 50  
         * change_prompt_every (int, optional) : Serial prompts, sepated by ^, will be cycled through every change_prompt_every iterations. Prompts will loop if more cycles are requested than there are prompts. Default = 0
@@ -402,6 +417,8 @@ def zoom_video_frames(eng_config=VQGAN_CLIP_Config(),
         * shift_x (int) : Every save_every iterations, a video frame is saved. That frame is shifted shift_x pixels in the x direction, and used as the initial image to generate the next frame. Default = 0
         * shift_y (int) : Every save_every iterations, a video frame is saved. That frame is shifted shift_y pixels in the y direction, and used as the initial image to generate the next frame. Default = 0
     """
+    if init_image:
+        eng_config.init_image = init_image
     parsed_text_prompts, parsed_image_prompts, parsed_noise_prompts = VF.parse_all_prompts(text_prompts, image_prompts, noise_prompts)
     eng = Engine(eng_config)
     eng.initialize_VQGAN_CLIP()
@@ -419,7 +436,7 @@ def zoom_video_frames(eng_config=VQGAN_CLIP_Config(),
     video_frame_num = 1
     output_image_size_x, output_image_size_y = eng.calculate_output_image_size()
     try:
-        for iteration_num in tqdm(range(1,iterations+1),unit='iteration'):
+        for iteration_num in tqdm(range(1,iterations+1),unit='iteration',desc='zoom video'):
             #perform iterations of train()
             lossAll = eng.train(iteration_num)
 

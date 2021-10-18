@@ -16,6 +16,10 @@ def testing_config():
 def image_prompts():
     return f'\\Users\\ryanh\\Documents\src\\vqgan_lib_dev\\vqgan-clip-generator\\tests\\images\\prompt1.jpg:0.5|\\Users\\ryanh\\Documents\src\\vqgan_lib_dev\\vqgan-clip-generator\\tests\\images\\prompt2.jpg:0.3'
 
+@pytest.fixture
+def init_image():
+    return f'\\Users\\ryanh\\Documents\src\\vqgan_lib_dev\\vqgan-clip-generator\\tests\\images\\prompt1.jpg'
+
 
 def test_single_image(testing_config, tmpdir):
     '''Generate a single image based on a text prompt
@@ -27,6 +31,7 @@ def test_single_image(testing_config, tmpdir):
         text_prompts = 'A painting of flowers in the renaissance style:0.5|rembrandt:0.5^fish:0.2|love:1',
         image_prompts = [],
         noise_prompts = [],
+        init_image = [],
         iterations = 5,
         save_every = 50,
         output_filename = output_filename,
@@ -89,6 +94,21 @@ def test_single_image_image_prompt(testing_config, image_prompts, tmpdir):
     output_filename = str(tmpdir.mkdir('output').join('output'))
     vqgan_clip.generate.single_image(config,
         image_prompts = image_prompts,
+        iterations = 5,
+        output_filename = output_filename)
+    output = output_filename + '.png'
+    assert os.path.exists(output)
+    os.remove(output)
+
+def test_single_image_init_image(testing_config, init_image, tmpdir):
+    '''Generate a single image based on a image prompt
+    '''
+    config = testing_config
+    config.output_image_size = [128,128]
+    output_filename = str(tmpdir.mkdir('output').join('output'))
+    vqgan_clip.generate.single_image(config,
+        text_prompts = 'A painting of flowers in the renaissance style',
+        init_image = init_image,
         iterations = 5,
         output_filename = output_filename)
     output = output_filename + '.png'
@@ -251,3 +271,6 @@ def test_zoom_video_all_prompts(testing_config, image_prompts, tmpdir):
     assert len(output_files) == iterations / save_every
     for f in output_files:
         os.remove(f)
+
+def test_restyle_video():
+    assert False

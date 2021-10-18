@@ -1,5 +1,6 @@
 # This contains the original math to generate an image from VQGAN+CLIP. I don't fully understand what it's doing and don't expect to change it.
 from . import _functional as VF
+from .download import load_file_from_url
 
 import torch
 from torch import optim
@@ -28,22 +29,23 @@ class VQGAN_CLIP_Config:
     """A set of attributes used to customize the execution of VQGAN+CLIP
 
     Instantiate VQGAN_CLIP_Config then customize attributes as described below.
-    * output_image_size (list of int) : x/y dimensions of the output image in pixels. This will be adjusted slightly based on the GAN model used. Default = [256,256]
-    * init_image (str) : A seed image that can be used to start the training. Without an initial image, random noise will be used. Default = None  
-    * init_noise (str) : Seed an image with noise. Options None, \'pixels\' or \'gradient\'  Default = None 
-    * init_weight (float) : Used to keep some similarity to the initial image. Default = 0.0
-    * self.seed = None # Integer to use as seed for the random number generaor. If None, a random value will be chosen.  
-    * self.clip_model = \'ViT-B/32\' # options \'ViT-B/32\', \'ViT-B/16)\', default to \'ViT-B/32\'  
-    * self.vqgan_config = f\'models/vqgan_imagenet_f16_16384.yaml\' # path to model yaml file  
-    * self.vqgan_checkpoint = f\'models/vqgan_imagenet_f16_16384.ckpt\' # path to model checkpoint file  
-    * self.learning_rate = 0.1  
-    * self.cut_method = \'original\' # choices=[\'original\',\'kornia\','sg3'] default=\'original\'  
-    * self.num_cuts = 32  
-    * self.cut_power = 1.0  
-    * self.cudnn_determinism = False # if true, use algorithms that have reproducible, deterministic output. Performance will be lower.  
-    * self.optimizer = \'Adam\' # choices=[\'Adam\',\'AdamW\',\'Adagrad\',\'Adamax\',\'DiffGrad\',\'AdamP\',\'RAdam\',\'RMSprop\'], default=\'Adam\'  
-    * self.cuda_device = \'cuda:0\' # select your GPU. Default to the first gpu, device 0  
-    * self.adaptiveLR = False # If true, use an adaptive learning rate. If the quality of the image stops improving, it will change less with each iteration. Generate.zoom output is more stable.
+    * output_image_size (list of int): x/y dimensions of the output image in pixels. This will be adjusted slightly based on the GAN model used. Default = [256,256]
+    * init_image (str): A seed image that can be used to start the training. Without an initial image, random noise will be used. Default = None  
+    * init_noise (str): Seed an image with noise. Options None, \'pixels\' or \'gradient\'  Default = None 
+    * init_weight (float): Used to keep some similarity to the initial image. Default = 0.0
+    * self.seed (int)): Integer to use as seed for the random number generaor. If None, a random value will be chosen.  Defaults to None.
+    * self.clip_model (str, optional): CLIP model to use. Options = \'ViT-B/32\', \'ViT-B/16)\', default to \'ViT-B/32\'. Defaults to \'ViT-B/32\' 
+    * self.vqgan_model_name (str, optional): Name of the pre-trained VQGAN model to be used. Defaults to \'vqgan_imagenet_f16_16384.yaml\'
+    * self.vqgan_model_yaml_url (str, optional): URL for valid VQGAN model configuration yaml file. Defaults to f'https://heibox.uni-heidelberg.de/d/a7530b09fed84f80a887/files/?p=%2Fconfigs%2Fmodel.yaml&dl=1'
+    * self.vqgan_model_ckpt_url (str, optional): URL for valid VQGAN checkpoint file. Defaults to 'https://heibox.uni-heidelberg.de/d/a7530b09fed84f80a887/files/?p=%2Fckpts%2Flast.ckpt&dl=1'
+    * self.learning_rate (float, optional):  Learning rate for the torch.optim algorithm selected. Defaults to 0.1  
+    * self.cut_method (str, optional): Cut method used. choices=[\'original\',\'kornia\','sg3'] default=\'original\'.  Defaults to \'original\'
+    * self.num_cuts (int, optional): Number of cuts to use. Impacts VRAM use if increased. Defaults to 32 
+    * self.cut_power (float, optional): Exponent used in MakeCutouts. Defaults to 1.0  
+    * self.cudnn_determinism (boolean, optional): If true, use algorithms that have reproducible, deterministic output. Performance will be lower.  Defaults to False.
+    * self.optimizer (str, optional): Optimizer used when training VQGAN. choices=[\'Adam\',\'AdamW\',\'Adagrad\',\'Adamax\',\'DiffGrad\',\'AdamP\',\'RAdam\',\'RMSprop\']. Defaults to \'Adam\' 
+    * self.cuda_device (str, optional): Select your GPU. Default to the first gpu, device 0.  Defaults to \'cuda:0\'
+    * self.adaptiveLR (boolean, optional): If true, use an adaptive learning rate. If the quality of the image stops improving, it will change less with each iteration. Generate.zoom output is more stable. Defaults to False.
     """
     def __init__(self):
         self.output_image_size = [256,256] # x/y dimensions of the output image in pixels. This will be adjusted slightly based on the GAN model used.
@@ -52,8 +54,9 @@ class VQGAN_CLIP_Config:
         self.init_weight = 0.0 # used to keep some similarity to the initial image. Not tested here.
         self.seed = None # Integer to use as seed for the random number generaor. If None, a random value will be chosen.
         self.clip_model = 'ViT-B/32' # options 'ViT-B/32', 'ViT-B/16)', default to 'ViT-B/32'
-        self.vqgan_config = f'models/vqgan_imagenet_f16_16384.yaml' # path to model yaml file
-        self.vqgan_checkpoint = f'models/vqgan_imagenet_f16_16384.ckpt' # path to model checkpoint file
+        self.vqgan_model_name = 'vqgan_imagenet_f16_16384' # Name of the pre-trained VQGAN model to be used.
+        self.vqgan_model_yaml_url = f'https://heibox.uni-heidelberg.de/d/a7530b09fed84f80a887/files/?p=%2Fconfigs%2Fmodel.yaml&dl=1'
+        self.vqgan_model_ckpt_url = f'https://heibox.uni-heidelberg.de/d/a7530b09fed84f80a887/files/?p=%2Fckpts%2Flast.ckpt&dl=1'
         self.learning_rate = 0.1
         self.cut_method = 'kornia' # choices=['original','kornia','sg3'] default='original'
         self.num_cuts = 32
@@ -345,7 +348,9 @@ class Engine:
 
     def load_model(self):
         # This step is slow, and does not need to be done each time an image is generated.
-        self._model = VF.load_vqgan_model(self.conf.vqgan_config, self.conf.vqgan_checkpoint).to(self._device)
+        model_yaml_path = load_file_from_url(self.conf.vqgan_model_yaml_url, model_dir=None, progress=True, file_name=self.conf.vqgan_model_name+'.yaml')
+        model_ckpt_path = load_file_from_url(self.conf.vqgan_model_ckpt_url, model_dir=None, progress=True, file_name=self.conf.vqgan_model_name+'.ckpt')
+        self._model = VF.load_vqgan_model(model_yaml_path, model_ckpt_path).to(self._device)
 
       
     def encode_and_append_prompts(self, prompt_number, text_prompts=[], image_prompts=[], noise_prompts=[]):
