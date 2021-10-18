@@ -26,11 +26,11 @@ The model files provided by the developer of Real-ESRGAN are shown below, and ar
 
 |Model|Description|
 |---------|---------|
-|[RealESRGAN_x4plus](https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth)|X4 model for general images. This is the default model used in vqgan_clip_generator.esrgan|
-|[RealESRGAN_x4plus_anime_6B](https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.2.4/RealESRGAN_x4plus_anime_6B.pth)|Optimized for anime images; 6 RRDB blocks (slightly smaller network)|
-|[RealESRGAN_x2plus](https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.1/RealESRGAN_x2plus.pth)|X2 model for general images|
-|[RealESRNet_x4plus](https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.1/RealESRNet_x4plus.pth)|X4 model with MSE loss (over-smooth effects)|
-|[official ESRGAN_x4](https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.1/ESRGAN_SRx4_DF2KOST_official-ff704c30.pth)|official ESRGAN model (X4)|
+|[RealESRGAN_x4plus.pth](https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth)|4X upscaling model for general images. This is the default model used in vqgan_clip_generator.esrgan|
+|[RealESRGAN_x4plus_anime_6B.pth](https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.2.4/RealESRGAN_x4plus_anime_6B.pth)|2X upscaling model optimized for anime images; 6 RRDB blocks (slightly smaller network)|
+|[RealESRGAN_x2plus.pth](https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.1/RealESRGAN_x2plus.pth)|2X upscaling model for general images|
+|[RealESRNet_x4plus.pth](https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.1/RealESRNet_x4plus.pth)|4X upscaling model with MSE loss (over-smooth effects)|
+|[official ESRGAN_x4.pth](https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.1/ESRGAN_SRx4_DF2KOST_official-ff704c30.pth)|official ESRGAN model (X4)|
 
 Many additional models can be found at the [Upscale Wiki Model Database](https://upscale.wiki/wiki/Model_Database). None of these have been tested with this package, but are described as being compatible, and as having been trained for specific image restoration / processing tasks.
 
@@ -59,6 +59,29 @@ esrgan.inference_realesrgan(input='my_original_image.png',
                 output_images_path='output',
                 face_enhance=False)
 ```
+Here is an example using a different model.
+```python
+from vqgan_clip import esrgan
+esrgan.inference_realesrgan(input='.\\video_frames',
+        output_images_path='upscaled_video_frames',
+        face_enhance=False,
+        purge_existing_files=True,
+        model_filename='RealESRGAN_x4plus_anime_6B.pth',
+        model_url='https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.2.4/RealESRGAN_x4plus_anime_6B.pth')
+```
+If you use a 2X upscaler instead of the default 4X upscaler, you must change the netscale and outscale arguments to 2.
+```python
+from vqgan_clip import esrgan
+esrgan.inference_realesrgan(input='.\\video_frames',
+        output_images_path='upscaled_video_frames',
+        face_enhance=False,
+        purge_existing_files=True,
+        model_filename='RealESRGAN_x2plus.pth',
+        model_url='https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.1/RealESRGAN_x2plus.pth',
+        netscale=2,
+        outscale=2)
+```
+
 Here is an example of using Real-ESRGAN to upscale a generated image.
 ```python
 from vqgan_clip import generate, esrgan
