@@ -30,6 +30,7 @@ This example uses [Anaconda](https://www.anaconda.com/products/individual#Downlo
 
 ```sh
 conda create --name vqgan python=3.9 pip ffmpeg numpy pytest tqdm git pytorch==1.9.0 torchvision==0.10.0 torchaudio==0.9.0 cudatoolkit=11.1 -c pytorch -c conda-forge
+conda install -c conda-forge ffmpeg
 conda activate vqgan
 pip install git+https://github.com/openai/CLIP.git taming-transformers ftfy regex tqdm pytorch-lightning kornia imageio omegaconf torch_optimizer
 pip install git+https://github.com/rkhamilton/vqgan-clip-generator.git
@@ -134,7 +135,7 @@ The parameters used for image generation are either passed to a method of genera
 
 ### vqgan_clip.generate function arguments
 These parameters are passed to the functions of vqgan_clip.generate: single_image(), multiple_images(), video_frames(), restyle_video_frames(), restyle_video_frames_naive(), and zoom_video_frames().
-|Attribute|Default|Meaning
+|Function Argument|Default|Meaning
 |---------|---------|---------|
 |text_prompts|'A painting of flowers in the renaissance style:0.5\|rembrandt:0.5^fish:0.2\|love:1'|Text prompt for image generation|
 |image_prompts|[]|Path to image(s) that will be turned into a prompt via CLIP. The contents of the resulting image will have simiar content to the prompt image(s) as evaluated by CLIP.|
@@ -166,7 +167,7 @@ config.output_image_size = [448,448]
 config.init_image = 'my_image.jpg'
 vqgan_clip.generate.single_image(eng_config = config)
 ```
-|Attribute|Default|Meaning
+|VQGAN_CLIP_Config Attribute|Default|Meaning
 |---------|---------|---------|
 |output_image_size|[256,256]|x/y dimensions of the output image in pixels. This will be adjusted slightly based on the GAN model used. VRAM requirements increase steeply with image size. A video card with 10GB of VRAM can handle a size of [448,448]|
 |init_image|None|A Seed image that can be used to start the training. Without an initial image, random noise will be used.|
