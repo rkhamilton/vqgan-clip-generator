@@ -6,7 +6,7 @@ import os
 
 #Let's generate a single image to initialize the video.
 config = VQGAN_CLIP_Config()
-config.output_image_size = [448,448]
+config.output_image_size = [587,330]
 text_prompts = 'A pastoral landscape painting by Rembrandt^A black dog with red eyes in a cave'
 final_video_filename = os.path.join('output','video.mp4')
 

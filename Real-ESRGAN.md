@@ -66,7 +66,7 @@ from vqgan_clip.engine import VQGAN_CLIP_Config
 import os
 
 config = VQGAN_CLIP_Config()
-config.output_image_size = [448,448]
+config.output_image_size = [587,330]
 upscale_image = True
 text_prompts = 'A pastoral landscape painting by Rembrandt'
 

@@ -8,7 +8,7 @@ import os
 
 # Let's generate a single image to initialize the video.
 config = VQGAN_CLIP_Config()
-config.output_image_size = [448,448]
+config.output_image_size = [587,330]
 text_prompts = 'A field of broken machines^Harvesting wheat'
 
 upscale_images = True
