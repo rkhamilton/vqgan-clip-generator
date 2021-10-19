@@ -33,7 +33,7 @@ class VQGAN_CLIP_Config:
     * init_image (str): A seed image that can be used to start the training. Without an initial image, random noise will be used. Default = None  
     * init_noise (str): Seed an image with noise. Options None, \'pixels\' or \'gradient\'  Default = None 
     * init_weight (float): Used to keep some similarity to the initial image. Default = 0.0
-    * self.seed (int)): Integer to use as seed for the random number generaor. If None, a random value will be chosen.  Defaults to None.
+    * self.seed (int)): Integer to use as seed for the pytorch random number generaor. If None, a random value will be chosen.  Defaults to None.
     * self.clip_model (str, optional): CLIP model to use. Options = \'ViT-B/32\', \'ViT-B/16)\', default to \'ViT-B/32\'. Defaults to \'ViT-B/32\' 
     * self.vqgan_model_name (str, optional): Name of the pre-trained VQGAN model to be used. Defaults to \'vqgan_imagenet_f16_16384.yaml\'
     * self.vqgan_model_yaml_url (str, optional): URL for valid VQGAN model configuration yaml file. Defaults to f'https://heibox.uni-heidelberg.de/d/a7530b09fed84f80a887/files/?p=%2Fconfigs%2Fmodel.yaml&dl=1'
@@ -79,7 +79,12 @@ class Engine:
         self.replace_grad = VF.ReplaceGrad.apply
         self.clamp_with_grad = VF.ClampWithGrad.apply
 
-        self.seed = torch.seed()
+        # lock down a seed if none was provided
+        if not self.conf.seed:
+            # note, retreiving torch.seed() also sets the torch seed
+            self.conf.seed = torch.seed()
+        else:
+            torch.manual_seed(self.conf.seed)
 
         self.clear_all_prompts()
 
@@ -220,6 +225,8 @@ class Engine:
         self.load_model()
         jit = True if float(torch.__version__[:3]) < 1.8 else False
         self._perceptor = clip.load(self.conf.clip_model, jit=jit)[0].eval().requires_grad_(False).to(self._device)
+
+        self.set_seed(self.conf.seed)
 
         self.select_make_cutouts()    
         self.initialize_z()

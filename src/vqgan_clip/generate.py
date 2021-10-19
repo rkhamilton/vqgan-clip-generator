@@ -6,6 +6,7 @@ from tqdm import tqdm
 import glob, os, sys, io
 import subprocess
 import contextlib
+import torch
 
 from PIL import ImageFile, Image, ImageChops
 ImageFile.LOAD_TRUNCATED_IMAGES = True
@@ -111,6 +112,8 @@ def multiple_images(eng_config=VQGAN_CLIP_Config(),
             # suppress stdout so the progressbar looks nice
             with open(os.devnull, 'w') as devnull:
                 with contextlib.redirect_stdout(devnull):
+                    # ensure we get a new RNG seed
+                    eng_config.seed = torch.seed()
                     eng = Engine(eng_config)
                     eng.initialize_VQGAN_CLIP()
             eng.encode_and_append_prompts(0, parsed_text_prompts, parsed_image_prompts, parsed_noise_prompts)
@@ -180,6 +183,7 @@ def restyle_video_frames_naive(video_frames,
             with open(os.devnull, 'w') as devnull:
                 with contextlib.redirect_stdout(devnull):
                     eng.load_model()
+                    eng.set_seed(eng.conf.seed)
             # Use the next frame of video as an initial image for VQGAN+CLIP
             pil_image = Image.open(video_frame).convert('RGB')
             eng.convert_image_to_init_image(pil_image)
