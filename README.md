@@ -383,6 +383,15 @@ else:
         os.rename(generated_video_no_audio,final_output_filename)
 ```
 
+## Custom scripts
+The [generate.py](https://github.com/rkhamilton/vqgan-clip-generator/blob/main/src/vqgan_clip/generate.py) file contains the common functions that users are expected to use to create content. However, you should feel free to copy methods from this file and customize them for your own projects. The code in generate.py is still pretty high level, with the implementation details buried in engine and _functional. I've provided [an example file](https://github.com/rkhamilton/vqgan-clip-generator/blob/main/examples/custom_zoom_video.py) where I just extracted the zoom_video_frames method and turned it into a script so that you can see how you might make some creative changes. A few ideas:
+* Change the image prompt weights over time to create smoother content transitions
+* Change the interval at which video frames are exported over time, to create the effect of speeding or slowing video
+* Create style transfer videos where each frame uses many image prompts, or many previous frames as image prompts
+* Create a zoom video where the shift_x and shift_x change over time to create spiraling zooms, or the look of camera movements
+* It's art. Go nuts!
+
+
 ## Troubleshooting
 
 ### RuntimeError: CUDA out of memory
