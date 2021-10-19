@@ -283,6 +283,11 @@ class Engine:
             self._z.requires_grad_(True)
 
     def calculate_output_image_size(self):
+        """The size of the VQGAN output image is constrained by the CLIP model. This function returns the appropriate output image size, given what was requested, and what CLIP delivers.
+
+        Returns:
+            (output_image_size_X, output_image_size_Y): Dimensions of VQGAN_CLIP_GENERATOR output in pixels.
+        """
         f = 2**(self._model.decoder.num_resolutions - 1)
         output_image_size_X = (self.conf.output_image_size[0] // f) * f
         output_image_size_Y = (self.conf.output_image_size[1] // f) * f
