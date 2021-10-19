@@ -1,5 +1,13 @@
 # This module is the interface for creating images and video from text prompts
 # This should also serve as examples of how you can use the Engine class to create images and video using your own creativity.
+# Feel free to extract the contents of these methods and use them to build your own sequences. 
+# Change the image prompt weights over time
+# Change the interval at which video frames are exported over time, to create the effect of speeding or slowing video
+# Change the engine learning rate to increase or decrease the amount of change for each frame
+# Create style transfer videos where each frame uses many image prompts, or many previous frames as image prompts.
+# Create a zoom video where the shift_x and shift_x are functions of iteration to create spiraling zooms
+# It's art. Go nuts!
+
 from logging import error
 from vqgan_clip.engine import Engine, VQGAN_CLIP_Config
 from tqdm import tqdm
