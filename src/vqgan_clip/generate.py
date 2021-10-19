@@ -213,7 +213,6 @@ def restyle_video_frames_naive(video_frames,
             # if making a video, save a frame named for the video step
             eng.save_current_output(generated_video_frames_path + os.sep + str(video_frame_num) + '.png')
             video_frame_num += 1
-        tqdm.write('Generating video...')
     except KeyboardInterrupt:
         pass
 
@@ -323,7 +322,6 @@ def restyle_video_frames(video_frames,
             last_video_frame_generated = generated_video_frames_path + os.sep + str(video_frame_num) + '.png'
             eng.save_current_output(last_video_frame_generated)
             video_frame_num += 1
-        tqdm.write('Generating video...')
     except KeyboardInterrupt:
         pass
 
@@ -389,7 +387,6 @@ def video_frames(eng_config=VQGAN_CLIP_Config(),
                 # if making a video, save a frame named for the video step
                 eng.save_current_output(video_frames_path + os.sep + str(video_frame_num) + '.png')
                 video_frame_num += 1
-        tqdm.write('Generating video...')
     except KeyboardInterrupt:
         pass
 
@@ -482,7 +479,6 @@ def zoom_video_frames(eng_config=VQGAN_CLIP_Config(),
                 # if making a video, save a frame named for the video step
                 eng.save_current_output(video_frames_path + os.sep + str(video_frame_num) + '.png')
                 video_frame_num += 1
-        tqdm.write('Generating video...')
     except KeyboardInterrupt:
         pass
 
