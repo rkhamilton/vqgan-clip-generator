@@ -144,7 +144,7 @@ os.system(f'ffmpeg -y -f image2 -i upscaled_video_frames\\frame_%12d.jpg -r 30 -
 video_tools.copy_video_audio(input_video_path, generated_video_no_audio, final_output_filename)
 os.remove(generated_video_no_audio)
 
-# This is equiavalent to
+# This is equivalent to
 # os.system(f'ffmpeg -i small_video.mp4 -vn -acodec copy extracted_original_audio.aac')
 # os.system(f'ffmpeg -i output_no_audio.mp4 -i extracted_original_audio.aac -c copy -map 0:v:0 -map 1:a:0 upscaled_video.mp4')
 ```
