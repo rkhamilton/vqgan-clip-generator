@@ -2,7 +2,7 @@
 # With the script exposed like this you could experiment with many different elements of image generation. For example
 # you could change it so that prompt weights change with each iteration, thereby giving you a smoother style transition.
 # You could vary the config.learning_rate, so that the amount of change from frame-to-frame varies.
-# You could 
+# T
 from vqgan_clip.engine import Engine, VQGAN_CLIP_Config
 from vqgan_clip import video_tools
 from tqdm import tqdm
@@ -87,8 +87,6 @@ try:
             eng.convert_image_to_init_image(new_pil_image)
 
             # Re-create optimiser with the new initial image
-            # with nostdout():
-            #     eng.load_model()
             eng.configure_optimizer()
 
             # save a frame of video every .save_every iterations
