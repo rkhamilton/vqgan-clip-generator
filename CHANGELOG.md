@@ -1,3 +1,12 @@
+# v1.1.3
+**Bug Fixes**
+* generate.restyle_video* functions now no longer rename the source files. Original filenames are preserved. As part of this fix, the video_tools.extract_video_frames() now uses a different naming format, consistent with generate.restyle_video. All video tools now use the filename frames_%12d.png.
+
+
+# v1.1.2
+**Bug Fixes**
+* When generating videos, the pytorch random number generator was getting a new seed every frame of video, instead of keeping the same seed. This is now fixed, and video is more consistent from frame to frame.
+
 # v1.1.1
 By user request, it is now possible to set an Engine.conf.model_dir to store downloaded models in a subfolder of the current working directory.
 ```python
