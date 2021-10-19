@@ -2,7 +2,7 @@ import os, subprocess, glob
 
 
 def extract_video_frames(input_video_path, extraction_framerate, extracted_video_frames_path='./extracted_video_frames'):
-    """Wrapper for ffmpeg. Parse original video file into individual frames
+    """Wrapper for ffmpeg. Parse original video file into individual frames formatted frame_%12d.jpg.
 
     Args:
         input_video_path (str): Location of video file to process.
@@ -64,7 +64,8 @@ def copy_video_audio(original_video, destination_file_without_audio, output_file
 
 
 def encode_video(output_file=f'.\\output\\output.mp4', path_to_stills=f'./video_frames', metadata='', output_framerate=30, assumed_input_framerate=None, crf=23, vcodec='libx264'):
-    """Wrapper for FFMPEG. Encodes a folder of PNG images to a video in HEVC format using ffmpeg with optional interpolation. Input stills must be sequentially numbered png files starting from 1. E.g. 1.png 2.png etc.
+    """Wrapper for FFMPEG. Encodes a folder of PNG images to a video in HEVC format using ffmpeg with optional interpolation. Input stills must be sequentially numbered png files named in the format frame_%12d.png.
+    Note that this wrapper will print to the command line the exact ffmpeg command that was used. You can copy this and run it from the command line with any tweaks necessary.
 
     Args:
         output_file (str, optional): Location to save the resulting mp4 video file. Defaults to f'.\output\output.mp4'.
@@ -83,6 +84,6 @@ def encode_video(output_file=f'.\\output\\output.mp4', path_to_stills=f'./video_
         # no interpolation
         input_framerate_option = ''
         output_framerate_option = f'-r {output_framerate}'
-    ffmpeg_command = f'ffmpeg -y -f image2 {input_framerate_option} -i {path_to_stills}\%d.png {output_framerate_option} -vcodec {vcodec} -crf {crf} -pix_fmt yuv420p -strict -2 -metadata comment=\"{metadata}\" {output_file}'
-    print(f'running command: {ffmpeg_command}')
+    ffmpeg_command = f'ffmpeg -y -f image2 {input_framerate_option} -i {path_to_stills}\\frame_%12d.png {output_framerate_option} -vcodec {vcodec} -crf {crf} -pix_fmt yuv420p -strict -2 -metadata comment=\"{metadata}\" {output_file}'
     subprocess.Popen(ffmpeg_command,shell=True).wait()
+    print(f'FFMPEG command used was:\t{ffmpeg_command}')

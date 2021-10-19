@@ -179,6 +179,8 @@ def restyle_video_frames_naive(video_frames,
     video_frame_num = 1
     try:
         for video_frame in tqdm(video_frames,unit='image',desc='style transfer naive'):
+            filename_to_save = os.path.basename(os.path.splitext(video_frame)[0]) + '.png'
+            filepath_to_save = os.path.join(generated_video_frames_path,filename_to_save)
             # suppress stdout to keep the progress bar clear
             with open(os.devnull, 'w') as devnull:
                 with contextlib.redirect_stdout(devnull):
@@ -203,7 +205,7 @@ def restyle_video_frames_naive(video_frames,
                     # save a frame of video every .save_every iterations
                     losses_str = ', '.join(f'{loss.item():7.3f}' for loss in lossAll)
                     tqdm.write(f'iteration:{iteration_num:6d}\tvideo frame: {video_frame_num:6d}\tloss sum: {sum(lossAll).item():7.3f}\tloss for each prompt:{losses_str}')
-                    eng.save_current_output(generated_video_frames_path + os.sep + str(video_frame_num) + '.png')
+                    eng.save_current_output(filepath_to_save)
 
             # save a frame of video every iterations
             # display some statistics about how the GAN training is going whever we save an image
@@ -211,7 +213,7 @@ def restyle_video_frames_naive(video_frames,
             tqdm.write(f'iteration:{iteration_num:6d}\tvideo frame: {video_frame_num:6d}\tloss sum: {sum(lossAll).item():7.3f}\tloss for each prompt:{losses_str}')
 
             # if making a video, save a frame named for the video step
-            eng.save_current_output(generated_video_frames_path + os.sep + str(video_frame_num) + '.png')
+            eng.save_current_output(filepath_to_save)
             video_frame_num += 1
     except KeyboardInterrupt:
         pass
@@ -271,6 +273,8 @@ def restyle_video_frames(video_frames,
         last_video_frame_generated = video_frames[0]
         video_frames_loop = tqdm(video_frames,unit='image',desc='style transfer')
         for video_frame in video_frames_loop:
+            filename_to_save = os.path.basename(os.path.splitext(video_frame)[0]) + '.png'
+            filepath_to_save = os.path.join(generated_video_frames_path,filename_to_save)
             # suppress stdout to keep the progress bar clear
             with open(os.devnull, 'w') as devnull:
                 with contextlib.redirect_stdout(devnull):
@@ -299,6 +303,7 @@ def restyle_video_frames(video_frames,
             for iteration_num in range(1,iterations+1):
                 #perform iterations of train()
                 lossAll = eng.train(iteration_num)
+                # TODO reimplement save_every
                 # if change_prompt_every and iteration_num % change_prompt_every == 0:
                 #     # change prompts if every change_prompt_every iterations
                 #     current_prompt_number += 1
@@ -311,7 +316,7 @@ def restyle_video_frames(video_frames,
                     # save a frame of video every .save_every iterations
                     losses_str = ', '.join(f'{loss.item():7.3f}' for loss in lossAll)
                     tqdm.write(f'iteration:{iteration_num:6d}\tvideo frame: {video_frame_num:6d}\tloss sum: {sum(lossAll).item():7.3f}\tloss for each prompt:{losses_str}')
-                    eng.save_current_output(generated_video_frames_path + os.sep + str(video_frame_num) + '.png')
+                    eng.save_current_output(filepath_to_save)
 
             # save a frame of video every iterations
             # display some statistics about how the GAN training is going whever we save an image
@@ -319,8 +324,8 @@ def restyle_video_frames(video_frames,
             tqdm.write(f'iteration:{iteration_num:6d}\tvideo frame: {video_frame_num:6d}\tloss sum: {sum(lossAll).item():7.3f}\tloss for each prompt:{losses_str}')
 
             # if making a video, save a frame named for the video step
-            last_video_frame_generated = generated_video_frames_path + os.sep + str(video_frame_num) + '.png'
-            eng.save_current_output(last_video_frame_generated)
+            eng.save_current_output(filepath_to_save)
+            last_video_frame_generated = filepath_to_save
             video_frame_num += 1
     except KeyboardInterrupt:
         pass
@@ -385,7 +390,8 @@ def video_frames(eng_config=VQGAN_CLIP_Config(),
                 tqdm.write(f'iteration:{iteration_num:6d}\tvideo frame: {video_frame_num:6d}\tloss sum: {sum(lossAll).item():7.3f}\tloss for each prompt:{losses_str}')
 
                 # if making a video, save a frame named for the video step
-                eng.save_current_output(video_frames_path + os.sep + str(video_frame_num) + '.png')
+                filepath_to_save = os.path.join(video_frames_path,f'frame_{video_frame_num:012d}.png')
+                eng.save_current_output(filepath_to_save)
                 video_frame_num += 1
     except KeyboardInterrupt:
         pass
@@ -477,7 +483,8 @@ def zoom_video_frames(eng_config=VQGAN_CLIP_Config(),
                 tqdm.write(f'iteration:{iteration_num:6d}\tvideo frame: {video_frame_num:6d}\tloss sum: {sum(lossAll).item():7.3f}\tloss for each prompt:{losses_str}')
 
                 # if making a video, save a frame named for the video step
-                eng.save_current_output(video_frames_path + os.sep + str(video_frame_num) + '.png')
+                filepath_to_save = os.path.join(video_frames_path,f'frame_{video_frame_num:012d}.png')
+                eng.save_current_output(filepath_to_save)
                 video_frame_num += 1
     except KeyboardInterrupt:
         pass
