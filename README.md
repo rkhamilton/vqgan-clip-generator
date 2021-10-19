@@ -49,7 +49,7 @@ vqgan_clip.generate.single_image(eng_config = config,
         text_prompts = text_prompts,
         iterations = 100,
         save_every = 10,
-        output_filename = 'output.jpg')
+        output_filename = 'output')
 ```
 
 ### Optionally, install and configure Real-ESRGAN for image upscaling
@@ -214,7 +214,7 @@ vqgan_clip.generate.single_image(eng_config = config,
         text_prompts = text_prompts,
         iterations = 100,
         save_every = 50,
-        output_filename = os.path.join('output','output.jpg'))
+        output_filename = os.path.join('output','output'))
 ```
 
 ### Generating a single image from a text prompt and initial image
@@ -233,7 +233,7 @@ vqgan_clip.generate.single_image(eng_config = config,
         init_image = 'starting_image.jpg',
         iterations = 100,
         save_every = 50,
-        output_filename = os.path.join('output','output.jpg'))
+        output_filename = os.path.join('output','output'))
 ```
 
 ### Multiple images for the same prompt
