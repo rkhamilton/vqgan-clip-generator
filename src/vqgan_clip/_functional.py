@@ -326,10 +326,13 @@ def split_prompt(prompt):
         weight (float): The string after the colon is converted to a float, e.g 1.2
         stop (int): Returns -inf. I have never seen this value used, but it is provided in the original algorithm.
     """
+    # handle the case where we get a full path with a drive letter
+    drive, path = os.path.splitdrive(prompt)
+
     #NR: Split prompts and weights
-    vals = prompt.rsplit(':', 2)
+    vals = path.rsplit(':', 2)
     vals = vals + ['', '1', '-inf'][len(vals):]
-    return vals[0], float(vals[1]), float(vals[2])
+    return drive+vals[0], float(vals[1]), float(vals[2])
 
 def filesize_matching_aspect_ratio(file_name, desired_x, desired_y):
     """Calculate image sizes (X,Y) that have an area equal to the area of your desired_x, desired_y image, but with an aspect ratio matching the image in file_name.
