@@ -6,6 +6,7 @@ from tqdm import tqdm
 import glob, os, sys, io
 import subprocess
 import contextlib
+import torch
 
 from PIL import ImageFile, Image, ImageChops
 ImageFile.LOAD_TRUNCATED_IMAGES = True
@@ -157,6 +158,10 @@ def restyle_video_frames_naive(video_frames,
         * change_prompt_every (int, optional) : Serial prompts, sepated by ^, will be cycled through every change_prompt_every iterations. Prompts will loop if more cycles are requested than there are prompts. Default = 0
         * video_frames_path (str, optional) : Path where still images should be saved as they are generated before being combined into a video. Defaults to './video_frames'.
     """
+    # If we haven't been passed a constant random number generator seed, lock it down to use the same one each time.
+    if not eng_config.seed:
+        eng_config.seed = torch.seed()
+
     eng = Engine(eng_config)
     parsed_text_prompts, parsed_image_prompts, parsed_noise_prompts = VF.parse_all_prompts(text_prompts, image_prompts, noise_prompts)
     eng.initialize_VQGAN_CLIP()
@@ -250,6 +255,10 @@ def restyle_video_frames(video_frames,
         * current_frame_prompt_weight (float) : Using the current frame of source video as an image prompt (as well as init_image), this assigns a weight to that image prompt. Default = 0.0
         * generated_frame_init_blend (float) : How much of the previous generated image to blend in to a new frame's init_image. 0 means no previous generated image, 1 means 100% previous generated image. Default = 0.2
     """
+    # If we haven't been passed a constant random number generator seed, lock it down to use the same one each time.
+    if not eng_config.seed:
+        eng_config.seed = torch.seed()
+
     parsed_text_prompts, parsed_image_prompts, parsed_noise_prompts = VF.parse_all_prompts(text_prompts, image_prompts, noise_prompts)
 
     # if the location for the generated video frames doesn't exist, create it
