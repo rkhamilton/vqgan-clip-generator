@@ -79,8 +79,7 @@ class Engine:
         self.replace_grad = VF.ReplaceGrad.apply
         self.clamp_with_grad = VF.ClampWithGrad.apply
 
-        if not self.seed:
-            self.seed = torch.seed()
+        self.seed = torch.seed()
 
         self.clear_all_prompts()
 
