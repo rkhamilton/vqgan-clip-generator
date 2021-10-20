@@ -12,7 +12,15 @@ ImageFile.LOAD_TRUNCATED_IMAGES = True
 from torchvision.transforms import functional as TF
 from vqgan_clip import _functional as VF
 
+# EXAMPLE HERE: you can set your parameters up to change with each frame of video.
+def parameters_by_frame(frame_num):
+        shift_x = 0 if frame_num < 100 else 1
+        shift_y = 0 if frame_num < 100 else 1
+        zoom_scale = 1.0 if frame_num < 200 else 1.02
+        return shift_x, shift_y, zoom_scale
+
 eng_config=VQGAN_CLIP_Config()
+eng_config.output_image_size = [587,330]
 text_prompts = 'Impressionist painting of a red horse'
 image_prompts = []
 noise_prompts = []
@@ -21,9 +29,6 @@ iterations = 1000
 save_every = 5
 change_prompt_every = 0
 video_frames_path='./video_frames'
-zoom_scale=1.02
-shift_x=1
-shift_y=1
 """
 * eng_config (VQGAN_CLIP_Config, optional): An instance of VQGAN_CLIP_Config with attributes customized for your use. See the documentation for VQGAN_CLIP_Config().
 * text_prompts (str, optional) : Text that will be turned into a prompt via CLIP. Default = []  
@@ -68,6 +73,9 @@ try:
             eng.encode_and_append_prompts(current_prompt_number, parsed_text_prompts, parsed_image_prompts, parsed_noise_prompts)
 
         if save_every and iteration_num % save_every == 0:
+            # EXAMPLE HERE: you can set your parameters up to change with each frame of video.
+            shift_x, shift_y, zoom_scale = parameters_by_frame(video_frame_num)
+
             # Transform the current video frame
             # Convert z back into a Pil image 
             pil_image = TF.to_pil_image(eng.output_tensor[0].cpu())
@@ -109,3 +117,4 @@ video_tools.encode_video(output_file=os.path.join('output','custom_zoom_video.mp
         assumed_input_framerate=30,
         vcodec='libx264',
         crf=23)
+
