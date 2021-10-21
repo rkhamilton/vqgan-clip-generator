@@ -198,6 +198,7 @@ class Engine:
 
         if self.conf.init_weight:
             result.append(F.mse_loss(self._z, self._z_orig) * self.conf.init_weight / 2)
+            # result.append(F.mse_loss(self._z, self._z_orig) * self.conf.init_weight / 2 * 1/torch.tensor(iteration_number + 1))
             # result.append(F.mse_loss(self._z, torch.zeros_like(self._z_orig)) * ((1/torch.tensor(iteration_number*2 + 1))*self.conf.init_weight) / 2)
 
         for prompt in self.pMs:
@@ -384,7 +385,7 @@ class Engine:
             
         """
         if len(text_prompts) > 0:
-            current_index = prompt_number % len(text_prompts)
+            current_index = min(prompt_number, len(text_prompts)-1)
             for prompt in text_prompts[current_index]:
                 # tqdm.write(f'Text prompt: {prompt_number} {prompt}')
                 self.encode_and_append_text_prompt(prompt)
@@ -392,14 +393,14 @@ class Engine:
         # Split target images using the pipe character (weights are split later)
         if len(image_prompts) > 0:
             # if we had image prompts, encode them with CLIP
-            current_index = prompt_number % len(image_prompts)
+            current_index = min(prompt_number, len(image_prompts))
             for prompt in image_prompts[current_index]:
                 # tqdm.write(f'Image prompt: {prompt_number} {prompt}')
                 self.encode_and_append_image_prompt(prompt)
 
         # Split noise prompts using the pipe character (weights are split later)
         if len(noise_prompts) > 0:
-            current_index = prompt_number % len(noise_prompts)
+            current_index = min(prompt_number, len(noise_prompts))
             for prompt in noise_prompts[current_index]:
                 # tqdm.write(f'Noise prompt: {prompt_number} {prompt}')
                 self.encode_and_append_noise_prompt(prompt)
