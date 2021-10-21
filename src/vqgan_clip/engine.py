@@ -60,7 +60,7 @@ class VQGAN_CLIP_Config:
         self.vqgan_model_yaml_url = f'https://heibox.uni-heidelberg.de/d/a7530b09fed84f80a887/files/?p=%2Fconfigs%2Fmodel.yaml&dl=1'
         self.vqgan_model_ckpt_url = f'https://heibox.uni-heidelberg.de/d/a7530b09fed84f80a887/files/?p=%2Fckpts%2Flast.ckpt&dl=1'
         self.learning_rate = 0.1
-        self.cut_method = 'kornia' # choices=['original','kornia','sg3'] default='original'
+        self.cut_method = 'sg3' # choices=['original','kornia','sg3'] default='original'
         self.num_cuts = 32
         self.cut_power = 1.0
         self.cudnn_determinism = False # if true, use algorithms that have reproducible, deterministic output. Performance will be lower.
@@ -82,9 +82,8 @@ class Engine:
         # lock down a seed if none was provided
         if not self.conf.seed:
             # note, retreiving torch.seed() also sets the torch seed
-            self.conf.seed = torch.seed()
-        else:
-            torch.manual_seed(self.conf.seed)
+            self.set_seed(torch.seed())
+        self.set_seed(self.conf.seed)
 
         self.clear_all_prompts()
 
@@ -109,7 +108,7 @@ class Engine:
         Args:
             seed (int): Integer seed for the random number generator. The code is still non-deterministic unless cudnn_determinism = False is used in the configuration.
         """
-        self.seed = seed
+        self.conf.seed = seed
         torch.manual_seed(seed)
 
     # Set the optimizer
@@ -198,8 +197,8 @@ class Engine:
         result = []
 
         if self.conf.init_weight:
-            # result.append(F.mse_loss(self._z, z_orig) * args.init_weight / 2)
-            result.append(F.mse_loss(self._z, torch.zeros_like(self._z_orig)) * ((1/torch.tensor(iteration_number*2 + 1))*self.conf.init_weight) / 2)
+            result.append(F.mse_loss(self._z, self._z_orig) * self.conf.init_weight / 2)
+            # result.append(F.mse_loss(self._z, torch.zeros_like(self._z_orig)) * ((1/torch.tensor(iteration_number*2 + 1))*self.conf.init_weight) / 2)
 
         for prompt in self.pMs:
             result.append(prompt(encoded_image))
