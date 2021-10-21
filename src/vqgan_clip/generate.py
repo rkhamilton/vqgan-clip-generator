@@ -15,6 +15,7 @@ import glob, os, sys, io
 import subprocess
 import contextlib
 import torch
+import warnings
 
 from PIL import ImageFile, Image, ImageChops
 ImageFile.LOAD_TRUNCATED_IMAGES = True
@@ -105,15 +106,11 @@ def multiple_images(eng_config=VQGAN_CLIP_Config(),
     if init_image:
         eng_config.init_image = init_image
 
-    os.makedirs(output_images_path, exist_ok=True)
-
     parsed_text_prompts, parsed_image_prompts, parsed_noise_prompts = VF.parse_all_prompts(text_prompts, image_prompts, noise_prompts)
 
     # if the location for the images doesn't exist, create it
     if not os.path.exists(output_images_path):
         os.mkdir(output_images_path)
-    else:
-        VF.delete_files(output_images_path)
 
     # generate the image
     current_prompt_number = 0
@@ -173,8 +170,6 @@ def restyle_video_frames_naive(video_frames,
         * change_prompt_every (int, optional) : Serial prompts, sepated by ^, will be cycled through every change_prompt_every iterations. Prompts will loop if more cycles are requested than there are prompts. Default = 0
         * video_frames_path (str, optional) : Path where still images should be saved as they are generated before being combined into a video. Defaults to './video_frames'.
     """
-    os.makedirs(generated_video_frames_path, exist_ok=True)
-
     # lock in a seed to use for each frame
     if not eng_config.seed:
         # note, retreiving torch.seed() also sets the torch seed
@@ -276,8 +271,6 @@ def restyle_video_frames(video_frames,
         * current_frame_prompt_weight (float) : Using the current frame of source video as an image prompt (as well as init_image), this assigns a weight to that image prompt. Default = 0.0
         * generated_frame_init_blend (float) : How much of the previous generated image to blend in to a new frame's init_image. 0 means no previous generated image, 1 means 100% previous generated image. Default = 0.2
     """
-    os.makedirs(generated_video_frames_path, exist_ok=True)
-
     parsed_text_prompts, parsed_image_prompts, parsed_noise_prompts = VF.parse_all_prompts(text_prompts, image_prompts, noise_prompts)
 
     # lock in a seed to use for each frame
@@ -384,8 +377,6 @@ def video_frames(eng_config=VQGAN_CLIP_Config(),
         * output_framerate (int, optional) : Desired framerate of the output video. Defaults to 30.
         * assumed_input_framerate (int, optional) : An assumed framerate to use for the still images. If an assumed input framerate is provided, the output video will be interpolated to the specified output framerate. Defaults to None.
     """
-    os.makedirs(video_frames_path, exist_ok=True)
-
     if init_image:
         eng_config.init_image = init_image
     eng = Engine(eng_config)
@@ -454,8 +445,6 @@ def zoom_video_frames(eng_config=VQGAN_CLIP_Config(),
         * shift_x (int) : Every save_every iterations, a video frame is saved. That frame is shifted shift_x pixels in the x direction, and used as the initial image to generate the next frame. Default = 0
         * shift_y (int) : Every save_every iterations, a video frame is saved. That frame is shifted shift_y pixels in the y direction, and used as the initial image to generate the next frame. Default = 0
     """
-    os.makedirs(video_frames_path, exist_ok=True)
-
     if init_image:
         eng_config.init_image = init_image
     parsed_text_prompts, parsed_image_prompts, parsed_noise_prompts = VF.parse_all_prompts(text_prompts, image_prompts, noise_prompts)
@@ -521,3 +510,10 @@ def zoom_video_frames(eng_config=VQGAN_CLIP_Config(),
     except KeyboardInterrupt:
         pass
 
+def _filename_to_png(file_path):
+    dir = os.path.dirname(file_path)
+    orig_file_name = os.path.basename(file_path)
+    basename_without_ext, ext = os.path.splitext(file_path)
+    if ext.lower() != '.png':
+        warnings.warn('vqgan_clip_generator can only create and save .PNG files.')
+    return os.path.join(dir,basename_without_ext+'.png')
