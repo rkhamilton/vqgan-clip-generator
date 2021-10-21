@@ -143,7 +143,8 @@ def multiple_images(eng_config=VQGAN_CLIP_Config(),
                     # save an interim copy of the image so you can look at it as it changes if you like
                     eng.save_current_output(output_images_path + os.sep + str(file_num) + '.png')
             #Always save a file at the end
-            eng.save_current_output(output_images_path + os.sep + str(file_num) + '.png')
+            filename_to_save = os.path.join(output_images_path,f'frame_{file_num:012d}.png')
+            eng.save_current_output(filename_to_save)
     except KeyboardInterrupt:
         pass
 
