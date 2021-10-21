@@ -148,7 +148,7 @@ These parameters are passed to the functions of vqgan_clip.generate: single_imag
 |extraction_framerate|30|When extracting video frames from an existing video, this sets how many frames per second will be extracted. Interpolation will be used if the video's native framerate differs.|
 |extracted_video_frames_path|'./extracted_video_frames'| Location where extract_video_frames will save extracted frames of video from the source file.|
 |output_framerate|30|Desired framerate of the output video from encode_video.|
-|assumed_input_framerate|None|When combining still images to make a video, this parameter can be used to force an assumed original framerate. For example, you could assume you started with 10fps, and interpolate to 60fps.|
+|input_framerate|None|When combining still images to make a video, this parameter can be used to force an assumed original framerate. For example, you could assume you started with 10fps, and interpolate to 60fps.|
 |copy_audio|False|When restyling a video, you can copy the audio from the original video to the result video.|
 
 
@@ -285,7 +285,7 @@ generate.video_frames(eng_config = config,
 video_tools.encode_video(output_file=os.path.join('output','zoom_video.mp4'),
         metadata=text_prompts,
         output_framerate=60,
-        assumed_input_framerate=30)
+        input_framerate=30)
 ```
 
 ### Zoom video
@@ -324,7 +324,7 @@ generate.zoom_video_frames(eng_config = config,
 video_tools.encode_video(output_file=os.path.join('output','zoom_video.mp4'),
         metadata=text_prompts,
         output_framerate=60,
-        assumed_input_framerate=30)
+        input_framerate=30)
 ```
 
 ### Restyle Video
@@ -373,7 +373,7 @@ generated_video_no_audio=os.path.join('output','output_no_audio.mp4')
 video_tools.encode_video(output_file=generated_video_no_audio,
         metadata=text_prompts,
         output_framerate=output_framerate,
-        assumed_input_framerate=extraction_framerate)
+        input_framerate=extraction_framerate)
 
 # Copy audio from the original file
 if copy_audio:
