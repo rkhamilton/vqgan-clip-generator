@@ -14,7 +14,7 @@ face_enhance = False
 generate.multiple_images(eng_config = config,
         text_prompts = text_prompts,
         iterations = 50,
-        save_every = 51,
+        save_every = None,
         num_images_to_generate=3,
         output_images_path=output_images_path)
 
