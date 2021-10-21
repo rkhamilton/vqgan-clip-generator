@@ -52,7 +52,7 @@ video_tools.encode_video(output_file=generated_video_no_audio,
         path_to_stills=video_frames_to_encode,
         metadata=text_prompts,
         output_framerate=output_framerate,
-        assumed_input_framerate=extraction_framerate)
+        input_framerate=extraction_framerate)
 
 # Copy audio from the original file
 if copy_audio:

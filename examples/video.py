@@ -26,9 +26,9 @@ generate.video_frames(eng_config = config,
         text_prompts = text_prompts,
         init_image = init_image+'.png',
         video_frames_path = generated_video_frames_path,
-        iterations = 1000,
+        iterations = 500,
         save_every = 10,
-        change_prompt_every = 300)
+        change_prompt_every = 100)
 
 # Upscale the video frames
 if upscale_images:
@@ -48,4 +48,4 @@ video_tools.encode_video(output_file=final_video_filename,
         path_to_stills=video_frames_to_encode,
         metadata=text_prompts,
         output_framerate=60,
-        assumed_input_framerate=30)
+        input_framerate=30)

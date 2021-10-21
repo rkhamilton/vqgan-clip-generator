@@ -63,7 +63,7 @@ def copy_video_audio(original_video, destination_file_without_audio, output_file
     os.remove(extracted_original_audio)
 
 
-def encode_video(output_file=f'.\\output\\output.mp4', path_to_stills=f'./video_frames', metadata='', output_framerate=30, assumed_input_framerate=None, crf=23, vcodec='libx264'):
+def encode_video(output_file, input_framerate, path_to_stills=f'./video_frames', metadata='', output_framerate=None, crf=23, vcodec='libx264'):
     """Wrapper for FFMPEG. Encodes a folder of PNG images to a video in HEVC format using ffmpeg with optional interpolation. Input stills must be sequentially numbered png files named in the format frame_%12d.png.
     Note that this wrapper will print to the command line the exact ffmpeg command that was used. You can copy this and run it from the command line with any tweaks necessary.
 
@@ -72,18 +72,19 @@ def encode_video(output_file=f'.\\output\\output.mp4', path_to_stills=f'./video_
         path_to_stills (str, optional): Path to still images. Defaults to f'.\steps'.
         metadata (str, optional): Metadata to be added to the comments field of the resulting video file. Defaults to ''.
         output_framerate (int, optional): The desired framerate of the output video. Defaults to 30.
-        assumed_input_framerate (int, optional): An assumed framerate to use for the input stills. If the assumed input framerate is different than the desired output, then ffpmeg will interpolate to generate extra frames. For example, an assumed input of 10 and desired output of 60 will cause the resulting video to have five interpolated frames for every original frame. Defaults to [].
+        input_framerate (int, optional): An assumed framerate to use for the input stills. If the assumed input framerate is different than the desired output, then ffpmeg will interpolate to generate extra frames. For example, an assumed input of 10 and desired output of 60 will cause the resulting video to have five interpolated frames for every original frame. Defaults to [].
         crf (int, optional): The -crf parameter value to pass to ffmpeg. Appropriate values depend on the codec, and image resolution. See ffmpeg documentation for guidance. Defaults to 23.
         vcodec (str, optional): The video codec (-vcodec) to pass to ffmpeg. Any valid video codec for ffmpeg is valid. Defaults to 'libx264'.
     """
-    if assumed_input_framerate and assumed_input_framerate != output_framerate:
-        # interpolate
-        input_framerate_option = f'-r {assumed_input_framerate}'
+    if input_framerate and output_framerate and input_framerate != output_framerate:
+        # a different input and output framerate are specified. Use interpolation
+        input_framerate_option = f'-r {input_framerate}'
         output_framerate_option = f"-filter:v minterpolate='mi_mode=mci:me=hexbs:me_mode=bidir:mc_mode=aobmc:vsbmc=1:mb_size=8:search_param=32:fps={str(output_framerate)}'"
     else:
         # no interpolation
         input_framerate_option = ''
-        output_framerate_option = f'-r {output_framerate}'
+        output_framerate_to_use = output_framerate if output_framerate else input_framerate
+        output_framerate_option = f'-r {output_framerate_to_use}'
     ffmpeg_command = f'ffmpeg -y -f image2 {input_framerate_option} -i {path_to_stills}\\frame_%12d.png {output_framerate_option} -vcodec {vcodec} -crf {crf} -pix_fmt yuv420p -strict -2 -metadata comment=\"{metadata}\" {output_file}'
     subprocess.Popen(ffmpeg_command,shell=True).wait()
     print(f'FFMPEG command used was:\t{ffmpeg_command}')

@@ -205,7 +205,7 @@ def test_video_single_prompt(testing_config, tmpdir):
         path_to_stills=steps_path,
         metadata='a test comment',
         output_framerate=30,
-        assumed_input_framerate=30)
+        input_framerate=30)
     assert os.path.exists(output_filename)
     for f in output_files:
         os.remove(f)
@@ -234,7 +234,7 @@ def test_video_multiple_prompt(testing_config, tmpdir):
         path_to_stills=steps_path,
         metadata='a test comment',
         output_framerate=30,
-        assumed_input_framerate=30)
+        input_framerate=30)
     assert os.path.exists(output_filename)
     for f in output_files:
         os.remove(f)
@@ -270,7 +270,7 @@ def test_zoom_video(testing_config, tmpdir):
         path_to_stills=steps_path,
         metadata='a test comment',
         output_framerate=30,
-        assumed_input_framerate=30)
+        input_framerate=30)
     assert os.path.exists(output_filename)
     for f in output_files:
         os.remove(f)
@@ -306,7 +306,7 @@ def test_zoom_video_all_prompts(testing_config, tmpdir):
         path_to_stills=steps_path,
         metadata='a test comment',
         output_framerate=30,
-        assumed_input_framerate=30)
+        input_framerate=30)
     assert os.path.exists(output_filename)
     for f in output_files:
         os.remove(f)

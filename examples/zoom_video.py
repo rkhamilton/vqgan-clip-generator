@@ -54,4 +54,4 @@ video_tools.encode_video(output_file=final_video_filename,
         path_to_stills=video_frames_to_encode,
         metadata=text_prompts,
         output_framerate=60,
-        assumed_input_framerate=30)
+        input_framerate=30)

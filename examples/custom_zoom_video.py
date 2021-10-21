@@ -114,7 +114,7 @@ video_tools.encode_video(output_file=os.path.join('output','custom_zoom_video.mp
         path_to_stills=video_frames_path,
         metadata=text_prompts,
         output_framerate=30,
-        assumed_input_framerate=30,
+        input_framerate=30,
         vcodec='libx264',
         crf=23)
 
