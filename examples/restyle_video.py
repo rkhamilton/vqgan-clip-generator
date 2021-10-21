@@ -6,6 +6,7 @@ import os
 
 config = VQGAN_CLIP_Config()
 config.output_image_size = [256,256]
+config.init_image_method = 'original'
 config.init_weight = 1.0
 text_prompts = 'portrait on deviantart'
 input_video_path = '20211004_132008000_iOS.MOV'
@@ -26,12 +27,12 @@ generated_video_frames_path='video_frames'
 generate.restyle_video_frames(original_video_frames,
         eng_config=config,
         text_prompts = text_prompts,
-        iterations = 20,
+        iterations = 15,
         save_every=None,
         generated_video_frames_path = generated_video_frames_path,
         current_source_frame_prompt_weight=0.1,
         previous_generated_frame_prompt_weight=0.0,
-        generated_frame_init_blend=0.5)
+        generated_frame_init_blend=0.1)
 
 # Upscale the video frames
 if upscale_images:
