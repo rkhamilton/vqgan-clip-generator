@@ -40,7 +40,7 @@ def single_image(eng_config=VQGAN_CLIP_Config(),
         * noise_prompts (str, optional) : Random number seeds can be used as prompts using the same format as a text prompt. E.g. \'123:0.1|234:0.2|345:0.3\' Stories (^) are supported. Default = []
         * init_image (str, optional) : Path to an image file that will be used as the seed to generate output (analyzed for pixels).
         * iterations (int, optional) : Number of iterations of train() to perform before stopping. Default = 100 
-        * save_every (int, optional) : An interim image will be saved to the output location every save_every iterations, and training stats will be displayed. Default = 50  
+        * save_every (int, optional) : An interim image will be saved as the final image is being generated. It's saved to the output location every save_every iterations, and training stats will be displayed. Default = 50  
         * output_filename (str, optional) : location to save the output image. Omit the file extension. Default = \'output\' + os.sep + \'output\'  
         * change_prompt_every (int, optional) : Serial prompts, sepated by ^, will be cycled through every change_prompt_every iterations. Prompts will loop if more cycles are requested than there are prompts. Default = 0
     """
@@ -90,6 +90,7 @@ def multiple_images(eng_config=VQGAN_CLIP_Config(),
         output_images_path='./video_frames'):
     """Generate multiple images using VQGAN+CLIP, each with a different random seed. The configuration of the algorithms is done via a VQGAN_CLIP_Config instance.  
     The use case for this function is to generate a lot of variants on the same prompt, and then look through the output folder for \'keepers.\'
+    These images are not suitable for combining into a video, as they are each separately generated.
 
     Args:
         * eng_config (VQGAN_CLIP_Config, optional): An instance of VQGAN_CLIP_Config with attributes customized for your use. See the documentation for VQGAN_CLIP_Config().
@@ -98,7 +99,7 @@ def multiple_images(eng_config=VQGAN_CLIP_Config(),
         * noise_prompts (str, optional) : Random number seeds can be used as prompts using the same format as a text prompt. E.g. \'123:0.1|234:0.2|345:0.3\' Stories (^) are supported. Default = []
         * init_image (str, optional) : Path to an image file that will be used as the seed to generate output (analyzed for pixels).
         * iterations (int, optional) : Number of iterations of train() to perform before stopping. Default = 100 
-        * save_every (int, optional) : An interim image will be saved to the output location every save_every iterations, and training stats will be displayed. Default = 50  
+        * save_every (int, optional) : An interim image will be saved as the final image is being generated. It's saved to the output location every save_every iterations, and training stats will be displayed. Default = 50  
         * change_prompt_every (int, optional) : Serial prompts, sepated by ^, will be cycled through every change_prompt_every iterations. Prompts will loop if more cycles are requested than there are prompts. Default = 0
         * num_images_to_generate (int, optional) : Number of images to generates. Default = 10
         * output_images_path (str, optional) : Path to save all generated images. Default = './video_frames'
@@ -153,7 +154,7 @@ def restyle_video_frames_naive(video_frames,
         text_prompts = [],
         image_prompts = [],
         noise_prompts = [],
-        iterations = 100,
+        iterations = 15,
         save_every = None,
         change_prompt_every = 0,
         generated_video_frames_path='./video_frames'):
@@ -167,7 +168,8 @@ def restyle_video_frames_naive(video_frames,
         * text_prompts (str, optional) : Text that will be turned into a prompt via CLIP. Default = []  
         * image_prompts (str, optional) : Path to image that will be turned into a prompt via CLIP. Default = []
         * noise_prompts (str, optional) : Random number seeds can be used as prompts using the same format as a text prompt. E.g. \'123:0.1|234:0.2|345:0.3\' Stories (^) are supported. Default = []
-        * iterations (int, optional) : Number of iterations of train() to perform for each frame of video. Default = 100 
+        * iterations (int, optional) : Number of iterations of train() to perform for each frame of video. Default = 15 
+        * save_every (int, optional) : An interim image will be saved as the final image is being generated. It's saved to the output location every save_every iterations, and training stats will be displayed. Default = 50  
         * change_prompt_every (int, optional) : Serial prompts, sepated by ^, will be cycled through every change_prompt_every iterations. Prompts will loop if more cycles are requested than there are prompts. Default = 0
         * video_frames_path (str, optional) : Path where still images should be saved as they are generated before being combined into a video. Defaults to './video_frames'.
     """
@@ -240,7 +242,7 @@ def restyle_video_frames(video_frames,
     text_prompts = 'Covered in spiders | Surreal:0.5',
     image_prompts = [],
     noise_prompts = [],
-    iterations = 30,
+    iterations = 15,
     save_every = None,
     generated_video_frames_path='./video_frames',
     current_source_frame_prompt_weight=0.0,
@@ -266,8 +268,8 @@ def restyle_video_frames(video_frames,
         * text_prompts (str, optional) : Text that will be turned into a prompt via CLIP. Default = []  
         * image_prompts (str, optional) : Path to image that will be turned into a prompt via CLIP. Default = []
         * noise_prompts (str, optional) : Random number seeds can be used as prompts using the same format as a text prompt. E.g. \'123:0.1|234:0.2|345:0.3\' Stories (^) are supported. Default = []
-        * iterations (int, optional) : Number of iterations of train() to perform for each frame of video. Default = 100 
-        * change_prompt_every (int, optional) : Serial prompts, sepated by ^, will be cycled through every change_prompt_every iterations. Prompts will loop if more cycles are requested than there are prompts. Default = 0
+        * iterations (int, optional) : Number of iterations of train() to perform for each frame of video. Default = 15 
+        * save_every (int, optional) : An interim image will be saved as the final image is being generated. It's saved to the output location every save_every iterations, and training stats will be displayed. Default = 50  
         * generated_video_frames_path (str, optional) : Path where still images should be saved as they are generated before being combined into a video. Defaults to './video_frames'.
         * current_frame_prompt_weight (float) : Using the current frame of source video as an image prompt (as well as init_image), this assigns a weight to that image prompt. Default = 0.0
         * generated_frame_init_blend (float) : How much of the previous generated image to blend in to a new frame's init_image. 0 means no previous generated image, 1 means 100% previous generated image. Default = 0.2
@@ -361,7 +363,9 @@ def video_frames(eng_config=VQGAN_CLIP_Config(),
         save_every = 5,
         change_prompt_every = 0,
         video_frames_path='./video_frames'):
-    """Generate a video using VQGAN+CLIP. The configuration of the VQGAN+CLIP algorithms is done via a VQGAN_CLIP_Config instance.
+    """Generate a series of images using VQGAN+CLIP. The configuration of the VQGAN+CLIP algorithms is done via a VQGAN_CLIP_Config instance. '
+    A PNG file is saved every save_every iterations, each with a different filename.
+    These images are generated by the same iteraion series, and can be usefully combined into a video.
 
     Args:
         Args:
@@ -371,12 +375,10 @@ def video_frames(eng_config=VQGAN_CLIP_Config(),
         * noise_prompts (str, optional) : Random number seeds can be used as prompts using the same format as a text prompt. E.g. \'123:0.1|234:0.2|345:0.3\' Stories (^) are supported. Default = []
         * init_image (str, optional) : Path to an image file that will be used as the seed to generate output (analyzed for pixels).
         * iterations (int, optional) : Number of iterations of train() to perform before stopping. Default = 100 
-        * save_every (int, optional) : An interim image will be saved to the output location every save_every iterations, and training stats will be displayed. Default = 50  
+        * save_every (int, optional) : An image named frame_%12d.png is saved to video_frames_path every save_every iterations, and training stats are displayed. Default = 5  
         * output_filename (str, optional) : location to save the output image. Omit the file extension. Default = \'output\' + os.sep + \'output\'  
         * change_prompt_every (int, optional) : Serial prompts, sepated by ^, will be cycled through every change_prompt_every iterations. Prompts will loop if more cycles are requested than there are prompts. Default = 0
         * video_frames_path (str, optional) : Path where still images should be saved as they are generated before being combined into a video. Defaults to './video_frames'.
-        * output_framerate (int, optional) : Desired framerate of the output video. Defaults to 30.
-        * input_framerate (int, optional) : An assumed framerate to use for the still images. If an assumed input framerate is provided, the output video will be interpolated to the specified output framerate. Defaults to None.
     """
     if init_image:
         eng_config.init_image = init_image
@@ -430,7 +432,8 @@ def zoom_video_frames(eng_config=VQGAN_CLIP_Config(),
         zoom_scale=1.0,
         shift_x=0, 
         shift_y=0):
-    """Generate a video using VQGAN+CLIP where each frame moves relative to the previous frame. The configuration of the VQGAN+CLIP algorithms is done via a VQGAN_CLIP_Config instance.
+    """Generate a series of images using VQGAN+CLIP where each frame moves relative to the previous frame. The configuration of the VQGAN+CLIP algorithms is done via a VQGAN_CLIP_Config instance.
+    These images are generated by the same iteraion series, and can be usefully combined into a video.
 
     Args:
         * eng_config (VQGAN_CLIP_Config, optional): An instance of VQGAN_CLIP_Config with attributes customized for your use. See the documentation for VQGAN_CLIP_Config().
@@ -438,8 +441,8 @@ def zoom_video_frames(eng_config=VQGAN_CLIP_Config(),
         * image_prompts (str, optional) : Path to image that will be turned into a prompt via CLIP. Default = []
         * noise_prompts (str, optional) : Random number seeds can be used as prompts using the same format as a text prompt. E.g. \'123:0.1|234:0.2|345:0.3\' Stories (^) are supported. Default = []
         * init_image (str, optional) : Path to an image file that will be used as the seed to generate output (analyzed for pixels).
-        * iterations (int, optional) : Number of iterations of train() to perform before stopping. Default = 100 
-        * save_every (int, optional) : An interim image will be saved to the output location every save_every iterations, and training stats will be displayed. Default = 50  
+        * iterations (int, optional) : Number of iterations of train() to perform before stopping. Default = 1000 
+        * save_every (int, optional) : An image named frame_%12d.png is saved to video_frames_path every save_every iterations, and training stats are displayed. Default = 5  
         * change_prompt_every (int, optional) : Serial prompts, sepated by ^, will be cycled through every change_prompt_every iterations. Prompts will loop if more cycles are requested than there are prompts. Default = 0
         * video_frames_path (str, optional) : Path where still images should be saved as they are generated before being combined into a video. Defaults to './video_frames'.
         * zoom_scale (float) : Every save_every iterations, a video frame is saved. That frame is shifted scaled by a factor of zoom_scale, and used as the initial image to generate the next frame. Default = 1.0
