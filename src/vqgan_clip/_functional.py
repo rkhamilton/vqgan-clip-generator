@@ -241,7 +241,6 @@ def load_vqgan_model(config_path, checkpoint_path):
         model = vqgan.GumbelVQ(**config.model.params)
         model.eval().requires_grad_(False)
         model.init_from_ckpt(checkpoint_path)
-        gumbel = True
     elif config.model.target == 'taming.models.cond_transformer.Net2NetTransformer':
         parent_model = cond_transformer.Net2NetTransformer(**config.model.params)
         parent_model.eval().requires_grad_(False)
