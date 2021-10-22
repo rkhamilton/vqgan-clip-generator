@@ -24,7 +24,7 @@ F.mse_loss(self._z, torch.zeros_like(self._z_orig)) * ((1/torch.tensor(iteration
 
 # v1.1.3
 **Bug Fixes**
-* generate.restyle_video* functions now no longer rename the source files. Original filenames are preserved. As part of this fix, the video_tools.extract_video_frames() now uses a different naming format, consistent with generate.restyle_video. All video tools now use the filename frames_%12d.png.
+* generate.restyle_video* functions now no longer renames the source files. Original filenames are preserved. As part of this fix, the video_tools.extract_video_frames() now uses a different naming format, consistent with generate.restyle_video. All video tools now use the filename frames_%12d.png.
 
 
 # v1.1.2
