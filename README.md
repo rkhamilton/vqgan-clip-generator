@@ -152,15 +152,15 @@ These parameters are passed to the functions of vqgan_clip.generate: single_imag
 |num_images_to_generate|10|How many images multiple_images() will generate.|
 |output_images_path|'./video_frames'|Location where multiple_images() will save output.|
 |zoom_scale|1.0|When using zoom_video(), this parameter sets the ratio by which each frame will be zoomed in relative to the previous.|
-|shift_x|0| | When using zoom_video(), this parameter sets how many pixels each new frame will be shifted in the x direction.|
-|shift_y|0| | When using zoom_video(), this parameter sets how many pixels each new frame will be shifted in the x direction.|
-|current_source_frame_prompt_weight|0.0| When restyling video, you can use the current frame of source video as an image prompt. This assigns a weight to that image prompt.|
-|previous_generated_frame_prompt_weight|0.2| When restyling video, you can use the previous generated frame of source video as an image prompt. This assigns a weight to that image prompt.|
-|generated_frame_init_blend|0.2| When restyling video, each original frame of video is used as an init_image for the new frame of generated video. This parameter lets you also blend the previous generated frame with the new source frame. This is an important feature for making the resulting video smooth, since the new frame will start with some elements that CLIP has determined are similar to the prompts.|
+|shift_x|0| When using zoom_video(), this parameter sets how many pixels each new frame will be shifted in the x direction.|
+|shift_y|0| When using zoom_video(), this parameter sets how many pixels each new frame will be shifted in the x direction.|
+|current_source_frame_prompt_weight|0.1| When restyling video, you can use the current frame of source video as an image prompt. This assigns a weight to that image prompt, and makes the output have content more like the input. Try values 0-1.0.|
+|previous_generated_frame_prompt_weight|0.1| When restyling video, you can use the previous generated frame of source video as an image prompt. This assigns a weight to that image prompt and promotes style consistency. It doesn't seem to have a large effect. Try values 0-0.5|
+|generated_frame_init_blend|0.1| When restyling video, each original frame of video is used as an init_image for the new frame of generated video. This parameter lets you also blend the previous generated frame with the new source frame. This is an important feature for making the resulting video smooth, since the new frame will start with some elements that CLIP has determined are similar to the prompts. Try values 0.0-0.3. Larger values cause runaway image evolution (which may be fun to see!).|
 |extraction_framerate|30|When extracting video frames from an existing video, this sets how many frames per second will be extracted. Interpolation will be used if the video's native framerate differs.|
 |extracted_video_frames_path|'./extracted_video_frames'| Location where extract_video_frames will save extracted frames of video from the source file.|
-|output_framerate|30|Desired framerate of the output video from encode_video.|
-|input_framerate|None|When combining still images to make a video, this parameter can be used to force an assumed original framerate. For example, you could assume you started with 10fps, and interpolate to 60fps.|
+|output_framerate|None|Desired framerate of the output video from encode_video.|
+|input_framerate|30|When combining still images to make a video, this parameter can be used to force an assumed original framerate. For example, you could assume you started with 10fps, and interpolate to 60fps.|
 |copy_audio|False|When restyling a video, you can copy the audio from the original video to the result video.|
 
 
@@ -339,7 +339,7 @@ video_tools.encode_video(output_file=os.path.join('output','zoom_video.mp4'),
         input_framerate=30)
 ```
 
-### Restyle Video
+### Restyle Video / Style Transfer
 The method generate.restyle_video will apply VQGAN+CLIP prompts to an existing video by extracting frames of video from the original and using them as inputs to create a frame of output video. The resulting frames are combined into an HEVC video, and the original audio is optionally copied to the new file. As an example, here is a video of my face restyled with the prompt "portrait on deviantart" and an init_weight of 1.0 (full code to generate this video is below).  
 <img src="./samples/portrait on deviantart.gif" width="256px"></img>
 
