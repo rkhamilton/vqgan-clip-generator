@@ -183,6 +183,7 @@ vqgan_clip.generate.single_image(eng_config = config)
 |vqgan_model_ckpt_url|f'https://heibox.uni-heidelberg.de/d/a7530b09fed84f80a887/files/?p=%2Fckpts%2Flast.ckpt&dl=1'|Name of the pre-trained VQGAN model to be used. [Select a valid model name](#dynamic-model-download-and-caching).|
 |optimizer|'Adam'|Different optimizers are provided for training the GAN. These all perform differently, and may give you a different result. See [torch.optim documentation](https://pytorch.org/docs/stable/optim.html).|
 |model_dir|None|If set to a folder name (e.g. 'models') then model files will be downloaded to a subfolder of the current working directory. This may be helpful if your default drive, used by PyTorch, is small.|
+|init_weight_method|'decay'|Method used to compare current image to init_image. 'Decay' will let the output image get further from the source. 'original' is the method used in the original Katherine Crowson colab notebook, and keeps the output image closer to the original input.|
 
 ### Dynamic model download and caching
 

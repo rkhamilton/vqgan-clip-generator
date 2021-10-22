@@ -69,7 +69,7 @@ class VQGAN_CLIP_Config:
         self.cuda_device = 'cuda:0' # select your GPU. Default to the first gpu, device 0
         self.adaptiveLR = False # If true, use an adaptive learning rate. If the quality of the image stops improving, it will change less with each iteration. Generate.zoom output is more stable.
         self.model_dir = None # If set to a folder name (e.g. 'models') then model files will be downloaded to a subfolder of the current working directory.
-        self.init_image_method = 'original' # Method used to compare current image to init_image. Options=['original','decay'] Default = 'original'
+        self.init_image_method = 'decay' # Method used to compare current image to init_image. Options=['original','decay'] Default = 'original'
 
 class Engine:
     def __init__(self, config=VQGAN_CLIP_Config()):
