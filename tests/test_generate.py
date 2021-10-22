@@ -203,7 +203,7 @@ def test_video_single_prompt(testing_config, tmpdir):
     output_filename = str(tmpdir.mkdir('output').join('output.mp4'))
     video_tools.encode_video(output_file=output_filename,
         path_to_stills=steps_path,
-        metadata='a test comment',
+        metadata_title='a test comment',
         output_framerate=30,
         input_framerate=30)
     assert os.path.exists(output_filename)
@@ -232,7 +232,7 @@ def test_video_multiple_prompt(testing_config, tmpdir):
     output_filename = str(tmpdir.mkdir('output').join('output.mp4'))
     video_tools.encode_video(output_file=output_filename,
         path_to_stills=steps_path,
-        metadata='a test comment',
+        metadata_title='a test comment',
         output_framerate=30,
         input_framerate=30)
     assert os.path.exists(output_filename)
@@ -268,7 +268,7 @@ def test_zoom_video(testing_config, tmpdir):
     output_filename = str(tmpdir.mkdir('output').join('output.mp4'))
     video_tools.encode_video(output_file=output_filename,
         path_to_stills=steps_path,
-        metadata='a test comment',
+        metadata_title='a test comment',
         output_framerate=30,
         input_framerate=30)
     assert os.path.exists(output_filename)
@@ -304,7 +304,7 @@ def test_zoom_video_all_prompts(testing_config, tmpdir):
     output_filename = str(tmpdir.mkdir('output').join('output.mp4'))
     video_tools.encode_video(output_file=output_filename,
         path_to_stills=steps_path,
-        metadata='a test comment',
+        metadata_title='a test comment',
         output_framerate=30,
         input_framerate=30)
     assert os.path.exists(output_filename)

@@ -87,6 +87,15 @@ def single_image(eng_config=VQGAN_CLIP_Config(),
     except KeyboardInterrupt:
         pass
 
+    config_info=f'iterations: {iterations}, '\
+            f'image_prompts: {image_prompts}, '\
+            f'noise_prompts: {noise_prompts}, '\
+            f'init_weight_method: {eng_config.init_image_method}, '\
+            f'init_weight {eng_config.init_weight:1.2f}, '\
+            f'init_image {init_image}, '\
+            f'change_prompt_every {change_prompt_every}, '\
+            f'seed {eng.conf.seed}'
+    return config_info
 
 def multiple_images(eng_config=VQGAN_CLIP_Config(),
         text_prompts = [],
@@ -167,6 +176,15 @@ def multiple_images(eng_config=VQGAN_CLIP_Config(),
             eng.save_current_output(filename_to_save,png_info_chunks(png_info))
     except KeyboardInterrupt:
         pass
+    config_info=f'iterations: {iterations}, '\
+            f'image_prompts: {image_prompts}, '\
+            f'noise_prompts: {noise_prompts}, '\
+            f'init_weight_method: {eng_config.init_image_method}, '\
+            f'init_weight {eng_config.init_weight:1.2f}, '\
+            f'init_image {init_image}, '\
+            f'change_prompt_every {change_prompt_every}, '\
+            f'seed {eng.conf.seed}'
+    return config_info
 
 def restyle_video_frames_naive(video_frames,
         eng_config=VQGAN_CLIP_Config(),
@@ -211,6 +229,13 @@ def restyle_video_frames_naive(video_frames,
     output_size_X, output_size_Y = VF.filesize_matching_aspect_ratio(video_frames[0], eng_config.output_image_size[0], eng_config.output_image_size[1])
     eng_config.output_image_size = [output_size_X, output_size_Y]
 
+
+    # suppress stdout to keep the progress bar clear
+    with open(os.devnull, 'w') as devnull:
+        with contextlib.redirect_stdout(devnull):
+            eng.load_model()
+            eng.set_seed(eng.conf.seed)
+
     # generate images
     current_prompt_number = 0
     video_frame_num = 1
@@ -219,11 +244,7 @@ def restyle_video_frames_naive(video_frames,
         for video_frame in tqdm(video_frames,unit='image',desc='style transfer naive'):
             filename_to_save = os.path.basename(os.path.splitext(video_frame)[0]) + '.png'
             filepath_to_save = os.path.join(generated_video_frames_path,filename_to_save)
-            # suppress stdout to keep the progress bar clear
-            with open(os.devnull, 'w') as devnull:
-                with contextlib.redirect_stdout(devnull):
-                    eng.load_model()
-                    eng.set_seed(eng.conf.seed)
+
             # Use the next frame of video as an initial image for VQGAN+CLIP
             pil_image = Image.open(video_frame).convert('RGB')
             eng.convert_image_to_init_image(pil_image)
@@ -264,6 +285,15 @@ def restyle_video_frames_naive(video_frames,
             video_frame_num += 1
     except KeyboardInterrupt:
         pass
+    config_info=f'iterations: {iterations}, '\
+            f'image_prompts: {image_prompts}, '\
+            f'noise_prompts: {noise_prompts}, '\
+            f'init_weight_method: {eng_config.init_image_method}, '\
+            f'init_weight {eng_config.init_weight:1.2f}, '\
+            f'init_image {generated_video_frames_path}, '\
+            f'change_prompt_every {change_prompt_every}, '\
+            f'seed {eng.conf.seed}'
+    return config_info
 
 def restyle_video_frames(video_frames,
     eng_config=VQGAN_CLIP_Config(),
@@ -318,20 +348,20 @@ def restyle_video_frames(video_frames,
     output_size_X, output_size_Y = VF.filesize_matching_aspect_ratio(video_frames[0], eng_config.output_image_size[0], eng_config.output_image_size[1])
     eng_config.output_image_size = [output_size_X, output_size_Y]
 
+    # suppress stdout to keep the progress bar clear
+    with open(os.devnull, 'w') as devnull:
+        with contextlib.redirect_stdout(devnull):
+            eng = Engine(eng_config)
+            eng.initialize_VQGAN_CLIP()
+
     # generate images
     video_frame_num = 1
-
     try:
         last_video_frame_generated = video_frames[0]
         video_frames_loop = tqdm(video_frames,unit='image',desc='style transfer')
         for video_frame in video_frames_loop:
             filename_to_save = os.path.basename(os.path.splitext(video_frame)[0]) + '.png'
             filepath_to_save = os.path.join(generated_video_frames_path,filename_to_save)
-            # suppress stdout to keep the progress bar clear
-            with open(os.devnull, 'w') as devnull:
-                with contextlib.redirect_stdout(devnull):
-                    eng = Engine(eng_config)
-                    eng.initialize_VQGAN_CLIP()
             pil_image_new_frame = Image.open(video_frame).convert('RGB').resize([output_size_X,output_size_Y], resample=Image.LANCZOS)
 
             # Blend the new original frame with the most recent generated frame. Use that as the initial image for the upcoming frame.
@@ -393,6 +423,18 @@ def restyle_video_frames(video_frames,
             video_frame_num += 1
     except KeyboardInterrupt:
         pass
+    config_info=f'iterations: {iterations}, '\
+            f'image_prompts: {image_prompts}, '\
+            f'noise_prompts: {noise_prompts}, '\
+            f'init_weight_method: {eng_config.init_image_method}, '\
+            f'init_weight {eng_config.init_weight:1.2f}, '\
+            f'init_image {generated_video_frames_path}, '\
+            f'current_source_frame_prompt_weight {current_source_frame_prompt_weight:2.2f}, '\
+            f'previous_generated_frame_prompt_weight {previous_generated_frame_prompt_weight:2.2f}, '\
+            f'generated_frame_init_blend {generated_frame_init_blend:2.2f}, '\
+            f'seed {eng.conf.seed}'
+    return config_info
+
 
 def video_frames(eng_config=VQGAN_CLIP_Config(),
         text_prompts = [],
@@ -468,6 +510,16 @@ def video_frames(eng_config=VQGAN_CLIP_Config(),
                 video_frame_num += 1
     except KeyboardInterrupt:
         pass
+    config_info=f'iterations: {iterations}, '\
+            f'image_prompts: {image_prompts}, '\
+            f'noise_prompts: {noise_prompts}, '\
+            f'init_weight_method: {eng_config.init_image_method}, '\
+            f'init_weight {eng_config.init_weight:1.2f}, '\
+            f'init_image {init_image}, '\
+            f'change_prompt_every {change_prompt_every}, '\
+            f'seed {eng.conf.seed}'
+    return config_info
+
 
 def zoom_video_frames(eng_config=VQGAN_CLIP_Config(),
         text_prompts = [],
@@ -571,11 +623,22 @@ def zoom_video_frames(eng_config=VQGAN_CLIP_Config(),
                 video_frame_num += 1
     except KeyboardInterrupt:
         pass
+    config_info=f'iterations: {iterations}, '\
+            f'image_prompts: {image_prompts}, '\
+            f'noise_prompts: {noise_prompts}, '\
+            f'init_weight_method: {eng_config.init_image_method}, '\
+            f'init_weight {eng_config.init_weight:1.2f}, '\
+            f'init_image {init_image}, '\
+            f'change_prompt_every {change_prompt_every}, '\
+            f'seed {eng.conf.seed}'
+    return config_info
+
 
 def _filename_to_png(file_path):
     dir = os.path.dirname(file_path)
-    basename_without_ext, ext = os.path.splitext(file_path)
-    if ext.lower() != '.png':
+    filename_without_path = os.path.basename(file_path)
+    basename_without_ext, ext = os.path.splitext(filename_without_path)
+    if ext.lower() not in ['.png','']:
         warnings.warn('vqgan_clip_generator can only create and save .PNG files.')
     return os.path.join(dir,basename_without_ext+'.png')
 
