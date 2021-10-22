@@ -98,6 +98,18 @@ conda remove --name vqgan --all
 Remove any cached model files at ~
 
 ## Generating images and video
+### Functions
+Generating images and video is done through functions in the vqgan_clip.generate module. For the functions that generate folders of images, you may optionally conver them to video using the included video_tools.encode_video() method, which is a wrapper for ffmpeg.
+|Function|Purpose|
+|--------|-------|
+|single_image|Generate a single image.|
+|multiple_images|Generate multiple, independent images. Each image has it's own random seed. This is useful if you want to fish for interesting images from the same prompt. It is equivalent to running single_image repeatedly. It generates a folder of images.|
+|restyle_video_frames_naive|Apply VQGAN_CLIP to each frame of a video separately as if you extracted the image and used it as an initial image for a call to single_image. This is the most common approach for VQGAN style transfers. It generates a folder of images which can be encoded to a video.|
+|restyle_video_frames|This is an enhanced version of restyle_video_frames_naive. Enhancements include using previous generated frames as image prompts, blending previous generated frames with the current input frame to create a new initial image that retains features of previous frames, and using the current source frame as an image prompt. The emphasis of these additions is better frame-to-frame consistency of generated content.|
+|video_frames|Generate a sequence of images by running the same VQGAN training while periodically saving the generated images to unique files. Images don't change much after 100-200 iterations, so this is most useful if you are using story prompts (see below).|
+|zoom_video_frames|Similar to video_frame, except that the image continually zooms in or out, and moves up/down/left/right. The images never stabilize, and create interesting patterns depending on the prompts.|
+
+
 
 ### Prompts
 Prompts are objects that can be analyzed by CLIP to identify their contents. The resulting images will be those that are similar to the prompts, as evaluated by CLIP. Prompts can be any combination of text phrases, example images, or random number generator seeds. Each of these types of prompts is in a separate string, discussed below.

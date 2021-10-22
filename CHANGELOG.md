@@ -1,3 +1,27 @@
+# v1.2.0
+**Important change to handling initial images**
+I discovered that the code that I started from had a major deviation in how it handled initial images, which I carried over in my code. The expected behavior is that passing any value for init_weight would drive the algorithm to preserve the original image in the output. The code I was using had changed this behavior completely to an (interesting) experimental approach so that the initial image feature was putting pressure on the output to drive it to an all grayscale, flat image, with a decay of this effect with iteration. If you set the init_weight very high, instead of ending up with your initial image, you would get a flat gray image.
+
+The line of code used in all other VQGAN+CLIP repos returns the diffrence between the outut tensor z (the current output image) and the orginal output tensor (original image):
+```python
+F.mse_loss(self._z, self._z_orig) * self.conf.init_weight / 2
+```
+
+The line of code used in the upstream copy that I started from is very different, with an effect that decreases with more iterations:
+```python
+F.mse_loss(self._z, torch.zeros_like(self._z_orig)) * ((1/torch.tensor(iteration_number*2 + 1))*self.conf.init_weight) / 2
+```
+
+**New features:**
+* Alternate methods for maintaining init_image are provided.
+  * 'decay' is the method used in this package from v1.0.0 through v1.1.3, and remains the default. This gives a more stylized look. Try values of 0.1-0.3.
+  * 'original' is the method from the original Katherine Crowson colab notebook, and is in common use in other notebooks. This gives a look that stays closer to the source image. Try values of 1-2.
+  * specify the method using config.init_weight_method = 'original' if desired, or config.init_weight_method = 'decay' to specify the default.
+* Story prompts no longer cycle back to the first prompt when the end is reached.
+* encode_video syntax change. input_framerate is now required. As before, if output_framerate differs from input_framerate, interpolation will be used.
+* PNG outputs have data chunks added which describe the generation conditions. You can view these properties using imagemagick. "magick identify -verbose my_image.png"
+
+
 # v1.1.3
 **Bug Fixes**
 * generate.restyle_video* functions now no longer rename the source files. Original filenames are preserved. As part of this fix, the video_tools.extract_video_frames() now uses a different naming format, consistent with generate.restyle_video. All video tools now use the filename frames_%12d.png.
