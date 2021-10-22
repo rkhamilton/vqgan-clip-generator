@@ -47,6 +47,7 @@ class VQGAN_CLIP_Config:
     * self.cuda_device (str, optional): Select your GPU. Default to the first gpu, device 0.  Defaults to \'cuda:0\'
     * self.adaptiveLR (boolean, optional): If true, use an adaptive learning rate. If the quality of the image stops improving, it will change less with each iteration. Generate.zoom output is more stable. Defaults to False.
     * self.conf.model_dir (str, optional): If set to a folder name (e.g. 'models') then model files will be downloaded to a subfolder of the current working directory. Defaults to None.
+    * init_image_method (str, optional): Method used to compare current image to init_image. Options=['original','decay']. Defaults to 'decay'
 
     """
     def __init__(self):
@@ -68,6 +69,7 @@ class VQGAN_CLIP_Config:
         self.cuda_device = 'cuda:0' # select your GPU. Default to the first gpu, device 0
         self.adaptiveLR = False # If true, use an adaptive learning rate. If the quality of the image stops improving, it will change less with each iteration. Generate.zoom output is more stable.
         self.model_dir = None # If set to a folder name (e.g. 'models') then model files will be downloaded to a subfolder of the current working directory.
+        self.init_image_method = 'original' # Method used to compare current image to init_image. Options=['original','decay'] Default = 'original'
 
 class Engine:
     def __init__(self, config=VQGAN_CLIP_Config()):
@@ -167,7 +169,7 @@ class Engine:
         
         return lossAll
 
-    def save_current_output(self, save_filename):
+    def save_current_output(self, save_filename, png_info=None):
         """Save the current output from the image generator as a PNG file to location save_filename
 
         Args:
@@ -175,11 +177,8 @@ class Engine:
         """
         # 
         with torch.inference_mode():
-            # model_output = self.synth()
-            info = PngImagePlugin.PngInfo()
-            # If we have a text prompt for this image, add it as metadata
-            # if self.story_phrase_current_prompt:
-            #     info.add_text('comment', self.story_phrase_current_prompt[0])
+            # if we weren't passed any info, generated a blank info object
+            info = png_info if png_info else PngImagePlugin.PngInfo()
             TF.to_pil_image(self.output_tensor[0].cpu()).save(save_filename, pnginfo=info)
 
     def ascend_txt(self,iteration_number):
@@ -197,9 +196,12 @@ class Engine:
         result = []
 
         if self.conf.init_weight:
-            result.append(F.mse_loss(self._z, self._z_orig) * self.conf.init_weight / 2)
-            # result.append(F.mse_loss(self._z, self._z_orig) * self.conf.init_weight / 2 * 1/torch.tensor(iteration_number + 1))
-            # result.append(F.mse_loss(self._z, torch.zeros_like(self._z_orig)) * ((1/torch.tensor(iteration_number*2 + 1))*self.conf.init_weight) / 2)
+            if self.conf.init_image_method == 'original':
+                result.append(F.mse_loss(self._z, self._z_orig) * self.conf.init_weight / 2)
+            elif self.conf.init_image_method == 'decay':
+                result.append(F.mse_loss(self._z, torch.zeros_like(self._z_orig)) * ((1/torch.tensor(iteration_number*2 + 1))*self.conf.init_weight) / 2)
+            else:
+                raise NameError('Invalid init_weight_method f{self.conf.init_image_method}')
 
         for prompt in self.pMs:
             result.append(prompt(encoded_image))
@@ -393,14 +395,14 @@ class Engine:
         # Split target images using the pipe character (weights are split later)
         if len(image_prompts) > 0:
             # if we had image prompts, encode them with CLIP
-            current_index = min(prompt_number, len(image_prompts))
+            current_index = min(prompt_number, len(image_prompts)-1)
             for prompt in image_prompts[current_index]:
                 # tqdm.write(f'Image prompt: {prompt_number} {prompt}')
                 self.encode_and_append_image_prompt(prompt)
 
         # Split noise prompts using the pipe character (weights are split later)
         if len(noise_prompts) > 0:
-            current_index = min(prompt_number, len(noise_prompts))
+            current_index = min(prompt_number, len(noise_prompts)-1)
             for prompt in noise_prompts[current_index]:
                 # tqdm.write(f'Noise prompt: {prompt_number} {prompt}')
                 self.encode_and_append_noise_prompt(prompt)

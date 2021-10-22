@@ -16,8 +16,7 @@ import subprocess
 import contextlib
 import torch
 import warnings
-
-from PIL import ImageFile, Image, ImageChops
+from PIL import ImageFile, Image, ImageChops, PngImagePlugin
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 from torchvision.transforms import functional as TF
 from . import _functional as VF
@@ -31,7 +30,7 @@ def single_image(eng_config=VQGAN_CLIP_Config(),
         save_every = 50,
         output_filename = 'output' + os.sep + 'output',
         change_prompt_every = 0):
-    """Generate an image using VQGAN+CLIP. The configuration of the algorithms is done via a VQGAN_CLIP_Config instance.
+    """Generate a single image using VQGAN+CLIP. The configuration of the algorithms is done via a VQGAN_CLIP_Config instance.
 
     Args:
         * eng_config (VQGAN_CLIP_Config, optional): An instance of VQGAN_CLIP_Config with attributes customized for your use. See the documentation for VQGAN_CLIP_Config().
@@ -44,8 +43,10 @@ def single_image(eng_config=VQGAN_CLIP_Config(),
         * output_filename (str, optional) : location to save the output image. Omit the file extension. Default = \'output\' + os.sep + \'output\'  
         * change_prompt_every (int, optional) : Serial prompts, sepated by ^, will be cycled through every change_prompt_every iterations. Prompts will loop if more cycles are requested than there are prompts. Default = 0
     """
+    output_filename = _filename_to_png(output_filename)
     output_folder_name = os.path.dirname(output_filename)
-    os.makedirs(output_folder_name, exist_ok=True)
+    if output_folder_name:
+        os.makedirs(output_folder_name, exist_ok=True)
 
     if init_image:
         eng_config.init_image = init_image
@@ -54,7 +55,15 @@ def single_image(eng_config=VQGAN_CLIP_Config(),
     parsed_text_prompts, parsed_image_prompts, parsed_noise_prompts = VF.parse_all_prompts(text_prompts, image_prompts, noise_prompts)
     eng.encode_and_append_prompts(0, parsed_text_prompts, parsed_image_prompts, parsed_noise_prompts)
     eng.configure_optimizer()
-    output_file = output_filename + '.png'
+    # metadata to save to PNG file as data chunks
+    png_info =  [('text_prompts',text_prompts),
+            ('image_prompts',image_prompts),
+            ('noise_prompts',noise_prompts),
+            ('iterations',iterations),
+            ('init_image',init_image),
+            ('save_every',save_every),
+            ('change_prompt_every',change_prompt_every),
+            ('seed',eng.conf.seed)]
     # generate the image
     current_prompt_number = 0
     try:
@@ -71,9 +80,10 @@ def single_image(eng_config=VQGAN_CLIP_Config(),
                 losses_str = ', '.join(f'{loss.item():7.3f}' for loss in lossAll)
                 tqdm.write(f'iteration:{iteration_num:6d}\tloss sum: {sum(lossAll).item():7.3f}\tloss for each prompt:{losses_str}')
                 # save an interim copy of the image so you can look at it as it changes if you like
-                eng.save_current_output(output_file) 
+                eng.save_current_output(output_filename,png_info_chunks(png_info)) 
         # Always save the output at the end
-        eng.save_current_output(output_file) 
+
+        eng.save_current_output(output_filename,png_info_chunks(png_info)) 
     except KeyboardInterrupt:
         pass
 
@@ -144,8 +154,17 @@ def multiple_images(eng_config=VQGAN_CLIP_Config(),
                     # save an interim copy of the image so you can look at it as it changes if you like
                     eng.save_current_output(output_images_path + os.sep + str(file_num) + '.png')
             #Always save a file at the end
+            # metadata to save to PNG file as data chunks
+            png_info =  [('text_prompts',text_prompts),
+                ('image_prompts',image_prompts),
+                ('noise_prompts',noise_prompts),
+                ('iterations',iterations),
+                ('init_image',init_image),
+                ('save_every',save_every),
+                ('change_prompt_every',change_prompt_every),
+                ('seed',eng.conf.seed)]
             filename_to_save = os.path.join(output_images_path,f'frame_{file_num:012d}.png')
-            eng.save_current_output(filename_to_save)
+            eng.save_current_output(filename_to_save,png_info_chunks(png_info))
     except KeyboardInterrupt:
         pass
 
@@ -232,7 +251,16 @@ def restyle_video_frames_naive(video_frames,
             tqdm.write(f'iteration:{iteration_num:6d}\tvideo frame: {video_frame_num:6d}\tloss sum: {sum(lossAll).item():7.3f}\tloss for each prompt:{losses_str}')
 
             # if making a video, save a frame named for the video step
-            eng.save_current_output(filepath_to_save)
+            # metadata to save to PNG file as data chunks
+            png_info =  [('text_prompts',text_prompts),
+                ('image_prompts',image_prompts),
+                ('noise_prompts',noise_prompts),
+                ('iterations',iterations),
+                ('init_image',video_frame),
+                ('save_every',save_every),
+                ('change_prompt_every',change_prompt_every),
+                ('seed',eng.conf.seed)]
+            eng.save_current_output(filepath_to_save,png_info_chunks(png_info))
             video_frame_num += 1
     except KeyboardInterrupt:
         pass
@@ -347,8 +375,20 @@ def restyle_video_frames(video_frames,
             losses_str = ', '.join(f'{loss.item():7.3f}' for loss in lossAll)
             tqdm.write(f'iteration:{iteration_num:6d}\tvideo frame: {video_frame_num:6d}\tloss sum: {sum(lossAll).item():7.3f}\tloss for each prompt:{losses_str}')
 
+            # metadata to save to PNG file as data chunks
+            png_info =  [('text_prompts',text_prompts),
+                ('image_prompts',image_prompts),
+                ('noise_prompts',noise_prompts),
+                ('iterations',iterations),
+                ('init_image',video_frame),
+                ('save_every',save_every),
+                ('change_prompt_every','N/A'),
+                ('seed',eng.conf.seed),
+                ('current_source_frame_prompt_weight',f'{current_source_frame_prompt_weight:2.2f}'),
+                ('previous_generated_frame_prompt_weight',f'{previous_generated_frame_prompt_weight:2.2f}'),
+                ('generated_frame_init_blend',f'{generated_frame_init_blend:2.2f}')]
             # if making a video, save a frame named for the video step
-            eng.save_current_output(filepath_to_save)
+            eng.save_current_output(filepath_to_save,png_info_chunks(png_info))
             last_video_frame_generated = filepath_to_save
             video_frame_num += 1
     except KeyboardInterrupt:
@@ -413,9 +453,18 @@ def video_frames(eng_config=VQGAN_CLIP_Config(),
                 losses_str = ', '.join(f'{loss.item():7.3f}' for loss in lossAll)
                 tqdm.write(f'iteration:{iteration_num:6d}\tvideo frame: {video_frame_num:6d}\tloss sum: {sum(lossAll).item():7.3f}\tloss for each prompt:{losses_str}')
 
+                # metadata to save to PNG file as data chunks
+                png_info =  [('text_prompts',text_prompts),
+                    ('image_prompts',image_prompts),
+                    ('noise_prompts',noise_prompts),
+                    ('iterations',iterations),
+                    ('init_image',video_frame_num),
+                    ('save_every',save_every),
+                    ('change_prompt_every','N/A'),
+                    ('seed',eng.conf.seed)]
                 # if making a video, save a frame named for the video step
                 filepath_to_save = os.path.join(video_frames_path,f'frame_{video_frame_num:012d}.png')
-                eng.save_current_output(filepath_to_save)
+                eng.save_current_output(filepath_to_save,png_info_chunks(png_info))
                 video_frame_num += 1
     except KeyboardInterrupt:
         pass
@@ -507,17 +556,41 @@ def zoom_video_frames(eng_config=VQGAN_CLIP_Config(),
                 losses_str = ', '.join(f'{loss.item():7.3f}' for loss in lossAll)
                 tqdm.write(f'iteration:{iteration_num:6d}\tvideo frame: {video_frame_num:6d}\tloss sum: {sum(lossAll).item():7.3f}\tloss for each prompt:{losses_str}')
 
+                # metadata to save to PNG file as data chunks
+                png_info =  [('text_prompts',text_prompts),
+                    ('image_prompts',image_prompts),
+                    ('noise_prompts',noise_prompts),
+                    ('iterations',iterations),
+                    ('init_image',video_frame_num),
+                    ('save_every',save_every),
+                    ('change_prompt_every','N/A'),
+                    ('seed',eng.conf.seed)]
                 # if making a video, save a frame named for the video step
                 filepath_to_save = os.path.join(video_frames_path,f'frame_{video_frame_num:012d}.png')
-                eng.save_current_output(filepath_to_save)
+                eng.save_current_output(filepath_to_save,png_info_chunks(png_info))
                 video_frame_num += 1
     except KeyboardInterrupt:
         pass
 
 def _filename_to_png(file_path):
     dir = os.path.dirname(file_path)
-    orig_file_name = os.path.basename(file_path)
     basename_without_ext, ext = os.path.splitext(file_path)
     if ext.lower() != '.png':
         warnings.warn('vqgan_clip_generator can only create and save .PNG files.')
     return os.path.join(dir,basename_without_ext+'.png')
+
+def png_info_chunks(list_of_info):
+    """Create a series of PNG info chunks that contain various details of image generation.
+
+    Args:
+        * list_of_info (list): A list of data to encode in a PNG file. Structure is [['chunk_name']['chunk_data'],['chunk_name']['chunk_data'],...]
+
+    Returns:
+        [PngImagePlugin.PngInfo()]: A PngImagePlugin.PngInfo() object populated with various information about the image generation.
+    """
+    # model_output = self.synth()
+    info = PngImagePlugin.PngInfo()
+    for chunk_tuple in list_of_info:
+        encode_me = chunk_tuple[1] if chunk_tuple[1] else ''  
+        info.add_text(chunk_tuple[0], str(encode_me))
+    return info
