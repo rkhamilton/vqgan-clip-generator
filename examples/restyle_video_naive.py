@@ -57,3 +57,5 @@ if copy_audio:
         os.remove(generated_video_no_audio)
 else:
         os.rename(generated_video_no_audio,final_output_filename)
+
+print(f'generation parameters: {metadata_comment}')

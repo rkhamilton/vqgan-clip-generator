@@ -11,7 +11,7 @@ upscale_images = True
 output_images_path='./video_frames'
 face_enhance = False
 
-generate.multiple_images(eng_config = config,
+metadata_comment = generate.multiple_images(eng_config = config,
         text_prompts = text_prompts,
         iterations = 50,
         save_every = None,
@@ -27,3 +27,5 @@ if upscale_images:
                 purge_existing_files=True,
                 netscale=4,
                 outscale=4)
+
+print(f'generation parameters: {metadata_comment}')

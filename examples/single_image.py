@@ -9,7 +9,7 @@ upscale_image = True
 text_prompts = 'A pastoral landscape painting by Rembrandt'
 
 output_filename = os.path.join('example_media',text_prompts+'.png')
-generate.single_image(eng_config = config,
+metadata_comment = generate.single_image(eng_config = config,
         text_prompts = text_prompts,
         iterations = 100,
         save_every = 50,
@@ -22,3 +22,4 @@ if upscale_image:
                 face_enhance=False,
                 netscale=4,
                 outscale=4)
+print(f'generation parameters: {metadata_comment}')

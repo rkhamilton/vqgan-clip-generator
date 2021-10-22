@@ -50,3 +50,5 @@ video_tools.encode_video(output_file=final_video_filename,
         metadata_comment=metadata_comment,
         output_framerate=60,
         input_framerate=30)
+
+print(f'generation parameters: {metadata_comment}')
