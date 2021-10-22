@@ -8,25 +8,25 @@ import os
 config = VQGAN_CLIP_Config()
 config.output_image_size = [587,330]
 text_prompts = 'A pastoral landscape painting by Rembrandt^A black dog with red eyes in a cave'
-final_video_filename = os.path.join('output','video.mp4')
-
+final_video_filename = os.path.join('example_media','video.mp4')
+iterations = 500
 upscale_images = True
 face_enhance = False
 
-init_image = os.path.join('output','init_image')
+init_image = os.path.join('example_media','init_image.png')
 generate.single_image(eng_config = config,
         text_prompts = text_prompts,
         iterations = 100,
         save_every = None,
         output_filename = init_image)
-
+        
 # Now generate a zoom video starting from that initial frame.
 generated_video_frames_path='video_frames'
-generate.video_frames(eng_config = config,
+metadata_comment = generate.video_frames(eng_config = config,
         text_prompts = text_prompts,
-        init_image = init_image+'.png',
+        init_image = init_image,
         video_frames_path = generated_video_frames_path,
-        iterations = 500,
+        iterations = iterations,
         save_every = 10,
         change_prompt_every = 100)
 
@@ -46,6 +46,7 @@ else:
 # Use a wrapper for FFMPEG to encode the video.
 video_tools.encode_video(output_file=final_video_filename,
         path_to_stills=video_frames_to_encode,
-        metadata=text_prompts,
+        metadata_title=text_prompts,
+        metadata_comment=metadata_comment,
         output_framerate=60,
         input_framerate=30)

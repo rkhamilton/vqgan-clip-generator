@@ -6,7 +6,7 @@ import os
 config = VQGAN_CLIP_Config()
 config.output_image_size = [448,448]
 upscale_image = True
-output_filename = os.path.join('output','image_prompt')
+output_filename = os.path.join('example_media','image_prompt.png')
 
 generate.single_image(eng_config = config,
         image_prompts = 'input_image.jpg',
@@ -16,7 +16,7 @@ generate.single_image(eng_config = config,
 
 # Upscale the video frames
 if upscale_image:
-        esrgan.inference_realesrgan(input=output_filename+'.png',
+        esrgan.inference_realesrgan(input=output_filename,
                 output_images_path='output',
                 face_enhance=True,
                 netscale=4,

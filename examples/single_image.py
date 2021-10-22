@@ -8,7 +8,7 @@ config.output_image_size = [448,448]
 upscale_image = True
 text_prompts = 'A pastoral landscape painting by Rembrandt'
 
-output_filename = os.path.join('output',text_prompts)
+output_filename = os.path.join('example_media',text_prompts+'.png')
 generate.single_image(eng_config = config,
         text_prompts = text_prompts,
         iterations = 100,
@@ -17,8 +17,8 @@ generate.single_image(eng_config = config,
 
 # Upscale the image
 if upscale_image:
-        esrgan.inference_realesrgan(input=output_filename+'.png',
-                output_images_path='output',
+        esrgan.inference_realesrgan(input=output_filename,
+                output_images_path='example_media',
                 face_enhance=False,
                 netscale=4,
                 outscale=4)

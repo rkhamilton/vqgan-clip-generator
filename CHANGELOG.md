@@ -1,3 +1,12 @@
+# v1.2.1
+**New features:**
+* Video metadata is encoded by the encode_video function in the title (text prompts) and comment (generator parameters) fields. 
+
+**Bug Fixes**
+* generate.restyle_video* functions no longer re-load the VQGAN network each frame, which results in a 300% speed-up in running this function. This means that training doesn't start over each frame, so the output will look somewhat different than in earlier versions.
+* generate functions no longer throw a warning when the output file argument doesn't have an extension.
+* v1.2.0 introduced a bug where images were saved to output/output/filename. This is fixed.
+
 # v1.2.0
 **Important change to handling initial images**
 I discovered that the code that I started from had a major deviation in how it handled initial images, which I carried over in my code. The expected behavior is that passing any value for init_weight would drive the algorithm to preserve the original image in the output. The code I was using had changed this behavior completely to an (interesting) experimental approach so that the initial image feature was putting pressure on the output to drive it to an all grayscale, flat image, with a decay of this effect with iteration. If you set the init_weight very high, instead of ending up with your initial image, you would get a flat gray image.

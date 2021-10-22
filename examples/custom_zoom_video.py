@@ -110,9 +110,13 @@ except KeyboardInterrupt:
     pass
 
 # Encode the images into a video
-video_tools.encode_video(output_file=os.path.join('output','custom_zoom_video.mp4'),
+metadata_comment=f'iterations: {iterations}, '\
+        f'init_weight_method: {eng_config.init_image_method}, '\
+        f'init_weight {eng_config.init_weight:1.2f}'
+video_tools.encode_video(output_file=os.path.join('example_media','custom_zoom_video.mp4'),
         path_to_stills=video_frames_path,
-        metadata=text_prompts,
+        metadata_title=text_prompts,
+        metadata_comment=metadata_comment,
         output_framerate=30,
         input_framerate=30,
         vcodec='libx264',

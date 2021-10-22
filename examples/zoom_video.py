@@ -10,13 +10,15 @@ import os
 config = VQGAN_CLIP_Config()
 config.output_image_size = [587,330]
 text_prompts = 'A field of broken machines^Harvesting wheat'
+iterations = 1000
+save_every = 5
 
 upscale_images = True
 face_enhance=False
-final_video_filename = os.path.join('output','zoom_video.mp4')
+final_video_filename = os.path.join('example_media','zoom_video.mp4')
 
 
-init_image = os.path.join('output','init_image')
+init_image = os.path.join('example_media','init_image.png')
 generate.single_image(eng_config = config,
         text_prompts = text_prompts,
         iterations = 100,
@@ -25,11 +27,11 @@ generate.single_image(eng_config = config,
 
 # Now generate a zoom video starting from that initial frame.
 generated_video_frames_path='video_frames'
-generate.zoom_video_frames(eng_config = config,
+metadata_comment = generate.zoom_video_frames(eng_config = config,
         text_prompts = text_prompts,
-        init_image = init_image+'.png',
-        iterations = 1000,
-        save_every = 5,
+        init_image = init_image,
+        iterations = iterations,
+        save_every = save_every,
         video_frames_path = generated_video_frames_path,
         change_prompt_every = 300,
         zoom_scale=1.02, 
@@ -52,6 +54,7 @@ else:
 # Encode the video
 video_tools.encode_video(output_file=final_video_filename,
         path_to_stills=video_frames_to_encode,
-        metadata=text_prompts,
+        metadata_title=text_prompts,
+        metadata_comment=metadata_comment,
         output_framerate=60,
         input_framerate=30)

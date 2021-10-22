@@ -9,7 +9,8 @@ config.output_image_size = [256,256]
 config.init_weight = 1.0
 text_prompts = 'portrait on deviantart'
 input_video_path = '20211004_132008000_iOS.MOV'
-final_output_filename = os.path.join('output','restyled_video_naive.mp4')
+iterations = 15
+final_output_filename = os.path.join('example_media','restyled_video_naive.mp4')
 extraction_framerate = 30
 output_framerate = 60
 copy_audio = True
@@ -21,10 +22,10 @@ original_video_frames = video_tools.extract_video_frames(input_video_path,
 
 # Restyle the video by applying VQGAN to each frame independently
 generated_video_frames_path='video_frames'
-generate.restyle_video_frames_naive(original_video_frames,
+metadata_comment = generate.restyle_video_frames_naive(original_video_frames,
         eng_config=config,
         text_prompts = text_prompts,
-        iterations = 15,
+        iterations = iterations,
         save_every=None,
         generated_video_frames_path = generated_video_frames_path)
 
@@ -42,10 +43,11 @@ else:
         video_frames_to_encode = generated_video_frames_path
 
 
-generated_video_no_audio=os.path.join('output','output_no_audio.mp4')
+generated_video_no_audio=os.path.join('example_media','output_no_audio.mp4')
 video_tools.encode_video(output_file=generated_video_no_audio,
         path_to_stills=video_frames_to_encode,
-        metadata=text_prompts,
+        metadata_title=text_prompts,
+        metadata_comment=metadata_comment,
         output_framerate=output_framerate,
         input_framerate=extraction_framerate)
 

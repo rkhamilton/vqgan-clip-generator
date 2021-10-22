@@ -63,7 +63,7 @@ def copy_video_audio(original_video, destination_file_without_audio, output_file
     os.remove(extracted_original_audio)
 
 
-def encode_video(output_file, input_framerate, path_to_stills=f'./video_frames', metadata='', output_framerate=None, crf=23, vcodec='libx264'):
+def encode_video(output_file, input_framerate, path_to_stills=f'./video_frames', metadata_title='', metadata_comment='', output_framerate=None, crf=23, vcodec='libx264'):
     """Wrapper for FFMPEG. Encodes a folder of PNG images to a video in HEVC format using ffmpeg with optional interpolation. Input stills must be sequentially numbered png files named in the format frame_%12d.png.
     Note that this wrapper will print to the command line the exact ffmpeg command that was used. You can copy this and run it from the command line with any tweaks necessary.
 
@@ -85,6 +85,7 @@ def encode_video(output_file, input_framerate, path_to_stills=f'./video_frames',
         input_framerate_option = ''
         output_framerate_to_use = output_framerate if output_framerate else input_framerate
         output_framerate_option = f'-r {output_framerate_to_use}'
-    ffmpeg_command = f'ffmpeg -y -f image2 {input_framerate_option} -i {path_to_stills}\\frame_%12d.png {output_framerate_option} -vcodec {vcodec} -crf {crf} -pix_fmt yuv420p -strict -2 -metadata comment=\"{metadata}\" {output_file}'
+    metadata_option = f'-metadata title=\"{metadata_title}\" -metadata comment=\"{metadata_comment}\" -metadata description=\"Generated with https://github.com/rkhamilton/vqgan-clip-generator\"'
+    ffmpeg_command = f'ffmpeg -y -f image2 {input_framerate_option} -i {path_to_stills}\\frame_%12d.png {output_framerate_option} -vcodec {vcodec} -crf {crf} -pix_fmt yuv420p -strict -2 {metadata_option} {output_file}'
     subprocess.Popen(ffmpeg_command,shell=True).wait()
     print(f'FFMPEG command used was:\t{ffmpeg_command}')

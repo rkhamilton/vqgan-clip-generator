@@ -8,8 +8,9 @@ from vqgan_clip import esrgan, video_tools
 import os
 
 input_video_path = 'small_video.mp4'
-final_output_filename = 'upscaled_video.mp4'
+final_output_filename = os.path.join('example_media','upscaled_video.mp4')
 extracted_video_frames_path = 'video_frames'
+upscaled_video_frames_path='upscaled_video_frames'
 extraction_framerate = 30
 
 
@@ -22,7 +23,6 @@ original_video_frames = video_tools.extract_video_frames(input_video_path,
 # os.system(f'ffmpeg -i small_video.mp4 -filter:v fps=30 video_frames\\frame_%12d.jpg')
 
 # Upscale using Real-ESRGAN
-upscaled_video_frames_path='upscaled_video_frames'
 esrgan.inference_realesrgan(input=extracted_video_frames_path,
         output_images_path=upscaled_video_frames_path,
         face_enhance=False,
@@ -31,8 +31,8 @@ esrgan.inference_realesrgan(input=extracted_video_frames_path,
         outscale=4)
 
 # Encode the video.
-generated_video_no_audio=os.path.join('output','output_no_audio.mp4')
-os.system(f'ffmpeg -y -f image2 -i upscaled_video_frames\\frame_%12d.jpg -r 30 -vcodec libx264 -crf 23 -pix_fmt yuv420p -strict -2 output_no_audio.mp4')
+generated_video_no_audio=os.path.join('example_media','output_no_audio.mp4')
+os.system(f'ffmpeg -y -f image2 -i {upscaled_video_frames_path}\\frame_%12d.jpg -r 30 -vcodec libx264 -crf 23 -pix_fmt yuv420p -strict -2 \"{generated_video_no_audio}\"')
 
 # Copy audio from the original file
 video_tools.copy_video_audio(input_video_path, generated_video_no_audio, final_output_filename)
