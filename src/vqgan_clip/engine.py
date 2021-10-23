@@ -175,11 +175,14 @@ class Engine:
         Args:
             save_filename (str): string containing the path to save the generated image. e.g. 'output.png' or 'outputs/my_file.png'
         """
-        # 
+        self.save_tensor_as_image(self.output_tensor, save_filename, png_info)
+
+    @staticmethod
+    def save_tensor_as_image(image_tensor, save_filename, png_info=None):
         with torch.inference_mode():
             # if we weren't passed any info, generated a blank info object
             info = png_info if png_info else PngImagePlugin.PngInfo()
-            TF.to_pil_image(self.output_tensor[0].cpu()).save(save_filename, pnginfo=info)
+            TF.to_pil_image(image_tensor[0].cpu()).save(save_filename, pnginfo=info)
 
     def ascend_txt(self,iteration_number):
         """Part of the process of training a GAN
