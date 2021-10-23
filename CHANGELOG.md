@@ -1,3 +1,9 @@
+# v1.2.2
+Test coverage increased to include all generate, esrgan, and video_tools functions.
+
+**Bug Fixes**
+* generate.extract_video_frames was still saving jpgs. Changed to only save png.
+
 # v1.2.1
 **New features:**
 * Video metadata is encoded by the encode_video function in the title (text prompts) and comment (generator parameters) fields. 
