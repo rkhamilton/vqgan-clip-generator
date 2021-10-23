@@ -16,6 +16,8 @@ def test_examples():
                 'single_image.py',
                 'upscaling_video.py',
                 'video.py',
-                'zoom_video.py']
+                'zoom_video.py']    
     for example in examples:
-        subprocess.call('python ' + os.path.join(EXAMPLES_PATH,example), shell=True)
+        cmnd = 'python ' + os.path.join(EXAMPLES_PATH,example)
+        # subprocess.call(cmnd, shell=True)
+        subprocess.check_output(cmnd)
