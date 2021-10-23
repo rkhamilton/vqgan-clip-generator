@@ -18,9 +18,10 @@ TEST_DATA_DIR = os.path.join(
     'test_files',
     )
 
-IMAGE_1=os.path.join(TEST_DATA_DIR,'prompt1.jpg')
-IMAGE_2=os.path.join(TEST_DATA_DIR,'prompt2.jpg')
+IMAGE_1 = os.path.join(TEST_DATA_DIR,'prompt1.jpg')
+IMAGE_2 = os.path.join(TEST_DATA_DIR,'prompt2.jpg')
 IMAGE_PROMPTS = f'{IMAGE_1}:0.5|{IMAGE_2}:0.5'
+TEST_VIDEO = os.path.join(TEST_DATA_DIR,'small.mp4')
 
 def test_single_image(testing_config, tmpdir):
     '''Generate a single image based on a text prompt
@@ -312,8 +313,54 @@ def test_zoom_video_all_prompts(testing_config, tmpdir):
         os.remove(f)
     os.remove(output_filename)
 
-def test_restyle_video():
-    assert False
+def test_restyle_video_naive(testing_config, tmpdir):
+    output_images_path = str(tmpdir.mkdir('video_frames'))
+    original_video_frames = video_tools.extract_video_frames(TEST_VIDEO, 
+        extraction_framerate = 2,
+        extracted_video_frames_path=output_images_path)
+
+    # Restyle the video by applying VQGAN to each frame independently
+    generated_video_frames_path = str(tmpdir.mkdir('generated_video_frames'))
+    vqgan_clip.generate.restyle_video_frames_naive(original_video_frames,
+            eng_config=testing_config,
+            text_prompts = 'a red rose|a fish^the last horse',
+            iterations = 5,
+            save_every=None,
+            generated_video_frames_path = generated_video_frames_path)
+
+    output_files = glob.glob(generated_video_frames_path + os.sep + '*.png')
+    assert len(output_files) > 0
+    assert len(output_files) == len(original_video_frames)
+    for f in output_files:
+        os.remove(f)
+    for f in original_video_frames:
+        os.remove(f)
+
+def test_restyle_video(testing_config, tmpdir):
+    output_images_path = str(tmpdir.mkdir('video_frames'))
+    original_video_frames = video_tools.extract_video_frames(TEST_VIDEO, 
+        extraction_framerate = 2,
+        extracted_video_frames_path=output_images_path)
+
+    # Restyle the video by applying VQGAN to each frame independently
+    generated_video_frames_path = str(tmpdir.mkdir('generated_video_frames'))
+    vqgan_clip.generate.restyle_video_frames(original_video_frames,
+            eng_config=testing_config,
+            text_prompts = 'a red rose|a fish^the last horse',
+            iterations = 5,
+            save_every=None,
+            generated_video_frames_path = generated_video_frames_path,
+            current_source_frame_prompt_weight=0.1,
+            previous_generated_frame_prompt_weight=0.1,
+            generated_frame_init_blend=0.1)
+
+    output_files = glob.glob(generated_video_frames_path + os.sep + '*.png')
+    assert len(output_files) > 0
+    assert len(output_files) == len(original_video_frames)
+    for f in output_files:
+        os.remove(f)
+    for f in original_video_frames:
+        os.remove(f)
 
 def test_single_image_no_folder(testing_config, tmpdir):
     '''Generate a single image based on a text prompt
