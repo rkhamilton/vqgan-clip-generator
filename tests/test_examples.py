@@ -19,5 +19,4 @@ def test_examples():
                 'zoom_video.py']    
     for example in examples:
         cmnd = 'python ' + os.path.join(EXAMPLES_PATH,example)
-        # subprocess.call(cmnd, shell=True)
         subprocess.check_output(cmnd)
