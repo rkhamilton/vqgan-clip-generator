@@ -29,9 +29,9 @@ def extract_video_frames(input_video_path, extraction_framerate, extracted_video
     subprocess.call(['ffmpeg',
         '-i', input_video_path,
         '-filter:v', 'fps='+str(extraction_framerate),
-        extracted_video_frames_path+os.sep+'frame_%12d.jpg'])
+        extracted_video_frames_path+os.sep+'frame_%12d.png'])
 
-    video_frames = sorted(glob.glob(extracted_video_frames_path+os.sep+'*.jpg'))
+    video_frames = sorted(glob.glob(extracted_video_frames_path+os.sep+'*.png'))
     if not len(video_frames):
         raise NameError('No video frames were extracted')
     return video_frames
