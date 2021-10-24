@@ -1,3 +1,8 @@
+# v1.3.0
+This release adds smoothing to the output of video_frames and restyle_video_frames. The smoothing is done by combining a user-specifiable number of latent vectors (z) and averaging them together using a modified exponentially weighted moving average (EWMA). The approach used here creates a sliding window of z frames (of z_smoothing_buffer length). The center of this window is considered the key frame, and has the greatest weight in the result. As frames move away from the center of the buffer, they have exponentially decreasing weight, by factor (1-z_smoothing_alpha)**offset_from_center.
+
+To increase the temporal smoothing, increase the buffer size. To increase the weight of the key frame of video, increase the z_smoothing_alpha. More smoothing will combine adjacent z vectors, which will blur rapid motion from frame to frame.
+
 # v1.2.2
 Test coverage increased to include all generate, esrgan, and video_tools functions.
 

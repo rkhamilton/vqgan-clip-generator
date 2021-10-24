@@ -337,7 +337,7 @@ def restyle_video_frames(video_frames,
         * current_frame_prompt_weight (float) : Using the current frame of source video as an image prompt (as well as init_image), this assigns a weight to that image prompt. Default = 0.0
         * generated_frame_init_blend (float) : How much of the previous generated image to blend in to a new frame's init_image. 0 means no previous generated image, 1 means 100% previous generated image. Default = 0.2
         * z_smoother (boolean, optional) : If true, smooth the latent vectors (z) used for image generation by combining multiple z vectors through an exponentially weighted moving average (EWMA). Defaults to False.
-        * z_smoother_buffer_len (int, optional) : How many images' latent vectors should be combined in the smoothing algorithm. Bigger numbers will be smoother, and have more blurred motion. Defaults to 3.
+        * z_smoother_buffer_len (int, optional) : How many images' latent vectors should be combined in the smoothing algorithm. Bigger numbers will be smoother, and have more blurred motion. Must be an odd number. Defaults to 3.
         * z_smoother_alpha (float, optional) : When combining multiple latent vectors for smoothing, this sets how important the "keyframe" z is. As frames move further from the keyframe, their weight drops by (1-z_smoother_alpha) each frame. Bigger numbers apply more smoothing. Defaults to 0.6.
 """
     parsed_text_prompts, parsed_image_prompts, parsed_noise_prompts = VF.parse_all_prompts(text_prompts, image_prompts, noise_prompts)
@@ -485,7 +485,7 @@ def video_frames(eng_config=VQGAN_CLIP_Config(),
         * change_prompt_every (int, optional) : Serial prompts, sepated by ^, will be cycled through every change_prompt_every iterations. Prompts will loop if more cycles are requested than there are prompts. Default = 0
         * video_frames_path (str, optional) : Path where still images should be saved as they are generated before being combined into a video. Defaults to './video_frames'.
         * z_smoother (boolean, optional) : If true, smooth the latent vectors (z) used for image generation by combining multiple z vectors through an exponentially weighted moving average (EWMA). Defaults to False.
-        * z_smoother_buffer_len (int, optional) : How many images' latent vectors should be combined in the smoothing algorithm. Bigger numbers will be smoother, and have more blurred motion. Defaults to 5.
+        * z_smoother_buffer_len (int, optional) : How many images' latent vectors should be combined in the smoothing algorithm. Bigger numbers will be smoother, and have more blurred motion. Must be an odd number. Defaults to 3.
         * z_smoother_alpha (float, optional) : When combining multiple latent vectors for smoothing, this sets how important the "keyframe" z is. As frames move further from the keyframe, their weight drops by (1-z_smoother_alpha) each frame. Bigger numbers apply more smoothing. Defaults to 0.7.
     """
     if init_image:
@@ -586,7 +586,7 @@ def zoom_video_frames(eng_config=VQGAN_CLIP_Config(),
         * shift_x (int, optional) : Every save_every iterations, a video frame is saved. That frame is shifted shift_x pixels in the x direction, and used as the initial image to generate the next frame. Default = 0
         * shift_y (int, optional) : Every save_every iterations, a video frame is saved. That frame is shifted shift_y pixels in the y direction, and used as the initial image to generate the next frame. Default = 0
         * z_smoother (boolean, optional) : If true, smooth the latent vectors (z) used for image generation by combining multiple z vectors through an exponentially weighted moving average (EWMA). Defaults to False.
-        * z_smoother_buffer_len (int, optional) : How many images' latent vectors should be combined in the smoothing algorithm. Bigger numbers will be smoother, and have more blurred motion. Defaults to 5.
+        * z_smoother_buffer_len (int, optional) : How many images' latent vectors should be combined in the smoothing algorithm. Bigger numbers will be smoother, and have more blurred motion. Must be an odd number. Defaults to 3.
         * z_smoother_alpha (float, optional) : When combining multiple latent vectors for smoothing, this sets how important the "keyframe" z is. As frames move further from the keyframe, their weight drops by (1-z_smoother_alpha) each frame. Bigger numbers apply more smoothing. Defaults to 0.7.
     """
     if init_image:

@@ -163,7 +163,7 @@ These parameters are passed to the functions of vqgan_clip.generate: single_imag
 |input_framerate|30|When combining still images to make a video, this parameter can be used to force an assumed original framerate. For example, you could assume you started with 10fps, and interpolate to 60fps.|
 |copy_audio|False|When restyling a video, you can copy the audio from the original video to the result video.|
 |z_smoother|False|When enabled, recent latent vectors used for image generation are combined using a modified [EWMA](https://en.wikipedia.org/wiki/Moving_average) calculation. This average together multiple latent vectors, giving more weight to a central vector, and exponentially less weight to preceeding and succeeding vectors.|
-|z_smoother_buffer_len|5|Sets how many latent vectors (image generation data) are combined using an EWMA. Bigger numbers will combine more images for more smoothing, but may make rapid changes blur.|
+|z_smoother_buffer_len|5|Sets how many latent vectors (image generation data) are combined using an EWMA. Bigger numbers will combine more images for more smoothing, but may make rapid changes blur. The center element of this buffer is given the greatest weight. Must be an odd number.|
 |z_smoother_alpha|0.7|Sets how much the adjacent latent vectors contribute to the final average. Smaller values mean the adjacent images will contribute more to the final output, smoothing changes from frame to frame and increasing the appearance of motion blur.|
 
 
