@@ -10,6 +10,7 @@
 
 from logging import error
 from vqgan_clip.engine import Engine, VQGAN_CLIP_Config
+from vqgan_clip.z_smoother import Z_Smoother
 from tqdm import tqdm
 import glob, os, sys, io
 import subprocess
@@ -20,6 +21,7 @@ from PIL import ImageFile, Image, ImageChops, PngImagePlugin
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 from torchvision.transforms import functional as TF
 from . import _functional as VF
+import collections
 
 def single_image(eng_config=VQGAN_CLIP_Config(),
         text_prompts = [],
@@ -80,10 +82,10 @@ def single_image(eng_config=VQGAN_CLIP_Config(),
                 losses_str = ', '.join(f'{loss.item():7.3f}' for loss in lossAll)
                 tqdm.write(f'iteration:{iteration_num:6d}\tloss sum: {sum(lossAll).item():7.3f}\tloss for each prompt:{losses_str}')
                 # save an interim copy of the image so you can look at it as it changes if you like
-                eng.save_current_output(output_filename,png_info_chunks(png_info)) 
+                eng.save_current_output(output_filename,_png_info_chunks(png_info)) 
         # Always save the output at the end
 
-        eng.save_current_output(output_filename,png_info_chunks(png_info)) 
+        eng.save_current_output(output_filename,_png_info_chunks(png_info)) 
     except KeyboardInterrupt:
         pass
 
@@ -173,7 +175,7 @@ def multiple_images(eng_config=VQGAN_CLIP_Config(),
                 ('change_prompt_every',change_prompt_every),
                 ('seed',eng.conf.seed)]
             filename_to_save = os.path.join(output_images_path,f'frame_{file_num:012d}.png')
-            eng.save_current_output(filename_to_save,png_info_chunks(png_info))
+            eng.save_current_output(filename_to_save,_png_info_chunks(png_info))
     except KeyboardInterrupt:
         pass
     config_info=f'iterations: {iterations}, '\
@@ -281,7 +283,7 @@ def restyle_video_frames_naive(video_frames,
                 ('save_every',save_every),
                 ('change_prompt_every',change_prompt_every),
                 ('seed',eng.conf.seed)]
-            eng.save_current_output(filepath_to_save,png_info_chunks(png_info))
+            eng.save_current_output(filepath_to_save,_png_info_chunks(png_info))
             video_frame_num += 1
     except KeyboardInterrupt:
         pass
@@ -305,7 +307,10 @@ def restyle_video_frames(video_frames,
     generated_video_frames_path='./video_frames',
     current_source_frame_prompt_weight=0.0,
     previous_generated_frame_prompt_weight=0.0,
-    generated_frame_init_blend=0.2):
+    generated_frame_init_blend=0.2,
+    z_smoother=False,
+    z_smoother_buffer_len=3,
+    z_smoother_alpha=0.6):
     """Apply a style to an existing video using VQGAN+CLIP using a blended input frame method. The still image 
     frames from the original video are extracted, and used as initial images for VQGAN+CLIP. The resulting 
     folder of stills are then encoded into an HEVC video file. The audio from the original may optionally be 
@@ -331,7 +336,10 @@ def restyle_video_frames(video_frames,
         * generated_video_frames_path (str, optional) : Path where still images should be saved as they are generated before being combined into a video. Defaults to './video_frames'.
         * current_frame_prompt_weight (float) : Using the current frame of source video as an image prompt (as well as init_image), this assigns a weight to that image prompt. Default = 0.0
         * generated_frame_init_blend (float) : How much of the previous generated image to blend in to a new frame's init_image. 0 means no previous generated image, 1 means 100% previous generated image. Default = 0.2
-    """
+        * z_smoother (boolean, optional) : If true, smooth the latent vectors (z) used for image generation by combining multiple z vectors through an exponentially weighted moving average (EWMA). Defaults to False.
+        * z_smoother_buffer_len (int, optional) : How many images' latent vectors should be combined in the smoothing algorithm. Bigger numbers will be smoother, and have more blurred motion. Defaults to 3.
+        * z_smoother_alpha (float, optional) : When combining multiple latent vectors for smoothing, this sets how important the "keyframe" z is. As frames move further from the keyframe, their weight drops by (1-z_smoother_alpha) each frame. Bigger numbers apply more smoothing. Defaults to 0.6.
+"""
     parsed_text_prompts, parsed_image_prompts, parsed_noise_prompts = VF.parse_all_prompts(text_prompts, image_prompts, noise_prompts)
 
     # lock in a seed to use for each frame
@@ -354,6 +362,7 @@ def restyle_video_frames(video_frames,
             eng = Engine(eng_config)
             eng.initialize_VQGAN_CLIP()
 
+    smoothed_z = Z_Smoother(buffer_len=z_smoother_buffer_len, alpha=z_smoother_alpha)
     # generate images
     video_frame_num = 1
     try:
@@ -362,15 +371,20 @@ def restyle_video_frames(video_frames,
         for video_frame in video_frames_loop:
             filename_to_save = os.path.basename(os.path.splitext(video_frame)[0]) + '.png'
             filepath_to_save = os.path.join(generated_video_frames_path,filename_to_save)
-            pil_image_new_frame = Image.open(video_frame).convert('RGB').resize([output_size_X,output_size_Y], resample=Image.LANCZOS)
 
+            # INIT IMAGE
+            # By default, the init_image is the new frame of source video.
+            pil_image_new_frame = Image.open(video_frame).convert('RGB').resize([output_size_X,output_size_Y], resample=Image.LANCZOS)
             # Blend the new original frame with the most recent generated frame. Use that as the initial image for the upcoming frame.
             if generated_frame_init_blend:
                 # open the last frame of generated video
                 pil_image_previous_generated_frame = Image.open(last_video_frame_generated).convert('RGB').resize([output_size_X,output_size_Y], resample=Image.LANCZOS)
-                pil_image_blend = Image.blend(pil_image_new_frame,pil_image_previous_generated_frame,generated_frame_init_blend)
-                eng.convert_image_to_init_image(pil_image_blend)
-            # Also use the current source video frame as an input prompt
+                pil_init_image = Image.blend(pil_image_new_frame,pil_image_previous_generated_frame,generated_frame_init_blend)
+            else:
+                pil_init_image = pil_image_new_frame
+            eng.convert_image_to_init_image(pil_init_image)
+
+            # Optionally use the current source video frame, and the previous generate frames, as input prompts
             eng.clear_all_prompts()
             current_prompt_number = 0
             eng.encode_and_append_prompts(current_prompt_number, parsed_text_prompts, parsed_image_prompts, parsed_noise_prompts)
@@ -379,6 +393,7 @@ def restyle_video_frames(video_frames,
             if previous_generated_frame_prompt_weight:
                 eng.encode_and_append_pil_image(pil_image_previous_generated_frame, weight=previous_generated_frame_prompt_weight)
 
+            # Setup for this frame is complete. Configure the optimizer for this z.
             eng.configure_optimizer()
 
             # Generate a new image
@@ -418,7 +433,12 @@ def restyle_video_frames(video_frames,
                 ('previous_generated_frame_prompt_weight',f'{previous_generated_frame_prompt_weight:2.2f}'),
                 ('generated_frame_init_blend',f'{generated_frame_init_blend:2.2f}')]
             # if making a video, save a frame named for the video step
-            eng.save_current_output(filepath_to_save,png_info_chunks(png_info))
+            if z_smoother:
+                smoothed_z.append(eng._z.clone())
+                output_tensor = eng.synth(smoothed_z._mid_ewma())
+                Engine.save_tensor_as_image(output_tensor,filepath_to_save,_png_info_chunks(png_info))
+            else:
+                eng.save_current_output(filepath_to_save,_png_info_chunks(png_info))
             last_video_frame_generated = filepath_to_save
             video_frame_num += 1
     except KeyboardInterrupt:
@@ -444,7 +464,10 @@ def video_frames(eng_config=VQGAN_CLIP_Config(),
         iterations = 1000,
         save_every = 5,
         change_prompt_every = 0,
-        video_frames_path='./video_frames'):
+        video_frames_path='./video_frames',
+        z_smoother=False,
+        z_smoother_buffer_len=5,
+        z_smoother_alpha=0.7):
     """Generate a series of images using VQGAN+CLIP. The configuration of the VQGAN+CLIP algorithms is done via a VQGAN_CLIP_Config instance. '
     A PNG file is saved every save_every iterations, each with a different filename.
     These images are generated by the same iteraion series, and can be usefully combined into a video.
@@ -461,6 +484,9 @@ def video_frames(eng_config=VQGAN_CLIP_Config(),
         * output_filename (str, optional) : location to save the output image. Omit the file extension. Default = \'output\' + os.sep + \'output\'  
         * change_prompt_every (int, optional) : Serial prompts, sepated by ^, will be cycled through every change_prompt_every iterations. Prompts will loop if more cycles are requested than there are prompts. Default = 0
         * video_frames_path (str, optional) : Path where still images should be saved as they are generated before being combined into a video. Defaults to './video_frames'.
+        * z_smoother (boolean, optional) : If true, smooth the latent vectors (z) used for image generation by combining multiple z vectors through an exponentially weighted moving average (EWMA). Defaults to False.
+        * z_smoother_buffer_len (int, optional) : How many images' latent vectors should be combined in the smoothing algorithm. Bigger numbers will be smoother, and have more blurred motion. Defaults to 5.
+        * z_smoother_alpha (float, optional) : When combining multiple latent vectors for smoothing, this sets how important the "keyframe" z is. As frames move further from the keyframe, their weight drops by (1-z_smoother_alpha) each frame. Bigger numbers apply more smoothing. Defaults to 0.7.
     """
     if init_image:
         eng_config.init_image = init_image
@@ -476,9 +502,11 @@ def video_frames(eng_config=VQGAN_CLIP_Config(),
     else:
         VF.delete_files(video_frames_path)
 
-    # generate images
+    # Smooth the latent vector z with recent results. Maintain a list of recent latent vectors.
+    smoothed_z = Z_Smoother(buffer_len=z_smoother_buffer_len, alpha=z_smoother_alpha)
     current_prompt_number = 0
     video_frame_num = 1
+    # generate images
     try:
         for iteration_num in tqdm(range(1,iterations+1),unit='iteration',desc='video'):
             #perform iterations of train()
@@ -506,7 +534,12 @@ def video_frames(eng_config=VQGAN_CLIP_Config(),
                     ('seed',eng.conf.seed)]
                 # if making a video, save a frame named for the video step
                 filepath_to_save = os.path.join(video_frames_path,f'frame_{video_frame_num:012d}.png')
-                eng.save_current_output(filepath_to_save,png_info_chunks(png_info))
+                if z_smoother:
+                    smoothed_z.append(eng._z.clone())
+                    output_tensor = eng.synth(smoothed_z._mid_ewma())
+                    Engine.save_tensor_as_image(output_tensor,filepath_to_save,_png_info_chunks(png_info))
+                else:
+                    eng.save_current_output(filepath_to_save,_png_info_chunks(png_info))
                 video_frame_num += 1
     except KeyboardInterrupt:
         pass
@@ -532,7 +565,10 @@ def zoom_video_frames(eng_config=VQGAN_CLIP_Config(),
         video_frames_path='./video_frames',
         zoom_scale=1.0,
         shift_x=0, 
-        shift_y=0):
+        shift_y=0,
+        z_smoother=False,
+        z_smoother_buffer_len=5,
+        z_smoother_alpha=0.7):
     """Generate a series of images using VQGAN+CLIP where each frame moves relative to the previous frame. The configuration of the VQGAN+CLIP algorithms is done via a VQGAN_CLIP_Config instance.
     These images are generated by the same iteraion series, and can be usefully combined into a video.
 
@@ -547,8 +583,11 @@ def zoom_video_frames(eng_config=VQGAN_CLIP_Config(),
         * change_prompt_every (int, optional) : Serial prompts, sepated by ^, will be cycled through every change_prompt_every iterations. Prompts will loop if more cycles are requested than there are prompts. Default = 0
         * video_frames_path (str, optional) : Path where still images should be saved as they are generated before being combined into a video. Defaults to './video_frames'.
         * zoom_scale (float) : Every save_every iterations, a video frame is saved. That frame is shifted scaled by a factor of zoom_scale, and used as the initial image to generate the next frame. Default = 1.0
-        * shift_x (int) : Every save_every iterations, a video frame is saved. That frame is shifted shift_x pixels in the x direction, and used as the initial image to generate the next frame. Default = 0
-        * shift_y (int) : Every save_every iterations, a video frame is saved. That frame is shifted shift_y pixels in the y direction, and used as the initial image to generate the next frame. Default = 0
+        * shift_x (int, optional) : Every save_every iterations, a video frame is saved. That frame is shifted shift_x pixels in the x direction, and used as the initial image to generate the next frame. Default = 0
+        * shift_y (int, optional) : Every save_every iterations, a video frame is saved. That frame is shifted shift_y pixels in the y direction, and used as the initial image to generate the next frame. Default = 0
+        * z_smoother (boolean, optional) : If true, smooth the latent vectors (z) used for image generation by combining multiple z vectors through an exponentially weighted moving average (EWMA). Defaults to False.
+        * z_smoother_buffer_len (int, optional) : How many images' latent vectors should be combined in the smoothing algorithm. Bigger numbers will be smoother, and have more blurred motion. Defaults to 5.
+        * z_smoother_alpha (float, optional) : When combining multiple latent vectors for smoothing, this sets how important the "keyframe" z is. As frames move further from the keyframe, their weight drops by (1-z_smoother_alpha) each frame. Bigger numbers apply more smoothing. Defaults to 0.7.
     """
     if init_image:
         eng_config.init_image = init_image
@@ -564,10 +603,12 @@ def zoom_video_frames(eng_config=VQGAN_CLIP_Config(),
     else:
         VF.delete_files(video_frames_path)
 
-    # generate images
+    # Smooth the latent vector z with recent results. Maintain a list of recent latent vectors.
+    smoothed_z = Z_Smoother(buffer_len=z_smoother_buffer_len, alpha=z_smoother_alpha)
     current_prompt_number = 0
     video_frame_num = 1
     output_image_size_x, output_image_size_y = eng.calculate_output_image_size()
+    # generate images
     try:
         for iteration_num in tqdm(range(1,iterations+1),unit='iteration',desc='zoom video'):
             #perform iterations of train()
@@ -616,10 +657,18 @@ def zoom_video_frames(eng_config=VQGAN_CLIP_Config(),
                     ('init_image',video_frame_num),
                     ('save_every',save_every),
                     ('change_prompt_every','N/A'),
-                    ('seed',eng.conf.seed)]
+                    ('seed',eng.conf.seed),
+                    ('z_smoother',z_smoother),
+                    ('z_smoother_buffer_len',z_smoother_buffer_len),
+                    ('z_smoother_alpha',z_smoother_alpha)]
                 # if making a video, save a frame named for the video step
                 filepath_to_save = os.path.join(video_frames_path,f'frame_{video_frame_num:012d}.png')
-                eng.save_current_output(filepath_to_save,png_info_chunks(png_info))
+                if z_smoother:
+                    smoothed_z.append(eng._z.clone())
+                    output_tensor = eng.synth(smoothed_z._mean())
+                    Engine.save_tensor_as_image(output_tensor,filepath_to_save,_png_info_chunks(png_info))
+                else:
+                    eng.save_current_output(filepath_to_save,_png_info_chunks(png_info))
                 video_frame_num += 1
     except KeyboardInterrupt:
         pass
@@ -630,7 +679,14 @@ def zoom_video_frames(eng_config=VQGAN_CLIP_Config(),
             f'init_weight {eng_config.init_weight:1.2f}, '\
             f'init_image {init_image}, '\
             f'change_prompt_every {change_prompt_every}, '\
-            f'seed {eng.conf.seed}'
+            f'seed {eng.conf.seed}, '\
+            f'zoom_scale {zoom_scale}, '\
+            f'shift_x {shift_x}, '\
+            f'shift_y {shift_y}, '\
+            f'z_smoother {z_smoother}, '\
+            f'z_smoother_buffer_len {z_smoother_buffer_len}, '\
+            f'z_smoother_alpha {z_smoother_alpha}'
+
     return config_info
 
 
@@ -642,7 +698,7 @@ def _filename_to_png(file_path):
         warnings.warn('vqgan_clip_generator can only create and save .PNG files.')
     return os.path.join(dir,basename_without_ext+'.png')
 
-def png_info_chunks(list_of_info):
+def _png_info_chunks(list_of_info):
     """Create a series of PNG info chunks that contain various details of image generation.
 
     Args:

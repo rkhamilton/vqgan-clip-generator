@@ -175,11 +175,14 @@ class Engine:
         Args:
             save_filename (str): string containing the path to save the generated image. e.g. 'output.png' or 'outputs/my_file.png'
         """
-        # 
+        self.save_tensor_as_image(self.output_tensor, save_filename, png_info)
+
+    @staticmethod
+    def save_tensor_as_image(image_tensor, save_filename, png_info=None):
         with torch.inference_mode():
             # if we weren't passed any info, generated a blank info object
             info = png_info if png_info else PngImagePlugin.PngInfo()
-            TF.to_pil_image(self.output_tensor[0].cpu()).save(save_filename, pnginfo=info)
+            TF.to_pil_image(image_tensor[0].cpu()).save(save_filename, pnginfo=info)
 
     def ascend_txt(self,iteration_number):
         """Part of the process of training a GAN
@@ -190,7 +193,7 @@ class Engine:
         Returns:
             lossAll (tensor): Parameter describing the performance of the GAN training process
         """
-        self.output_tensor = self.synth()
+        self.output_tensor = self.synth(self._z)
         encoded_image = self._perceptor.encode_image(VF.normalize(self._make_cutouts(self.output_tensor))).float()
         
         result = []
@@ -209,11 +212,11 @@ class Engine:
         return result
 
     # Vector quantize
-    def synth(self):
+    def synth(self, z):
         if self._gumbel:
-            z_q = VF.vector_quantize(self._z.movedim(1, 3), self._model.quantize.embed.weight).movedim(3, 1)
+            z_q = VF.vector_quantize(z.movedim(1, 3), self._model.quantize.embed.weight).movedim(3, 1)
         else:
-            z_q = VF.vector_quantize(self._z.movedim(1, 3), self._model.quantize.embedding.weight).movedim(3, 1)
+            z_q = VF.vector_quantize(z.movedim(1, 3), self._model.quantize.embedding.weight).movedim(3, 1)
         clamp_with_grad = VF.ClampWithGrad.apply
         return clamp_with_grad(self._model.decode(z_q).add(1).div(2), 0, 1)
 
