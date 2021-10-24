@@ -657,7 +657,10 @@ def zoom_video_frames(eng_config=VQGAN_CLIP_Config(),
                     ('init_image',video_frame_num),
                     ('save_every',save_every),
                     ('change_prompt_every','N/A'),
-                    ('seed',eng.conf.seed)]
+                    ('seed',eng.conf.seed),
+                    ('z_smoother',z_smoother),
+                    ('z_smoother_buffer_len',z_smoother_buffer_len),
+                    ('z_smoother_alpha',z_smoother_alpha)]
                 # if making a video, save a frame named for the video step
                 filepath_to_save = os.path.join(video_frames_path,f'frame_{video_frame_num:012d}.png')
                 if z_smoother:
@@ -680,7 +683,10 @@ def zoom_video_frames(eng_config=VQGAN_CLIP_Config(),
             f'zoom_scale {zoom_scale}, '\
             f'shift_x {shift_x}, '\
             f'shift_y {shift_y}, '\
-            f'smoothed {z_smoother}'
+            f'z_smoother {z_smoother}, '\
+            f'z_smoother_buffer_len {z_smoother_buffer_len}, '\
+            f'z_smoother_alpha {z_smoother_alpha}'
+
     return config_info
 
 
