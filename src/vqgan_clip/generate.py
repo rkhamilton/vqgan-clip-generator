@@ -82,10 +82,10 @@ def single_image(eng_config=VQGAN_CLIP_Config(),
                 losses_str = ', '.join(f'{loss.item():7.3f}' for loss in lossAll)
                 tqdm.write(f'iteration:{iteration_num:6d}\tloss sum: {sum(lossAll).item():7.3f}\tloss for each prompt:{losses_str}')
                 # save an interim copy of the image so you can look at it as it changes if you like
-                eng.save_current_output(output_filename,png_info_chunks(png_info)) 
+                eng.save_current_output(output_filename,_png_info_chunks(png_info)) 
         # Always save the output at the end
 
-        eng.save_current_output(output_filename,png_info_chunks(png_info)) 
+        eng.save_current_output(output_filename,_png_info_chunks(png_info)) 
     except KeyboardInterrupt:
         pass
 
@@ -175,7 +175,7 @@ def multiple_images(eng_config=VQGAN_CLIP_Config(),
                 ('change_prompt_every',change_prompt_every),
                 ('seed',eng.conf.seed)]
             filename_to_save = os.path.join(output_images_path,f'frame_{file_num:012d}.png')
-            eng.save_current_output(filename_to_save,png_info_chunks(png_info))
+            eng.save_current_output(filename_to_save,_png_info_chunks(png_info))
     except KeyboardInterrupt:
         pass
     config_info=f'iterations: {iterations}, '\
@@ -283,7 +283,7 @@ def restyle_video_frames_naive(video_frames,
                 ('save_every',save_every),
                 ('change_prompt_every',change_prompt_every),
                 ('seed',eng.conf.seed)]
-            eng.save_current_output(filepath_to_save,png_info_chunks(png_info))
+            eng.save_current_output(filepath_to_save,_png_info_chunks(png_info))
             video_frame_num += 1
     except KeyboardInterrupt:
         pass
@@ -308,6 +308,7 @@ def restyle_video_frames(video_frames,
     current_source_frame_prompt_weight=0.0,
     previous_generated_frame_prompt_weight=0.0,
     generated_frame_init_blend=0.2):
+    smoothed=False):
     """Apply a style to an existing video using VQGAN+CLIP using a blended input frame method. The still image 
     frames from the original video are extracted, and used as initial images for VQGAN+CLIP. The resulting 
     folder of stills are then encoded into an HEVC video file. The audio from the original may optionally be 
@@ -356,6 +357,7 @@ def restyle_video_frames(video_frames,
             eng = Engine(eng_config)
             eng.initialize_VQGAN_CLIP()
 
+    smoothed_z = Z_Smoother(buffer_len=3, init_z=eng._z, alpha=0.7)
     # generate images
     video_frame_num = 1
     try:
@@ -370,8 +372,11 @@ def restyle_video_frames(video_frames,
             if generated_frame_init_blend:
                 # open the last frame of generated video
                 pil_image_previous_generated_frame = Image.open(last_video_frame_generated).convert('RGB').resize([output_size_X,output_size_Y], resample=Image.LANCZOS)
-                pil_image_blend = Image.blend(pil_image_new_frame,pil_image_previous_generated_frame,generated_frame_init_blend)
-                eng.convert_image_to_init_image(pil_image_blend)
+                pil_init_image = Image.blend(pil_image_new_frame,pil_image_previous_generated_frame,generated_frame_init_blend)
+            else:
+                pil_init_image = pil_image_new_frame
+                
+            eng.convert_image_to_init_image(pil_init_image)
             # Also use the current source video frame as an input prompt
             eng.clear_all_prompts()
             current_prompt_number = 0
@@ -420,7 +425,12 @@ def restyle_video_frames(video_frames,
                 ('previous_generated_frame_prompt_weight',f'{previous_generated_frame_prompt_weight:2.2f}'),
                 ('generated_frame_init_blend',f'{generated_frame_init_blend:2.2f}')]
             # if making a video, save a frame named for the video step
-            eng.save_current_output(filepath_to_save,png_info_chunks(png_info))
+            if smoothed:
+                smoothed_z.append(eng._z.clone())
+                output_tensor = eng.synth(smoothed_z._mid_ewma())
+                Engine.save_tensor_as_image(output_tensor,filepath_to_save,_png_info_chunks(png_info))
+            else:
+                eng.save_current_output(filepath_to_save,_png_info_chunks(png_info))
             last_video_frame_generated = filepath_to_save
             video_frame_num += 1
     except KeyboardInterrupt:
@@ -480,7 +490,7 @@ def video_frames(eng_config=VQGAN_CLIP_Config(),
         VF.delete_files(video_frames_path)
 
     # Smooth the latent vector z with recent results. Maintain a list of recent latent vectors.
-    smoothed_z = Z_Smoother(buffer_len=10, init_z=eng._z)
+    smoothed_z = Z_Smoother(buffer_len=3, init_z=eng._z, alpha=0.7)
     current_prompt_number = 0
     video_frame_num = 1
     # generate images
@@ -513,10 +523,10 @@ def video_frames(eng_config=VQGAN_CLIP_Config(),
                 filepath_to_save = os.path.join(video_frames_path,f'frame_{video_frame_num:012d}.png')
                 if smoothed:
                     smoothed_z.append(eng._z.clone())
-                    output_tensor = eng.synth(smoothed_z.mean())
-                    Engine.save_tensor_as_image(output_tensor,filepath_to_save,png_info_chunks(png_info))
+                    output_tensor = eng.synth(smoothed_z._mid_ewma())
+                    Engine.save_tensor_as_image(output_tensor,filepath_to_save,_png_info_chunks(png_info))
                 else:
-                    eng.save_current_output(filepath_to_save,png_info_chunks(png_info))
+                    eng.save_current_output(filepath_to_save,_png_info_chunks(png_info))
                 video_frame_num += 1
     except KeyboardInterrupt:
         pass
@@ -576,7 +586,7 @@ def zoom_video_frames(eng_config=VQGAN_CLIP_Config(),
         VF.delete_files(video_frames_path)
 
     # Smooth the latent vector z with recent results. Maintain a list of recent latent vectors.
-    smoothed_z = Z_Smoother(buffer_len=15, init_z=eng._z)
+    smoothed_z = Z_Smoother(buffer_len=5, init_z=eng._z)
     current_prompt_number = 0
     video_frame_num = 1
     output_image_size_x, output_image_size_y = eng.calculate_output_image_size()
@@ -634,10 +644,10 @@ def zoom_video_frames(eng_config=VQGAN_CLIP_Config(),
                 filepath_to_save = os.path.join(video_frames_path,f'frame_{video_frame_num:012d}.png')
                 if smoothed:
                     smoothed_z.append(eng._z.clone())
-                    output_tensor = eng.synth(smoothed_z.mean())
-                    Engine.save_tensor_as_image(output_tensor,filepath_to_save,png_info_chunks(png_info))
+                    output_tensor = eng.synth(smoothed_z._mean())
+                    Engine.save_tensor_as_image(output_tensor,filepath_to_save,_png_info_chunks(png_info))
                 else:
-                    eng.save_current_output(filepath_to_save,png_info_chunks(png_info))
+                    eng.save_current_output(filepath_to_save,_png_info_chunks(png_info))
                 video_frame_num += 1
     except KeyboardInterrupt:
         pass
@@ -664,7 +674,7 @@ def _filename_to_png(file_path):
         warnings.warn('vqgan_clip_generator can only create and save .PNG files.')
     return os.path.join(dir,basename_without_ext+'.png')
 
-def png_info_chunks(list_of_info):
+def _png_info_chunks(list_of_info):
     """Create a series of PNG info chunks that contain various details of image generation.
 
     Args:
