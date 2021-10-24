@@ -6,7 +6,7 @@ here = pathlib.Path(__file__).parent.resolve()
 long_description = (here / 'README.md').read_text(encoding='utf-8')
 setup(
     name='vqgan-clip-generator',
-    version='1.2.2',
+    version='1.3.0',
     description='Implements VQGAN+CLIP for image and video generation, and style transfers, based on text and image prompts. Emphasis on ease-of-use, documentation, and smooth video creation.',
     long_description=long_description,
     long_description_content_type='text/markdown',
