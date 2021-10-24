@@ -307,7 +307,7 @@ def restyle_video_frames(video_frames,
     generated_video_frames_path='./video_frames',
     current_source_frame_prompt_weight=0.0,
     previous_generated_frame_prompt_weight=0.0,
-    generated_frame_init_blend=0.2):
+    generated_frame_init_blend=0.2,
     smoothed=False):
     """Apply a style to an existing video using VQGAN+CLIP using a blended input frame method. The still image 
     frames from the original video are extracted, and used as initial images for VQGAN+CLIP. The resulting 
@@ -357,7 +357,7 @@ def restyle_video_frames(video_frames,
             eng = Engine(eng_config)
             eng.initialize_VQGAN_CLIP()
 
-    smoothed_z = Z_Smoother(buffer_len=3, init_z=eng._z, alpha=0.7)
+    smoothed_z = Z_Smoother(buffer_len=3, alpha=0.6)
     # generate images
     video_frame_num = 1
     try:
@@ -366,8 +366,10 @@ def restyle_video_frames(video_frames,
         for video_frame in video_frames_loop:
             filename_to_save = os.path.basename(os.path.splitext(video_frame)[0]) + '.png'
             filepath_to_save = os.path.join(generated_video_frames_path,filename_to_save)
-            pil_image_new_frame = Image.open(video_frame).convert('RGB').resize([output_size_X,output_size_Y], resample=Image.LANCZOS)
 
+            # INIT IMAGE
+            # By default, the init_image is the new frame of source video.
+            pil_image_new_frame = Image.open(video_frame).convert('RGB').resize([output_size_X,output_size_Y], resample=Image.LANCZOS)
             # Blend the new original frame with the most recent generated frame. Use that as the initial image for the upcoming frame.
             if generated_frame_init_blend:
                 # open the last frame of generated video
@@ -375,9 +377,9 @@ def restyle_video_frames(video_frames,
                 pil_init_image = Image.blend(pil_image_new_frame,pil_image_previous_generated_frame,generated_frame_init_blend)
             else:
                 pil_init_image = pil_image_new_frame
-                
             eng.convert_image_to_init_image(pil_init_image)
-            # Also use the current source video frame as an input prompt
+
+            # Optionally use the current source video frame, and the previous generate frames, as input prompts
             eng.clear_all_prompts()
             current_prompt_number = 0
             eng.encode_and_append_prompts(current_prompt_number, parsed_text_prompts, parsed_image_prompts, parsed_noise_prompts)
@@ -386,6 +388,7 @@ def restyle_video_frames(video_frames,
             if previous_generated_frame_prompt_weight:
                 eng.encode_and_append_pil_image(pil_image_previous_generated_frame, weight=previous_generated_frame_prompt_weight)
 
+            # Setup for this frame is complete. Configure the optimizer for this z.
             eng.configure_optimizer()
 
             # Generate a new image
@@ -490,7 +493,7 @@ def video_frames(eng_config=VQGAN_CLIP_Config(),
         VF.delete_files(video_frames_path)
 
     # Smooth the latent vector z with recent results. Maintain a list of recent latent vectors.
-    smoothed_z = Z_Smoother(buffer_len=3, init_z=eng._z, alpha=0.7)
+    smoothed_z = Z_Smoother(buffer_len=3, alpha=0.7)
     current_prompt_number = 0
     video_frame_num = 1
     # generate images
@@ -586,7 +589,7 @@ def zoom_video_frames(eng_config=VQGAN_CLIP_Config(),
         VF.delete_files(video_frames_path)
 
     # Smooth the latent vector z with recent results. Maintain a list of recent latent vectors.
-    smoothed_z = Z_Smoother(buffer_len=5, init_z=eng._z)
+    smoothed_z = Z_Smoother(buffer_len=5, alpha=0.7)
     current_prompt_number = 0
     video_frame_num = 1
     output_image_size_x, output_image_size_y = eng.calculate_output_image_size()
