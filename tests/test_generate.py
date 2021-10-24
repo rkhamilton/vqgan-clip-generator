@@ -212,6 +212,35 @@ def test_video_single_prompt(testing_config, tmpdir):
         os.remove(f)
     os.remove(output_filename)
 
+def test_video_single_prompt_smoothed(testing_config, tmpdir):
+    '''Generate a video file based on a text prompt
+    '''
+    config = testing_config
+    config.output_image_size = [128,128]
+    steps_path = str(tmpdir.mkdir('video_frames'))
+    iterations = 100
+    save_every = 10
+    vqgan_clip.generate.video_frames(config,
+        text_prompts = 'A painting of flowers in the renaissance style',
+        iterations = iterations,
+        save_every = save_every,
+        change_prompt_every = 300,
+        video_frames_path=steps_path,
+        z_smoother=True)
+    output_files = glob.glob(steps_path + os.sep + '*')
+    assert len(output_files) == iterations / save_every
+    # test generating video
+    output_filename = str(tmpdir.mkdir('output').join('output.mp4'))
+    video_tools.encode_video(output_file=output_filename,
+        path_to_stills=steps_path,
+        metadata_title='a test comment',
+        output_framerate=30,
+        input_framerate=30)
+    assert os.path.exists(output_filename)
+    for f in output_files:
+        os.remove(f)
+    os.remove(output_filename)
+
 def test_video_multiple_prompt(testing_config, tmpdir):
     '''Generate a video file based on a text prompt and interpolate to a higher framerate
     '''
@@ -277,6 +306,41 @@ def test_zoom_video(testing_config, tmpdir):
         os.remove(f)
     os.remove(output_filename)
 
+def test_zoom_video_smoothed(testing_config, tmpdir):
+    '''Generate a zoom video based on a text prompt changing every 10 iterations
+    '''
+    config = testing_config
+    config.output_image_size = [128,128]
+    steps_path = str(tmpdir.mkdir('video_frames'))
+    iterations = 200
+    save_every = 5
+
+    vqgan_clip.generate.zoom_video_frames(config,
+        text_prompts = 'A painting of flowers in the renaissance style',
+        image_prompts = [],
+        noise_prompts = [],
+        iterations = iterations,
+        save_every = save_every,
+        change_prompt_every = 50,
+        video_frames_path=steps_path, 
+        zoom_scale=1.02, 
+        shift_x=1, 
+        shift_y=1,
+        z_smoother=True)
+    output_files = glob.glob(steps_path + os.sep + '*')
+    assert len(output_files) == iterations / save_every
+
+    # test generating video
+    output_filename = str(tmpdir.mkdir('output').join('output.mp4'))
+    video_tools.encode_video(output_file=output_filename,
+        path_to_stills=steps_path,
+        metadata_title='a test comment',
+        output_framerate=30,
+        input_framerate=30)
+    assert os.path.exists(output_filename)
+    for f in output_files:
+        os.remove(f)
+    os.remove(output_filename)
 
 def test_zoom_video_all_prompts(testing_config, tmpdir):
     '''Generate a zoom video based on a text prompt changing every 10 iterations
@@ -353,6 +417,33 @@ def test_restyle_video(testing_config, tmpdir):
             current_source_frame_prompt_weight=0.1,
             previous_generated_frame_prompt_weight=0.1,
             generated_frame_init_blend=0.1)
+
+    output_files = glob.glob(generated_video_frames_path + os.sep + '*.png')
+    assert len(output_files) > 0
+    assert len(output_files) == len(original_video_frames)
+    for f in output_files:
+        os.remove(f)
+    for f in original_video_frames:
+        os.remove(f)
+
+def test_restyle_video_smoothed(testing_config, tmpdir):
+    output_images_path = str(tmpdir.mkdir('video_frames'))
+    original_video_frames = video_tools.extract_video_frames(TEST_VIDEO, 
+        extraction_framerate = 2,
+        extracted_video_frames_path=output_images_path)
+
+    # Restyle the video by applying VQGAN to each frame independently
+    generated_video_frames_path = str(tmpdir.mkdir('generated_video_frames'))
+    vqgan_clip.generate.restyle_video_frames(original_video_frames,
+            eng_config=testing_config,
+            text_prompts = 'a red rose|a fish^the last horse',
+            iterations = 5,
+            save_every=None,
+            generated_video_frames_path = generated_video_frames_path,
+            current_source_frame_prompt_weight=0.1,
+            previous_generated_frame_prompt_weight=0.1,
+            generated_frame_init_blend=0.1,
+            z_smoother=True)
 
     output_files = glob.glob(generated_video_frames_path + os.sep + '*.png')
     assert len(output_files) > 0
