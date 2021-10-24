@@ -20,8 +20,7 @@ import warnings
 from PIL import ImageFile, Image, ImageChops, PngImagePlugin
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 from torchvision.transforms import functional as TF
-from . import _functional as VF
-import collections
+from vqgan_clip import _functional as VF
 
 def single_image(eng_config=VQGAN_CLIP_Config(),
         text_prompts = [],
@@ -52,6 +51,9 @@ def single_image(eng_config=VQGAN_CLIP_Config(),
 
     if init_image:
         eng_config.init_image = init_image
+        output_size_X, output_size_Y = VF.filesize_matching_aspect_ratio(video_frames[0], eng_config.output_image_size[0], eng_config.output_image_size[1])
+        eng_config.output_image_size = [output_size_X, output_size_Y]
+
     eng = Engine(eng_config)
     eng.initialize_VQGAN_CLIP()
     parsed_text_prompts, parsed_image_prompts, parsed_noise_prompts = VF.parse_all_prompts(text_prompts, image_prompts, noise_prompts)

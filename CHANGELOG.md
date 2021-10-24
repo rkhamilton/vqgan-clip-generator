@@ -1,3 +1,8 @@
+# v.1.3.1
+**New features:**
+* Single_image generation creates an image that matches the aspect ratio of any init_image provided. The output will have the same number of pixels as your specified output_size, in order to stay within your memory constraints. 
+
+
 # v1.3.0
 This release adds smoothing to the output of video_frames and restyle_video_frames. The smoothing is done by combining a user-specifiable number of latent vectors (z) and averaging them together using a modified exponentially weighted moving average (EWMA). The approach used here creates a sliding window of z frames (of z_smoothing_buffer length). The center of this window is considered the key frame, and has the greatest weight in the result. As frames move away from the center of the buffer, they have exponentially decreasing weight, by factor (1-z_smoothing_alpha)**offset_from_center.
 
