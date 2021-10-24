@@ -7,6 +7,7 @@ import collections
 class Z_Smoother:
     def __init__(self, buffer_len, alpha=0.7, init_z=None):
         self._buffer_len = buffer_len
+        self._alpha = alpha
         self._data = collections.deque()
         # if given initial data, populate the entire buffer
         if init_z != None:
@@ -19,7 +20,7 @@ class Z_Smoother:
         """fill the Z_Smoother buffer with self.buffer_len copies of the same tensor, init_z.
 
         Args:
-            init_z (tensor): A pytorch Tensor.
+            init_z (tensor): A pytorch tensor.
         """
         with torch.inference_mode():
             for _ in range(0,self._buffer_len):
@@ -31,7 +32,8 @@ class Z_Smoother:
         Args:
             new_tensor (Tensor): A pytorch tensor.
         """
-        self._data.pop()
+        if len(self._data) == self._buffer_len:
+            self._data.pop()
         self._data.appendleft(new_tensor.clone())
 
     def smooth(self, method):
@@ -71,13 +73,16 @@ class Z_Smoother:
 
     def _mid_ewma(self):
         # Compute 2-sided EWMA to data in the buffer.
+        # truncate the buffer to an odd number of elements
+        if len(self._data) % 2 == 0:
+            this_buffer = list(self._data)[0:-1]
+        else:
+            this_buffer = list(self._data)
+        buffer_len = len(this_buffer)
+        ewma_wts = self._calc_ewma_wts(buffer_len, self._alpha)
         with torch.inference_mode():
-            scaled_data = [None] * self._buffer_len
-            for idx in range(0,self._buffer_len):
-                scaled_data[idx] = torch.mul(self._data[idx], self._ewma_wts[idx])
+            scaled_data = [None] * buffer_len
+            for idx in range(0,buffer_len):
+                scaled_data[idx] = torch.mul(this_buffer[idx], ewma_wts[idx])
             mid_ewma_z = torch.sum(torch.stack(scaled_data), dim=0)
             return mid_ewma_z
-
-# output_tensor = eng.synth(mean_z)
-# with torch.inference_mode():
-#     TF.to_pil_image(output_tensor[0].cpu()).save(filepath_to_save, pnginfo=png_info_chunks(png_info))
