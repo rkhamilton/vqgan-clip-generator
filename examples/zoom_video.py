@@ -36,7 +36,10 @@ metadata_comment = generate.zoom_video_frames(eng_config = config,
         change_prompt_every = 300,
         zoom_scale=1.02, 
         shift_x=1, 
-        shift_y=1)
+        shift_y=1,
+        z_smoother=True,
+        z_smoother_buffer_len=5,
+        z_smoother_alpha=0.9)
 
 # Upscale the video frames
 if upscale_images:
