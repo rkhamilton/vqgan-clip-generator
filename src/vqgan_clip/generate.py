@@ -51,7 +51,7 @@ def single_image(eng_config=VQGAN_CLIP_Config(),
 
     if init_image:
         eng_config.init_image = init_image
-        output_size_X, output_size_Y = VF.filesize_matching_aspect_ratio(video_frames[0], eng_config.output_image_size[0], eng_config.output_image_size[1])
+        output_size_X, output_size_Y = VF.filesize_matching_aspect_ratio(init_image, eng_config.output_image_size[0], eng_config.output_image_size[1])
         eng_config.output_image_size = [output_size_X, output_size_Y]
 
     eng = Engine(eng_config)
