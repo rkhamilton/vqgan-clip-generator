@@ -51,7 +51,7 @@ def single_image(eng_config=VQGAN_CLIP_Config(),
 
     if init_image:
         eng_config.init_image = init_image
-        output_size_X, output_size_Y = VF.filesize_matching_aspect_ratio(video_frames[0], eng_config.output_image_size[0], eng_config.output_image_size[1])
+        output_size_X, output_size_Y = VF.filesize_matching_aspect_ratio(init_image, eng_config.output_image_size[0], eng_config.output_image_size[1])
         eng_config.output_image_size = [output_size_X, output_size_Y]
 
     eng = Engine(eng_config)
@@ -660,6 +660,9 @@ def zoom_video_frames(eng_config=VQGAN_CLIP_Config(),
                     ('save_every',save_every),
                     ('change_prompt_every','N/A'),
                     ('seed',eng.conf.seed),
+                    ('zoom_scale',zoom_scale),
+                    ('shift_x',shift_x),
+                    ('shift_y',shift_y),
                     ('z_smoother',z_smoother),
                     ('z_smoother_buffer_len',z_smoother_buffer_len),
                     ('z_smoother_alpha',z_smoother_alpha)]
@@ -715,3 +718,160 @@ def _png_info_chunks(list_of_info):
         encode_me = chunk_tuple[1] if chunk_tuple[1] else ''  
         info.add_text(chunk_tuple[0], str(encode_me))
     return info
+
+def restyle_video_frames_dev(video_frames,
+    eng_config=VQGAN_CLIP_Config(),
+    text_prompts = 'Covered in spiders | Surreal:0.5',
+    image_prompts = [],
+    noise_prompts = [],
+    iterations = 15,
+    save_every = None,
+    generated_video_frames_path='./video_frames',
+    current_source_frame_prompt_weight=0.0,
+    previous_generated_frame_prompt_weight=0.0,
+    z_smoother=False,
+    z_smoother_buffer_len=3,
+    z_smoother_alpha=0.6):
+    """Apply a style to an existing video using VQGAN+CLIP using a blended input frame method. The still image 
+    frames from the original video are extracted, and used as initial images for VQGAN+CLIP. The resulting 
+    folder of stills are then encoded into an HEVC video file. The audio from the original may optionally be 
+    transferred. The configuration of the VQGAN+CLIP algorithms is done via a VQGAN_CLIP_Config instance. 
+    Unlike restyle_video, in restyle_video_blended each new frame of video is initialized using a blend of the 
+    new source frame and the old *generated* frame. This results in an output video that transitions much more
+    smoothly between frames. Using the method parameter current_frame_prompt_weight lets you decide how much 
+    of the new source frame to use versus the previous generated frame.
+
+    It is suggested to also use a config.init_weight > 0 so that the resulting generated video will look more
+    like the original video frames.
+
+
+    Args:
+        Args:
+        * video_frames (list of str) : List of paths to the video frames that will be restyled.
+        * eng_config (VQGAN_CLIP_Config, optional): An instance of VQGAN_CLIP_Config with attributes customized for your use. See the documentation for VQGAN_CLIP_Config().
+        * text_prompts (str, optional) : Text that will be turned into a prompt via CLIP. Default = []  
+        * image_prompts (str, optional) : Path to image that will be turned into a prompt via CLIP. Default = []
+        * noise_prompts (str, optional) : Random number seeds can be used as prompts using the same format as a text prompt. E.g. \'123:0.1|234:0.2|345:0.3\' Stories (^) are supported. Default = []
+        * iterations (int, optional) : Number of iterations of train() to perform for each frame of video. Default = 15 
+        * save_every (int, optional) : An interim image will be saved as the final image is being generated. It's saved to the output location every save_every iterations, and training stats will be displayed. Default = 50  
+        * generated_video_frames_path (str, optional) : Path where still images should be saved as they are generated before being combined into a video. Defaults to './video_frames'.
+        * current_frame_prompt_weight (float) : Using the current frame of source video as an image prompt (as well as init_image), this assigns a weight to that image prompt. Default = 0.0
+        * generated_frame_init_blend (float) : How much of the previous generated image to blend in to a new frame's init_image. 0 means no previous generated image, 1 means 100% previous generated image. Default = 0.2
+        * z_smoother (boolean, optional) : If true, smooth the latent vectors (z) used for image generation by combining multiple z vectors through an exponentially weighted moving average (EWMA). Defaults to False.
+        * z_smoother_buffer_len (int, optional) : How many images' latent vectors should be combined in the smoothing algorithm. Bigger numbers will be smoother, and have more blurred motion. Must be an odd number. Defaults to 3.
+        * z_smoother_alpha (float, optional) : When combining multiple latent vectors for smoothing, this sets how important the "keyframe" z is. As frames move further from the keyframe, their weight drops by (1-z_smoother_alpha) each frame. Bigger numbers apply more smoothing. Defaults to 0.6.
+"""
+    parsed_text_prompts, parsed_image_prompts, parsed_noise_prompts = VF.parse_all_prompts(text_prompts, image_prompts, noise_prompts)
+
+    # lock in a seed to use for each frame
+    if not eng_config.seed:
+        # note, retreiving torch.seed() also sets the torch seed
+        eng_config.seed = torch.seed()
+
+    # if the location for the generated video frames doesn't exist, create it
+    if not os.path.exists(generated_video_frames_path):
+        os.mkdir(generated_video_frames_path)
+    else:
+        VF.delete_files(generated_video_frames_path)
+
+    output_size_X, output_size_Y = VF.filesize_matching_aspect_ratio(video_frames[0], eng_config.output_image_size[0], eng_config.output_image_size[1])
+    eng_config.output_image_size = [output_size_X, output_size_Y]
+    eng_config.init_image_method = 'alternate_img_target'
+
+    # suppress stdout to keep the progress bar clear
+    with open(os.devnull, 'w') as devnull:
+        with contextlib.redirect_stdout(devnull):
+            eng = Engine(eng_config)
+            eng.initialize_VQGAN_CLIP()
+
+    smoothed_z = Z_Smoother(buffer_len=z_smoother_buffer_len, alpha=z_smoother_alpha)
+    # generate images
+    video_frame_num = 1
+    try:
+        last_video_frame_generated = video_frames[0]
+        video_frames_loop = tqdm(video_frames,unit='image',desc='style transfer')
+        for video_frame in video_frames_loop:
+            filename_to_save = os.path.basename(os.path.splitext(video_frame)[0]) + '.png'
+            filepath_to_save = os.path.join(generated_video_frames_path,filename_to_save)
+
+            # INIT IMAGE
+            # Alternate aglorithm - init image is previous output
+            # alternate_image_target is the new source frame. Apply a loss in Engine using conf.init_image_method == 'alternate_img_target'
+            pil_image_new_frame = Image.open(video_frame).convert('RGB').resize([output_size_X,output_size_Y], resample=Image.LANCZOS)
+            pil_image_previous_generated_frame = Image.open(last_video_frame_generated).convert('RGB').resize([output_size_X,output_size_Y], resample=Image.LANCZOS)
+            eng.convert_image_to_init_image(pil_image_previous_generated_frame)
+            eng.set_alternate_image_target(pil_image_new_frame)
+
+            # Optionally use the current source video frame, and the previous generate frames, as input prompts
+            eng.clear_all_prompts()
+            current_prompt_number = 0
+            eng.encode_and_append_prompts(current_prompt_number, parsed_text_prompts, parsed_image_prompts, parsed_noise_prompts)
+            if current_source_frame_prompt_weight:
+                eng.encode_and_append_pil_image(pil_image_new_frame, weight=current_source_frame_prompt_weight)
+            if previous_generated_frame_prompt_weight:
+                eng.encode_and_append_pil_image(pil_image_previous_generated_frame, weight=previous_generated_frame_prompt_weight)
+
+            # Setup for this frame is complete. Configure the optimizer for this z.
+            eng.configure_optimizer()
+
+            # Generate a new image
+            for iteration_num in range(1,iterations+1):
+                #perform iterations of train()
+                lossAll = eng.train(iteration_num)
+                # TODO reimplement save_every
+                # if change_prompt_every and iteration_num % change_prompt_every == 0:
+                #     # change prompts if every change_prompt_every iterations
+                #     current_prompt_number += 1
+                #     eng.clear_all_prompts()
+                #     eng.encode_and_append_prompts(current_prompt_number, parsed_text_prompts, parsed_image_prompts, parsed_noise_prompts)
+                #     # eng.encode_and_append_pil_image(pil_image_new_frame, weight=current_frame_prompt_weight)
+                #     eng.configure_optimizer()
+
+                if save_every and iteration_num % save_every == 0:
+                    # save a frame of video every .save_every iterations
+                    losses_str = ', '.join(f'{loss.item():7.3f}' for loss in lossAll)
+                    tqdm.write(f'iteration:{iteration_num:6d}\tvideo frame: {video_frame_num:6d}\tloss sum: {sum(lossAll).item():7.3f}\tloss for each prompt:{losses_str}')
+                    eng.save_current_output(filepath_to_save)
+
+            # save a frame of video every iterations
+            # display some statistics about how the GAN training is going whever we save an image
+            losses_str = ', '.join(f'{loss.item():7.3f}' for loss in lossAll)
+            tqdm.write(f'iteration:{iteration_num:6d}\tvideo frame: {video_frame_num:6d}\tloss sum: {sum(lossAll).item():7.3f}\tloss for each prompt:{losses_str}')
+
+            # metadata to save to PNG file as data chunks
+            png_info =  [('text_prompts',text_prompts),
+                ('image_prompts',image_prompts),
+                ('noise_prompts',noise_prompts),
+                ('iterations',iterations),
+                ('init_image',video_frame),
+                ('save_every',save_every),
+                ('change_prompt_every','N/A'),
+                ('seed',eng.conf.seed),
+                ('z_smoother',z_smoother),
+                ('z_smoother_buffer_len',z_smoother_buffer_len),
+                ('z_smoother_alpha',z_smoother_alpha),
+                ('current_source_frame_prompt_weight',f'{current_source_frame_prompt_weight:2.2f}'),
+                ('previous_generated_frame_prompt_weight',f'{previous_generated_frame_prompt_weight:2.2f}')]
+            if z_smoother:
+                smoothed_z.append(eng._z.clone())
+                output_tensor = eng.synth(smoothed_z._mid_ewma())
+                Engine.save_tensor_as_image(output_tensor,filepath_to_save,_png_info_chunks(png_info))
+            else:
+                eng.save_current_output(filepath_to_save,_png_info_chunks(png_info))
+            last_video_frame_generated = filepath_to_save
+            video_frame_num += 1
+    except KeyboardInterrupt:
+        pass
+    config_info=f'iterations: {iterations}, '\
+            f'image_prompts: {image_prompts}, '\
+            f'noise_prompts: {noise_prompts}, '\
+            f'init_weight_method: {eng_config.init_image_method}, '\
+            f'init_weight {eng_config.init_weight:1.2f}, '\
+            f'init_image {generated_video_frames_path}, '\
+            f'current_source_frame_prompt_weight {current_source_frame_prompt_weight:2.2f}, '\
+            f'previous_generated_frame_prompt_weight {previous_generated_frame_prompt_weight:2.2f}, '\
+            f'z_smoother {z_smoother:2.2f}, '\
+            f'z_smoother_buffer_len {z_smoother_buffer_len:2.2f}, '\
+            f'z_smoother_alpha {z_smoother_alpha:2.2f}, '\
+            f'seed {eng.conf.seed}'
+    return config_info
