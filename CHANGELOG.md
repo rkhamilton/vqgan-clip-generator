@@ -1,4 +1,9 @@
-# v.1.3.1
+# v2.0.0
+
+**Bug Fixes**
+* upscaling video example file had a bug in the ffmpeg command. Fixed.
+
+# v1.3.1
 **New features:**
 * Single_image generation creates an image that matches the aspect ratio of any init_image provided. The output will have the same number of pixels as your specified output_size, in order to stay within your memory constraints. 
 
