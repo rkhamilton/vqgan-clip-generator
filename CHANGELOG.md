@@ -4,7 +4,9 @@
 * generate.video_frames arguments changed. iterations and save_every are removed. New arguments are provided to make it easier to calculate video durations.
   * num_video_frames : Set the number of video frames (images) to be generated.
   * iterations_per_frame : Set the number of vqgan training iterations to perform for each frame of video. Higher numbers are more stylized.
-* 
+* generate.multiple_images removed. Functionally it was identical to repeatedly running generate.single_image
+* generate.single_image renamed to generate.image
+* generate.single_image argument change_prompt_every is removed. It is not relevant for generating a single image.
 
 **New Features**
 * generate.zoom_video lets you specify specific video frames where prompts should be changed using the argument change_prompts_on_frame. E.g. to change prompts on frames 150 and 200, use change_prompts_on_frame = [150,200]. Examples are updated with this argument.

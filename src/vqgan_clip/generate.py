@@ -8,12 +8,10 @@
 # Create a zoom video where the shift_x and shift_x are functions of iteration to create spiraling zooms
 # It's art. Go nuts!
 
-from logging import error
 from vqgan_clip.engine import Engine, VQGAN_CLIP_Config
 from vqgan_clip.z_smoother import Z_Smoother
 from tqdm import tqdm
-import glob, os, sys, io
-import subprocess
+import os
 import contextlib
 import torch
 import warnings
@@ -22,27 +20,26 @@ ImageFile.LOAD_TRUNCATED_IMAGES = True
 from torchvision.transforms import functional as TF
 from vqgan_clip import _functional as VF
 
-def single_image(eng_config=VQGAN_CLIP_Config(),
+def image(output_filename,
+        eng_config = VQGAN_CLIP_Config(),
         text_prompts = [],
         image_prompts = [],
         noise_prompts = [],
         init_image = None,
         iterations = 100,
-        save_every = 50,
-        output_filename = 'output' + os.sep + 'output',
-        change_prompt_every = 0):
+        save_every = None,
+        verbose = False):
     """Generate a single image using VQGAN+CLIP. The configuration of the algorithms is done via a VQGAN_CLIP_Config instance.
 
     Args:
+        * output_filename (str) : location to save the output image. Omit the file extension. 
         * eng_config (VQGAN_CLIP_Config, optional): An instance of VQGAN_CLIP_Config with attributes customized for your use. See the documentation for VQGAN_CLIP_Config().
         * text_prompts (str, optional) : Text that will be turned into a prompt via CLIP. Default = []  
         * image_prompts (str, optional) : Path to image that will be turned into a prompt via CLIP (analyzed for content). Default = []
         * noise_prompts (str, optional) : Random number seeds can be used as prompts using the same format as a text prompt. E.g. \'123:0.1|234:0.2|345:0.3\' Stories (^) are supported. Default = []
         * init_image (str, optional) : Path to an image file that will be used as the seed to generate output (analyzed for pixels).
         * iterations (int, optional) : Number of iterations of train() to perform before stopping. Default = 100 
-        * save_every (int, optional) : An interim image will be saved as the final image is being generated. It's saved to the output location every save_every iterations, and training stats will be displayed. Default = 50  
-        * output_filename (str, optional) : location to save the output image. Omit the file extension. Default = \'output\' + os.sep + \'output\'  
-        * change_prompt_every (int, optional) : Serial prompts, sepated by ^, will be cycled through every change_prompt_every iterations. Prompts will loop if more cycles are requested than there are prompts. Default = 0
+        * save_every (int, optional) : An interim image will be saved as the final image is being generated. It's saved to the output location every save_every iterations, and training stats will be displayed. Default = None  
     """
     output_filename = _filename_to_png(output_filename)
     output_folder_name = os.path.dirname(output_filename)
@@ -69,27 +66,23 @@ def single_image(eng_config=VQGAN_CLIP_Config(),
             ('iterations',iterations),
             ('init_image',init_image),
             ('save_every',save_every),
-            ('change_prompt_every',change_prompt_every),
             ('seed',eng.conf.seed)]
+
     # generate the image
-    current_prompt_number = 0
     try:
         for iteration_num in tqdm(range(1,iterations+1),unit='iteration',desc='single image'):
             #perform iterations of train()
             lossAll = eng.train(iteration_num)
-            if change_prompt_every and iteration_num % change_prompt_every == 0:
-                # change prompts if every change_prompt_every iterations
-                current_prompt_number += 1
-                eng.clear_all_prompts()
-                eng.encode_and_append_prompts(current_prompt_number, parsed_text_prompts, parsed_image_prompts, parsed_noise_prompts)
+
             if save_every and iteration_num % save_every == 0:
-                # display some statistics about how the GAN training is going whever we save an interim image
-                losses_str = ', '.join(f'{loss.item():7.3f}' for loss in lossAll)
-                tqdm.write(f'iteration:{iteration_num:6d}\tloss sum: {sum(lossAll).item():7.3f}\tloss for each prompt:{losses_str}')
+                if verbose:
+                    # display some statistics about how the GAN training is going whever we save an interim image
+                    losses_str = ', '.join(f'{loss.item():7.3f}' for loss in lossAll)
+                    tqdm.write(f'iteration:{iteration_num:6d}\tloss sum: {sum(lossAll).item():7.3f}\tloss for each prompt:{losses_str}')
                 # save an interim copy of the image so you can look at it as it changes if you like
                 eng.save_current_output(output_filename,_png_info_chunks(png_info)) 
-        # Always save the output at the end
 
+        # Always save the output at the end
         eng.save_current_output(output_filename,_png_info_chunks(png_info)) 
     except KeyboardInterrupt:
         pass
@@ -100,98 +93,9 @@ def single_image(eng_config=VQGAN_CLIP_Config(),
             f'init_weight_method: {eng_config.init_image_method}, '\
             f'init_weight {eng_config.init_weight:1.2f}, '\
             f'init_image {init_image}, '\
-            f'change_prompt_every {change_prompt_every}, '\
             f'seed {eng.conf.seed}'
     return config_info
 
-def multiple_images(eng_config=VQGAN_CLIP_Config(),
-        text_prompts = [],
-        image_prompts = [],
-        noise_prompts = [],
-        init_image = None,
-        iterations = 100,
-        save_every = None,
-        change_prompt_every = 0,
-        num_images_to_generate = 10,
-        output_images_path='./video_frames'):
-    """Generate multiple images using VQGAN+CLIP, each with a different random seed. The configuration of the algorithms is done via a VQGAN_CLIP_Config instance.  
-    The use case for this function is to generate a lot of variants on the same prompt, and then look through the output folder for \'keepers.\'
-    These images are not suitable for combining into a video, as they are each separately generated.
-
-    Args:
-        * eng_config (VQGAN_CLIP_Config, optional): An instance of VQGAN_CLIP_Config with attributes customized for your use. See the documentation for VQGAN_CLIP_Config().
-        * text_prompts (str, optional) : Text that will be turned into a prompt via CLIP. Default = []  
-        * image_prompts (str, optional) : Path to image that will be turned into a prompt via CLIP. Default = []
-        * noise_prompts (str, optional) : Random number seeds can be used as prompts using the same format as a text prompt. E.g. \'123:0.1|234:0.2|345:0.3\' Stories (^) are supported. Default = []
-        * init_image (str, optional) : Path to an image file that will be used as the seed to generate output (analyzed for pixels).
-        * iterations (int, optional) : Number of iterations of train() to perform before stopping. Default = 100 
-        * save_every (int, optional) : An interim image will be saved as the final image is being generated. It's saved to the output location every save_every iterations, and training stats will be displayed. Default = 50  
-        * change_prompt_every (int, optional) : Serial prompts, sepated by ^, will be cycled through every change_prompt_every iterations. Prompts will loop if more cycles are requested than there are prompts. Default = 0
-        * num_images_to_generate (int, optional) : Number of images to generates. Default = 10
-        * output_images_path (str, optional) : Path to save all generated images. Default = './video_frames'
-    """
-    if init_image:
-        eng_config.init_image = init_image
-
-    parsed_text_prompts, parsed_image_prompts, parsed_noise_prompts = VF.parse_all_prompts(text_prompts, image_prompts, noise_prompts)
-
-    # if the location for the images doesn't exist, create it
-    if not os.path.exists(output_images_path):
-        os.mkdir(output_images_path)
-
-    # generate the image
-    current_prompt_number = 0
-    try:
-        files = tqdm(range(1,num_images_to_generate+1),unit='file',desc='multiple images')
-        for file_num in files:
-            # files.desc = f'Multiple Files {file_num}'
-            # load a fresh copy of the VQGAN model for training on the new image
-            # suppress stdout so the progressbar looks nice
-            with open(os.devnull, 'w') as devnull:
-                with contextlib.redirect_stdout(devnull):
-                    # ensure we get a new RNG seed
-                    eng_config.seed = torch.seed()
-                    eng = Engine(eng_config)
-                    eng.initialize_VQGAN_CLIP()
-            eng.encode_and_append_prompts(0, parsed_text_prompts, parsed_image_prompts, parsed_noise_prompts)
-            eng.configure_optimizer()
-            for iteration_num in range(1,iterations+1):
-                #perform iterations of train()
-                lossAll = eng.train(iteration_num)
-                if change_prompt_every and iteration_num % change_prompt_every == 0:
-                    # change prompts if every change_prompt_every iterations
-                    current_prompt_number += 1
-                    eng.clear_all_prompts()
-                    eng.encode_and_append_prompts(current_prompt_number, parsed_text_prompts, parsed_image_prompts, parsed_noise_prompts)
-                if save_every and iteration_num % save_every == 0:
-                    # display some statistics about how the GAN training is going whever we save an interim image
-                    losses_str = ', '.join(f'{loss.item():7.3f}' for loss in lossAll)
-                    tqdm.write(f'iteration:{iteration_num:6d}\tfiles generated: {file_num:6d}\tloss sum: {sum(lossAll).item():7.3f}\tloss for each prompt:{losses_str}')
-                    # save an interim copy of the image so you can look at it as it changes if you like
-                    eng.save_current_output(output_images_path + os.sep + str(file_num) + '.png')
-            #Always save a file at the end
-            # metadata to save to PNG file as data chunks
-            png_info =  [('text_prompts',text_prompts),
-                ('image_prompts',image_prompts),
-                ('noise_prompts',noise_prompts),
-                ('iterations',iterations),
-                ('init_image',init_image),
-                ('save_every',save_every),
-                ('change_prompt_every',change_prompt_every),
-                ('seed',eng.conf.seed)]
-            filename_to_save = os.path.join(output_images_path,f'frame_{file_num:012d}.png')
-            eng.save_current_output(filename_to_save,_png_info_chunks(png_info))
-    except KeyboardInterrupt:
-        pass
-    config_info=f'iterations: {iterations}, '\
-            f'image_prompts: {image_prompts}, '\
-            f'noise_prompts: {noise_prompts}, '\
-            f'init_weight_method: {eng_config.init_image_method}, '\
-            f'init_weight {eng_config.init_weight:1.2f}, '\
-            f'init_image {init_image}, '\
-            f'change_prompt_every {change_prompt_every}, '\
-            f'seed {eng.conf.seed}'
-    return config_info
 
 def restyle_video_frames_naive(video_frames,
         eng_config=VQGAN_CLIP_Config(),

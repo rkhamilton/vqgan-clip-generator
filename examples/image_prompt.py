@@ -8,7 +8,7 @@ config.output_image_size = [448,448]
 upscale_image = True
 output_filename = os.path.join('example_media','image_prompt.png')
 
-metadata_comment = generate.single_image(eng_config = config,
+metadata_comment = generate.image(eng_config = config,
         image_prompts = 'input_image.jpg',
         iterations = 500,
         save_every = 10,

@@ -26,7 +26,7 @@ generated_video_frames_path='video_frames'
 init_image = os.path.join('example_media','init_image.png')
 upscaled_video_frames_path='upscaled_video_frames'
 
-generate.single_image(eng_config = config,
+generate.image(eng_config = config,
         text_prompts = text_prompts,
         iterations = 100,
         save_every = None,
