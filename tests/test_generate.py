@@ -147,6 +147,42 @@ def test_image_all_prompts_story(testing_config, tmpdir):
     assert os.path.exists(output)
     os.remove(output)
 
+def test_image_output_jpg(testing_config, tmpdir):
+    ''' Incorrect output filetype specified
+    '''
+    config = testing_config
+    config.output_image_size = [128,128]
+    output_filename = str(tmpdir.mkdir('output').join('output'))
+    vqgan_clip.generate.image(eng_config=config,
+        text_prompts = 'A painting of flowers in the renaissance style:0.5|rembrandt:0.5^fish:0.2|love:1',
+        image_prompts = [],
+        noise_prompts = [],
+        init_image = [],
+        iterations = 5,
+        save_every = 50,
+        output_filename = output_filename+'.jpg')
+    output = output_filename + '.png'
+    assert os.path.exists(output)
+    os.remove(output)
+
+def test_image_no_folder(testing_config):
+    '''Output filename specified without a folder
+    '''
+    config = testing_config
+    config.output_image_size = [128,128]
+    output_filename = str('output')
+    vqgan_clip.generate.image(eng_config=config,
+        text_prompts = 'A painting of flowers in the renaissance style:0.5|rembrandt:0.5^fish:0.2|love:1',
+        image_prompts = [],
+        noise_prompts = [],
+        init_image = [],
+        iterations = 5,
+        save_every = 50,
+        output_filename = output_filename)
+    output = output_filename + '.png'
+    assert os.path.exists(output)
+    os.remove(output)
+
 def test_video(testing_config, tmpdir):
     '''Generate a zoom video based on a text prompt changing every 10 iterations
     '''
@@ -395,41 +431,3 @@ def test_restyle_video_smoothed(testing_config, tmpdir):
         os.remove(f)
     for f in original_video_frames:
         os.remove(f)
-
-def test_image_no_folder(testing_config, tmpdir):
-    '''Generate a single image based on a text prompt
-    '''
-    config = testing_config
-    config.output_image_size = [128,128]
-    output_filename = str('output')
-    vqgan_clip.generate.image(eng_config=config,
-        text_prompts = 'A painting of flowers in the renaissance style:0.5|rembrandt:0.5^fish:0.2|love:1',
-        image_prompts = [],
-        noise_prompts = [],
-        init_image = [],
-        iterations = 5,
-        save_every = 50,
-        output_filename = output_filename,
-        change_prompt_every = 0)
-    output = output_filename + '.png'
-    assert os.path.exists(output)
-    os.remove(output)
-
-def test_image_output_jpg(testing_config, tmpdir):
-    '''Generate a single image based on a text prompt
-    '''
-    config = testing_config
-    config.output_image_size = [128,128]
-    output_filename = str(tmpdir.mkdir('output').join('output'))
-    vqgan_clip.generate.image(eng_config=config,
-        text_prompts = 'A painting of flowers in the renaissance style:0.5|rembrandt:0.5^fish:0.2|love:1',
-        image_prompts = [],
-        noise_prompts = [],
-        init_image = [],
-        iterations = 5,
-        save_every = 50,
-        output_filename = output_filename+'.jpg',
-        change_prompt_every = 0)
-    output = output_filename + '.png'
-    assert os.path.exists(output)
-    os.remove(output)
