@@ -156,7 +156,7 @@ def test_video(testing_config, tmpdir):
     iterations_per_frame = 15
     num_video_frames = 5
 
-    vqgan_clip.generate.video_frames(eng_eng_config=config,
+    vqgan_clip.generate.video_frames(eng_config=config,
         text_prompts = 'A painting of flowers in the renaissance style',
         image_prompts = [],
         noise_prompts = [],
@@ -189,7 +189,7 @@ def test_video_zoomed(testing_config, tmpdir):
     iterations_per_frame = 15
     num_video_frames = 5
 
-    vqgan_clip.generate.video_frames(eng_eng_config=config,
+    vqgan_clip.generate.video_frames(eng_config=config,
         text_prompts = 'A painting of flowers in the renaissance style',
         image_prompts = [],
         noise_prompts = [],
@@ -222,7 +222,7 @@ def test_video_smoothed(testing_config, tmpdir):
     iterations_per_frame = 15
     num_video_frames = 5
 
-    vqgan_clip.generate.video_frames(eng_eng_config=config,
+    vqgan_clip.generate.video_frames(eng_config=config,
         text_prompts = 'A painting of flowers in the renaissance style',
         image_prompts = [],
         noise_prompts = [],
@@ -257,7 +257,7 @@ def test_video_story_prompts(testing_config, tmpdir):
     iterations_per_frame = 15
     num_video_frames = 10
 
-    vqgan_clip.generate.video_frames(eng_eng_config=config,
+    vqgan_clip.generate.video_frames(eng_config=config,
         text_prompts = 'A painting of flowers in the renaissance style:0.5|rembrandt:0.5^fish:0.2|love:1',
         video_frames_path = steps_path,
         image_prompts = IMAGE_PROMPTS,
@@ -293,7 +293,7 @@ def test_video_all_prompts(testing_config, tmpdir):
     iterations_per_frame = 30
     num_video_frames = 5
 
-    vqgan_clip.generate.video_frames(eng_eng_config=config,
+    vqgan_clip.generate.video_frames(eng_config=config,
         text_prompts = 'A painting of flowers in the renaissance style:0.5|rembrandt:0.5^fish:0.2|love:1',
         image_prompts = IMAGE_PROMPTS,
         noise_prompts = '123:0.1|234:0.2|345:0.3^700',
