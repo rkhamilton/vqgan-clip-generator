@@ -268,7 +268,7 @@ def video_frames(num_video_frames,
         shift_y=0,
         z_smoother=False,
         z_smoother_buffer_len=5,
-        z_smoother_alpha=0.7,
+        z_smoother_alpha=0.9,
         verbose=False):
     """Generate a series of PNG-formatted images using VQGAN+CLIP where each image is related to the previous image so they can be combined into a video. 
     The configuration of the VQGAN+CLIP algorithms is done via a VQGAN_CLIP_Config instance.
