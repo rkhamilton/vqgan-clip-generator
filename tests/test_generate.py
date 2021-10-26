@@ -356,29 +356,6 @@ def test_video_all_prompts(testing_config, tmpdir):
         os.remove(f)
     os.remove(output_filename)
 
-def test_restyle_video_naive(testing_config, tmpdir):
-    output_images_path = str(tmpdir.mkdir('video_frames'))
-    original_video_frames = video_tools.extract_video_frames(TEST_VIDEO, 
-        extraction_framerate = 2,
-        extracted_video_frames_path=output_images_path)
-
-    # Restyle the video by applying VQGAN to each frame independently
-    generated_video_frames_path = str(tmpdir.mkdir('generated_video_frames'))
-    vqgan_clip.generate.restyle_video_frames_naive(original_video_frames,
-            eng_config=testing_config,
-            text_prompts = 'a red rose|a fish^the last horse',
-            iterations = 5,
-            save_every=None,
-            generated_video_frames_path = generated_video_frames_path)
-
-    output_files = glob.glob(generated_video_frames_path + os.sep + '*.png')
-    assert len(output_files) > 0
-    assert len(output_files) == len(original_video_frames)
-    for f in output_files:
-        os.remove(f)
-    for f in original_video_frames:
-        os.remove(f)
-
 def test_restyle_video(testing_config, tmpdir):
     output_images_path = str(tmpdir.mkdir('video_frames'))
     original_video_frames = video_tools.extract_video_frames(TEST_VIDEO, 
