@@ -184,151 +184,94 @@ def test_multiple_images(testing_config, tmpdir):
     for f in output_files:
         os.remove(f)
 
-def test_video_single_prompt(testing_config, tmpdir):
-    '''Generate a video file based on a text prompt
-    '''
-    config = testing_config
-    config.output_image_size = [128,128]
-    steps_path = str(tmpdir.mkdir('video_frames'))
-    iterations = 100
-    save_every = 10
-    vqgan_clip.generate.video_frames(config,
-        text_prompts = 'A painting of flowers in the renaissance style',
-        iterations = iterations,
-        save_every = save_every,
-        change_prompt_every = 300,
-        video_frames_path=steps_path)
-    output_files = glob.glob(steps_path + os.sep + '*')
-    assert len(output_files) == iterations / save_every
-    # test generating video
-    output_filename = str(tmpdir.mkdir('output').join('output.mp4'))
-    video_tools.encode_video(output_file=output_filename,
-        path_to_stills=steps_path,
-        metadata_title='a test comment',
-        output_framerate=30,
-        input_framerate=30)
-    assert os.path.exists(output_filename)
-    for f in output_files:
-        os.remove(f)
-    os.remove(output_filename)
-
-def test_video_single_prompt_smoothed(testing_config, tmpdir):
-    '''Generate a video file based on a text prompt
-    '''
-    config = testing_config
-    config.output_image_size = [128,128]
-    steps_path = str(tmpdir.mkdir('video_frames'))
-    iterations = 100
-    save_every = 10
-    vqgan_clip.generate.video_frames(config,
-        text_prompts = 'A painting of flowers in the renaissance style',
-        iterations = iterations,
-        save_every = save_every,
-        change_prompt_every = 300,
-        video_frames_path=steps_path,
-        z_smoother=True)
-    output_files = glob.glob(steps_path + os.sep + '*')
-    assert len(output_files) == iterations / save_every
-    # test generating video
-    output_filename = str(tmpdir.mkdir('output').join('output.mp4'))
-    video_tools.encode_video(output_file=output_filename,
-        path_to_stills=steps_path,
-        metadata_title='a test comment',
-        output_framerate=30,
-        input_framerate=30)
-    assert os.path.exists(output_filename)
-    for f in output_files:
-        os.remove(f)
-    os.remove(output_filename)
-
-def test_video_multiple_prompt(testing_config, tmpdir):
-    '''Generate a video file based on a text prompt and interpolate to a higher framerate
-    '''
-    config = testing_config
-    config.output_image_size = [128,128]
-    steps_path = str(tmpdir.mkdir('video_frames'))
-    iterations = 300
-    save_every = 10
-    vqgan_clip.generate.video_frames(config,
-        text_prompts = 'A painting of flowers in the renaissance style^a black dog in a cave',
-        iterations = iterations,
-        save_every = save_every,
-        change_prompt_every = 100,
-        video_frames_path=steps_path)
-    output_files = glob.glob(steps_path + os.sep + '*')
-    assert len(output_files) == iterations / save_every
-
-    # test generating video
-    output_filename = str(tmpdir.mkdir('output').join('output.mp4'))
-    video_tools.encode_video(output_file=output_filename,
-        path_to_stills=steps_path,
-        metadata_title='a test comment',
-        output_framerate=30,
-        input_framerate=30)
-    assert os.path.exists(output_filename)
-    for f in output_files:
-        os.remove(f)
-    os.remove(output_filename)
-
-
-def test_zoom_video(testing_config, tmpdir):
+def test_video(testing_config, tmpdir):
     '''Generate a zoom video based on a text prompt changing every 10 iterations
     '''
     config = testing_config
     config.output_image_size = [128,128]
     steps_path = str(tmpdir.mkdir('video_frames'))
-    iterations = 200
-    save_every = 5
+    iterations_per_frame = 15
+    num_video_frames = 5
 
-    vqgan_clip.generate.zoom_video_frames(config,
+    vqgan_clip.generate.video_frames(eng_config=config,
         text_prompts = 'A painting of flowers in the renaissance style',
         image_prompts = [],
         noise_prompts = [],
-        iterations = iterations,
-        save_every = save_every,
-        change_prompt_every = 50,
+        num_video_frames=num_video_frames,
+        iterations_per_frame = iterations_per_frame,
+        video_frames_path=steps_path, 
+        zoom_scale=1.0, 
+        shift_x=0, 
+        shift_y=0)
+    output_files = glob.glob(steps_path + os.sep + '*.png')
+    assert len(output_files) == num_video_frames
+
+    # test generating video
+    output_filename = str(tmpdir.mkdir('output').join('output.mp4'))
+    video_tools.encode_video(output_file=output_filename,
+        path_to_stills=steps_path,
+        metadata_title='a test comment',
+        input_framerate=30)
+    assert os.path.exists(output_filename)
+    for f in output_files:
+        os.remove(f)
+    os.remove(output_filename)
+
+def test_video_zoomed(testing_config, tmpdir):
+    '''Generate a zoom video based on a text prompt changing every 10 iterations
+    '''
+    config = testing_config
+    config.output_image_size = [128,128]
+    steps_path = str(tmpdir.mkdir('video_frames'))
+    iterations_per_frame = 15
+    num_video_frames = 5
+
+    vqgan_clip.generate.video_frames(eng_config=config,
+        text_prompts = 'A painting of flowers in the renaissance style',
+        image_prompts = [],
+        noise_prompts = [],
+        num_video_frames=num_video_frames,
+        iterations_per_frame = iterations_per_frame,
         video_frames_path=steps_path, 
         zoom_scale=1.02, 
         shift_x=1, 
         shift_y=1)
-    output_files = glob.glob(steps_path + os.sep + '*')
-    assert len(output_files) == iterations / save_every
+    output_files = glob.glob(steps_path + os.sep + '*.png')
+    assert len(output_files) == num_video_frames
 
     # test generating video
     output_filename = str(tmpdir.mkdir('output').join('output.mp4'))
     video_tools.encode_video(output_file=output_filename,
         path_to_stills=steps_path,
         metadata_title='a test comment',
-        output_framerate=30,
         input_framerate=30)
     assert os.path.exists(output_filename)
     for f in output_files:
         os.remove(f)
     os.remove(output_filename)
 
-def test_zoom_video_smoothed(testing_config, tmpdir):
+def test_video_smoothed(testing_config, tmpdir):
     '''Generate a zoom video based on a text prompt changing every 10 iterations
     '''
     config = testing_config
     config.output_image_size = [128,128]
     steps_path = str(tmpdir.mkdir('video_frames'))
-    iterations = 200
-    save_every = 5
+    iterations_per_frame = 15
+    num_video_frames = 5
 
-    vqgan_clip.generate.zoom_video_frames(config,
+    vqgan_clip.generate.video_frames(eng_config=config,
         text_prompts = 'A painting of flowers in the renaissance style',
         image_prompts = [],
         noise_prompts = [],
-        iterations = iterations,
-        save_every = save_every,
-        change_prompt_every = 50,
+        num_video_frames=num_video_frames,
+        iterations_per_frame = iterations_per_frame,
         video_frames_path=steps_path, 
         zoom_scale=1.02, 
         shift_x=1, 
         shift_y=1,
         z_smoother=True)
-    output_files = glob.glob(steps_path + os.sep + '*')
-    assert len(output_files) == iterations / save_every
+    output_files = glob.glob(steps_path + os.sep + '*.png')
+    assert len(output_files) == num_video_frames
 
     # test generating video
     output_filename = str(tmpdir.mkdir('output').join('output.mp4'))
@@ -342,28 +285,65 @@ def test_zoom_video_smoothed(testing_config, tmpdir):
         os.remove(f)
     os.remove(output_filename)
 
-def test_zoom_video_all_prompts(testing_config, tmpdir):
+def test_video_story_prompts(testing_config, tmpdir):
+    '''Generate a zoom video based on a text prompt changing over time
+    '''
+    config = testing_config
+    config.output_image_size = [128,128]
+    steps_path = str(tmpdir.mkdir('video_frames'))
+    iterations_per_frame = 15
+    num_video_frames = 10
+
+    vqgan_clip.generate.video_frames(eng_config=config,
+        text_prompts = 'A painting of flowers in the renaissance style:0.5|rembrandt:0.5^fish:0.2|love:1',
+        video_frames_path = steps_path,
+        image_prompts = IMAGE_PROMPTS,
+        noise_prompts = '123:0.1|234:0.2|345:0.3^700',
+        change_prompts_on_frame = [3, 5, 9],
+        num_video_frames=num_video_frames,
+        iterations_per_frame = iterations_per_frame,
+        zoom_scale=1.02, 
+        shift_x=1, 
+        shift_y=1,
+        z_smoother=True)
+    output_files = glob.glob(steps_path + os.sep + '*.png')
+    assert len(output_files) == num_video_frames
+
+    # test generating video
+    output_filename = str(tmpdir.mkdir('output').join('output.mp4'))
+    video_tools.encode_video(output_file=output_filename,
+        path_to_stills=steps_path,
+        metadata_title='a test comment',
+        output_framerate=30,
+        input_framerate=30)
+    assert os.path.exists(output_filename)
+    for f in output_files:
+        os.remove(f)
+    os.remove(output_filename)
+
+def test_video_all_prompts(testing_config, tmpdir):
     '''Generate a zoom video based on a text prompt changing every 10 iterations
     '''
     config = testing_config
     config.output_image_size = [128,128]
     steps_path = str(tmpdir.mkdir('video_frames'))
-    iterations = 200
-    save_every = 5
+    iterations_per_frame = 30
+    num_video_frames = 5
 
-    vqgan_clip.generate.zoom_video_frames(config,
+    vqgan_clip.generate.video_frames(eng_config=config,
         text_prompts = 'A painting of flowers in the renaissance style:0.5|rembrandt:0.5^fish:0.2|love:1',
         image_prompts = IMAGE_PROMPTS,
         noise_prompts = '123:0.1|234:0.2|345:0.3^700',
-        iterations = iterations,
-        save_every = save_every,
-        change_prompt_every = 50,
-        video_frames_path=steps_path, 
+        change_prompts_on_frame = [3, 5, 9],
+        num_video_frames=num_video_frames,
+        iterations_per_frame = iterations_per_frame,
+        video_frames_path = steps_path,
         zoom_scale=1.02, 
         shift_x=1, 
-        shift_y=1)
+        shift_y=1,
+        z_smoother=True)
     output_files = glob.glob(steps_path + os.sep + '*')
-    assert len(output_files) == iterations / save_every
+    assert len(output_files) == num_video_frames
 
     # test generating video
     output_filename = str(tmpdir.mkdir('output').join('output.mp4'))
