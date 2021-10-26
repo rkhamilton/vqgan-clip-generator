@@ -1,4 +1,7 @@
 # v2.0.0
+This release is a major change of the video generation API to make it easier to calculate video durations.
+This release also introduces major improvements to style transfers, in which VQGAN style is applied to an existing video. The improvements should result in videos that are more consistant from frame-to-frame (less flicker).
+
 **API changes**
 * generate.zoom_video_frames and generate.video_frames have been combined to a single function: generate.video_frames. If you do not specify zoom_scale, shift_x, or shift_y, these values default to 0, and non-zooming images are generated.
 * generate.video_frames arguments changed. iterations and save_every are removed. New arguments are provided to make it easier to calculate video durations.
