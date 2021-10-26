@@ -126,9 +126,9 @@ try:
         if z_smoother:
             smoothed_z.append(eng._z.clone())
             output_tensor = eng.synth(smoothed_z._mean())
-            Engine.save_tensor_as_image(output_tensor,filepath_to_save,VF._png_info_chunks(png_info))
+            Engine.save_tensor_as_image(output_tensor,filepath_to_save,VF.png_info_chunks(png_info))
         else:
-            eng.save_current_output(filepath_to_save,VF._png_info_chunks(png_info))
+            eng.save_current_output(filepath_to_save,VF.png_info_chunks(png_info))
 
 except KeyboardInterrupt:
     pass

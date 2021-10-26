@@ -378,3 +378,31 @@ def png_info_chunks(list_of_info):
         encode_me = chunk_tuple[1] if chunk_tuple[1] else ''  
         info.add_text(chunk_tuple[0], str(encode_me))
     return info
+
+def copy_PNG_metadata(files_with_metadata_path,files_needing_metadata_path):
+    if os.path.isfile(files_with_metadata_path):
+        source_files = [files_with_metadata_path]
+    if os.path.isdir(files_with_metadata_path):
+        source_files = glob.glob(files_with_metadata_path + os.sep + '*.png')
+
+    if os.path.isfile(files_needing_metadata_path):
+        dest_files = [files_needing_metadata_path]
+    if os.path.isdir(files_needing_metadata_path):
+        # use source filenames
+        dest_files = []
+        for src in source_files:
+            dest_files.append(os.path.join(files_needing_metadata_path,os.path.basename(src)))
+    
+    assert len(source_files) == len(dest_files)
+
+    file_set = zip(source_files, dest_files)
+
+    for source_file, dest_file in file_set:
+        info = PngImagePlugin.PngInfo()
+        pil_source = Image.open(source_file)
+        pil_dest = Image.open(dest_file)
+        
+        for key, value in zip(pil_source.info.keys(), pil_source.info.values()):
+            info.add_text(key, value)
+        pil_dest.save(dest_file, "png", pnginfo=info)
+        

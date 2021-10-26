@@ -5,6 +5,7 @@
 from vqgan_clip import generate, video_tools, esrgan
 from vqgan_clip.engine import VQGAN_CLIP_Config
 import os, subprocess
+from vqgan_clip import _functional as VF
 
 config = VQGAN_CLIP_Config()
 config.output_image_size = [256,144]
@@ -52,6 +53,8 @@ if upscale_images:
                 purge_existing_files=True,
                 netscale=4,
                 outscale=4)
+        # copy PNG metadata from generated images to upscaled images
+        VF.copy_PNG_metadata(generated_video_frames_path,upscaled_video_frames_path)
         video_frames_to_encode = upscaled_video_frames_path
 else:
         video_frames_to_encode = generated_video_frames_path

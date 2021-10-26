@@ -2,6 +2,7 @@
 from vqgan_clip import generate, esrgan
 from vqgan_clip.engine import VQGAN_CLIP_Config
 import os
+from vqgan_clip import _functional as VF
 
 config = VQGAN_CLIP_Config()
 config.output_image_size = [448,448]
@@ -21,5 +22,6 @@ if upscale_image:
                 face_enhance=True,
                 netscale=4,
                 outscale=4)
-        
+        VF.copy_PNG_metadata(output_filename,os.path.splitext(output_filename)[0]+'_upscaled.png')
+
 print(f'generation parameters: {metadata_comment}')
