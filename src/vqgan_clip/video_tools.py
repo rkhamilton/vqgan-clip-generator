@@ -29,6 +29,8 @@ def extract_video_frames(input_video_path, extraction_framerate, extracted_video
     subprocess.call(['ffmpeg',
         '-i', input_video_path,
         '-filter:v', 'fps='+str(extraction_framerate),
+        '-hide_banner',
+        '-loglevel', 'error',
         extracted_video_frames_path+os.sep+'frame_%12d.png'])
 
     video_frames = sorted(glob.glob(extracted_video_frames_path+os.sep+'*.png'))
@@ -45,6 +47,8 @@ def copy_video_audio(original_video, destination_file_without_audio, output_file
             '-i', original_video,
             '-vn', 
             '-acodec', 'copy',
+            '-hide_banner',
+            '-loglevel', 'error',
             extracted_original_audio])
     except:
         print("Audio extraction failed")
@@ -57,6 +61,8 @@ def copy_video_audio(original_video, destination_file_without_audio, output_file
         '-c', 'copy', 
         '-map', '0:v:0',
         '-map', '1:a:0',
+        '-hide_banner',
+        '-loglevel', 'error',
     output_file])
     
     # clean up
@@ -86,6 +92,6 @@ def encode_video(output_file, input_framerate, path_to_stills=f'./video_frames',
         output_framerate_to_use = output_framerate if output_framerate else input_framerate
         output_framerate_option = f'-r {output_framerate_to_use}'
     metadata_option = f'-metadata title=\"{metadata_title}\" -metadata comment=\"{metadata_comment}\" -metadata description=\"Generated with https://github.com/rkhamilton/vqgan-clip-generator\"'
-    ffmpeg_command = f'ffmpeg -y -f image2 {input_framerate_option} -i {path_to_stills}\\frame_%12d.png {output_framerate_option} -vcodec {vcodec} -crf {crf} -pix_fmt yuv420p -strict -2 {metadata_option} {output_file}'
+    ffmpeg_command = f'ffmpeg -y -f image2 {input_framerate_option} -i {path_to_stills}\\frame_%12d.png {output_framerate_option} -vcodec {vcodec} -crf {crf} -pix_fmt yuv420p -hide_banner -loglevel error {metadata_option} {output_file}'
     subprocess.Popen(ffmpeg_command,shell=True).wait()
-    print(f'FFMPEG command used was:\t{ffmpeg_command}')
+    print(f'FFMPEG command used was:\n{ffmpeg_command}')
