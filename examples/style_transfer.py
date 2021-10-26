@@ -7,11 +7,11 @@ from vqgan_clip import _functional as VF
 
 config = VQGAN_CLIP_Config()
 config.output_image_size = [256,256]
-text_prompts = 'hand covered in spiders ^ kittens and rainbows ^ a ball of snakes'
-input_video_path = '20211025_164356000_iOS.MOV'
+text_prompts = 'portrait on deviantart'
+input_video_path = '20211004_132008000_iOS.MOV'
 # Generated video framerate. Images will be extracted from the source video at this framerate, using interpolation if needed.
 video_framerate = 30
-final_video_filename = os.path.join('\"output','spiders psychadelic.mp4\"')
+final_video_filename = os.path.join('\"example_media','portrait.mp4\"')
 # Set True if you installed the Real-ESRGAN package for upscaling. face_enhance is a feature of Real-ESRGAN.
 upscale_images = True
 face_enhance = False

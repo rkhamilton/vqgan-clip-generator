@@ -18,7 +18,7 @@ metadata_comment = generate.image(eng_config = config,
 # Upscale the video frames
 if upscale_image:
         esrgan.inference_realesrgan(input=output_filename,
-                output_images_path='output',
+                output_images_path='example_media',
                 face_enhance=True,
                 netscale=4,
                 outscale=4)
