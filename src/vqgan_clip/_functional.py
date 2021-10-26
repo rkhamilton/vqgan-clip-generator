@@ -356,12 +356,25 @@ def filesize_matching_aspect_ratio(file_name, desired_x, desired_y):
     restyled_image_x = int(source_aspect_ratio * restyled_image_y)
     return restyled_image_x, restyled_image_y
 
-
-
-
 def supress_stdout(func):
     def wrapper(*a, **ka):
         with open(os.devnull, 'w') as devnull:
             with contextlib.redirect_stdout(devnull):
                 func(*a, **ka)
     return wrapper
+
+def png_info_chunks(list_of_info):
+    """Create a series of PNG info chunks that contain various details of image generation.
+
+    Args:
+        * list_of_info (list): A list of data to encode in a PNG file. Structure is [['chunk_name']['chunk_data'],['chunk_name']['chunk_data'],...]
+
+    Returns:
+        [PngImagePlugin.PngInfo()]: A PngImagePlugin.PngInfo() object populated with various information about the image generation.
+    """
+    # model_output = self.synth()
+    info = PngImagePlugin.PngInfo()
+    for chunk_tuple in list_of_info:
+        encode_me = chunk_tuple[1] if chunk_tuple[1] else ''  
+        info.add_text(chunk_tuple[0], str(encode_me))
+    return info

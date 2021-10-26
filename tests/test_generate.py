@@ -356,7 +356,7 @@ def test_video_all_prompts(testing_config, tmpdir):
         os.remove(f)
     os.remove(output_filename)
 
-def test_restyle_video(testing_config, tmpdir):
+def test_style_transfer(testing_config, tmpdir):
     output_images_path = str(tmpdir.mkdir('video_frames'))
     original_video_frames = video_tools.extract_video_frames(TEST_VIDEO, 
         extraction_framerate = 2,
@@ -364,15 +364,13 @@ def test_restyle_video(testing_config, tmpdir):
 
     # Restyle the video by applying VQGAN to each frame independently
     generated_video_frames_path = str(tmpdir.mkdir('generated_video_frames'))
-    vqgan_clip.generate.restyle_video_frames(original_video_frames,
+    vqgan_clip.generate.style_transfer(original_video_frames,
             eng_config=testing_config,
             text_prompts = 'a red rose|a fish^the last horse',
-            iterations = 5,
-            save_every=None,
+            iterations_per_frame = 5,
             generated_video_frames_path = generated_video_frames_path,
             current_source_frame_prompt_weight=0.1,
-            previous_generated_frame_prompt_weight=0.1,
-            generated_frame_init_blend=0.1)
+            current_source_frame_image_weight=0.1)
 
     output_files = glob.glob(generated_video_frames_path + os.sep + '*.png')
     assert len(output_files) > 0
@@ -382,7 +380,7 @@ def test_restyle_video(testing_config, tmpdir):
     for f in original_video_frames:
         os.remove(f)
 
-def test_restyle_video_smoothed(testing_config, tmpdir):
+def test_style_transfer_smoothed(testing_config, tmpdir):
     output_images_path = str(tmpdir.mkdir('video_frames'))
     original_video_frames = video_tools.extract_video_frames(TEST_VIDEO, 
         extraction_framerate = 2,
@@ -390,15 +388,13 @@ def test_restyle_video_smoothed(testing_config, tmpdir):
 
     # Restyle the video by applying VQGAN to each frame independently
     generated_video_frames_path = str(tmpdir.mkdir('generated_video_frames'))
-    vqgan_clip.generate.restyle_video_frames(original_video_frames,
+    vqgan_clip.generate.style_transfer(original_video_frames,
             eng_config=testing_config,
             text_prompts = 'a red rose|a fish^the last horse',
-            iterations = 5,
-            save_every=None,
+            iterations_per_frame = 5,
             generated_video_frames_path = generated_video_frames_path,
             current_source_frame_prompt_weight=0.1,
-            previous_generated_frame_prompt_weight=0.1,
-            generated_frame_init_blend=0.1,
+            current_source_frame_image_weight=0.1,
             z_smoother=True)
 
     output_files = glob.glob(generated_video_frames_path + os.sep + '*.png')

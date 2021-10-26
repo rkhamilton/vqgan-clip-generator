@@ -5,6 +5,7 @@ import os
 
 config = VQGAN_CLIP_Config()
 config.output_image_size = [448,448]
+# Set True if you installed the Real-ESRGAN package for upscaling.
 upscale_image = True
 text_prompts = 'A pastoral landscape painting by Rembrandt'
 
@@ -12,7 +13,6 @@ output_filename = os.path.join('example_media',text_prompts+'.png')
 metadata_comment = generate.image(eng_config = config,
         text_prompts = text_prompts,
         iterations = 100,
-        save_every = 50,
         output_filename = output_filename)
 
 # Upscale the image

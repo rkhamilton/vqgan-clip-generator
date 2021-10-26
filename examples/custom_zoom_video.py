@@ -3,14 +3,17 @@
 # you could change it so that prompt weights change with each iteration, thereby giving you a smoother style transition.
 # You could vary the config.learning_rate, so that the amount of change from frame-to-frame varies.
 # T
+import vqgan_clip
 from vqgan_clip.engine import Engine, VQGAN_CLIP_Config
 from vqgan_clip import video_tools
+from vqgan_clip.z_smoother import Z_Smoother
 from tqdm import tqdm
 import os
 from PIL import ImageFile, ImageChops
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 from torchvision.transforms import functional as TF
 from vqgan_clip import _functional as VF
+import contextlib
 
 # EXAMPLE HERE: you can set your parameters up to change with each frame of video.
 def parameters_by_frame(frame_num):
@@ -20,15 +23,20 @@ def parameters_by_frame(frame_num):
         return shift_x, shift_y, zoom_scale
 
 eng_config=VQGAN_CLIP_Config()
+num_video_frames = 150
+iterations_per_frame = 30
 eng_config.output_image_size = [587,330]
 text_prompts = 'Impressionist painting of a red horse'
 image_prompts = []
 noise_prompts = []
+change_prompts_on_frame = [50, 100],
 init_image = None
-iterations = 1000
-save_every = 5
-change_prompt_every = 0
 video_frames_path='./video_frames'
+z_smoother=False
+z_smoother_buffer_len=3
+z_smoother_alpha=0.7
+verbose=False
+
 """
 * eng_config (VQGAN_CLIP_Config, optional): An instance of VQGAN_CLIP_Config with attributes customized for your use. See the documentation for VQGAN_CLIP_Config().
 * text_prompts (str, optional) : Text that will be turned into a prompt via CLIP. Default = []  
@@ -46,9 +54,13 @@ video_frames_path='./video_frames'
 if init_image:
     eng_config.init_image = init_image
 parsed_text_prompts, parsed_image_prompts, parsed_noise_prompts = VF.parse_all_prompts(text_prompts, image_prompts, noise_prompts)
-eng = Engine(eng_config)
-eng.initialize_VQGAN_CLIP()
-eng.encode_and_append_prompts(0, parsed_text_prompts, parsed_image_prompts, parsed_noise_prompts)
+# suppress stdout to keep the progress bar clear
+with open(os.devnull, 'w') as devnull:
+    with contextlib.redirect_stdout(devnull):
+        eng = Engine(eng_config)
+        eng.initialize_VQGAN_CLIP()
+current_prompt_number = 0
+eng.encode_and_append_prompts(current_prompt_number, parsed_text_prompts, parsed_image_prompts, parsed_noise_prompts)
 eng.configure_optimizer()
 
 # if the location for the interim video frames doesn't exist, create it
@@ -57,62 +69,84 @@ if not os.path.exists(video_frames_path):
 else:
     VF.delete_files(video_frames_path)
 
-# generate images
-current_prompt_number = 0
-video_frame_num = 1
+# Smooth the latent vector z with recent results. Maintain a list of recent latent vectors.
+smoothed_z = Z_Smoother(buffer_len=z_smoother_buffer_len, alpha=z_smoother_alpha)
 output_image_size_x, output_image_size_y = eng.calculate_output_image_size()
+# generate images
 try:
-    for iteration_num in tqdm(range(1,iterations+1),unit='iteration',desc='zoom video'):
-        #perform iterations of train()
-        lossAll = eng.train(iteration_num)
+    for video_frame_num in tqdm(range(1,num_video_frames+1),unit='frame',desc='video frames'):
+        for iteration_num in range(iterations_per_frame):
+            lossAll = eng.train(iteration_num)
 
-        if change_prompt_every and iteration_num % change_prompt_every == 0:
-            # change prompts if every change_prompt_every iterations
-            current_prompt_number += 1
-            eng.clear_all_prompts()
-            eng.encode_and_append_prompts(current_prompt_number, parsed_text_prompts, parsed_image_prompts, parsed_noise_prompts)
+        if change_prompts_on_frame is not None:
+            if video_frame_num in change_prompts_on_frame:
+                # change prompts if the current frame number is in the list of change frames
+                current_prompt_number += 1
+                eng.clear_all_prompts()
+                eng.encode_and_append_prompts(current_prompt_number, parsed_text_prompts, parsed_image_prompts, parsed_noise_prompts)
 
-        if save_every and iteration_num % save_every == 0:
-            # EXAMPLE HERE: you can set your parameters up to change with each frame of video.
-            shift_x, shift_y, zoom_scale = parameters_by_frame(video_frame_num)
+        shift_x, shift_y, zoom_scale = parameters_by_frame(video_frame_num)
 
-            # Transform the current video frame
-            # Convert z back into a Pil image 
-            pil_image = TF.to_pil_image(eng.output_tensor[0].cpu())
-                                    
-            # Zoom
-            if zoom_scale != 1.0:
-                new_pil_image = VF.zoom_at(pil_image, output_image_size_x/2, output_image_size_y/2, zoom_scale)
-            else:
-                new_pil_image = pil_image
-            
-            # Shift
-            if shift_x or shift_y:
-                # This one wraps the image
-                new_pil_image = ImageChops.offset(new_pil_image, shift_x, shift_y)
-            
-            # Re-encode and use this as the new initial image for the next iteration
-            eng.convert_image_to_init_image(new_pil_image)
+        # Zoom / shift the generated image
+        pil_image = TF.to_pil_image(eng.output_tensor[0].cpu())
+        if zoom_scale != 1.0:
+            new_pil_image = VF.zoom_at(pil_image, output_image_size_x/2, output_image_size_y/2, zoom_scale)
+        else:
+            new_pil_image = pil_image
 
-            # Re-create optimiser with the new initial image
-            eng.configure_optimizer()
+        if shift_x or shift_y:
+            new_pil_image = ImageChops.offset(new_pil_image, shift_x, shift_y)
+        
+        # Re-encode and use this as the new initial image for the next iteration
+        eng.convert_image_to_init_image(new_pil_image)
 
-            # save a frame of video every .save_every iterations
+        eng.configure_optimizer()
+
+        if verbose:
             # display some statistics about how the GAN training is going whever we save an interim image
             losses_str = ', '.join(f'{loss.item():7.3f}' for loss in lossAll)
             tqdm.write(f'iteration:{iteration_num:6d}\tvideo frame: {video_frame_num:6d}\tloss sum: {sum(lossAll).item():7.3f}\tloss for each prompt:{losses_str}')
 
-            # if making a video, save a frame named for the video step
-            filepath_to_save = os.path.join(video_frames_path,f'frame_{video_frame_num:012d}.png')
-            eng.save_current_output(filepath_to_save)
-            video_frame_num += 1
+        # metadata to save to PNG file as data chunks
+        png_info =  [('text_prompts',text_prompts),
+            ('image_prompts',image_prompts),
+            ('noise_prompts',noise_prompts),
+            ('iterations',iterations_per_frame),
+            ('init_image',video_frame_num),
+            ('change_prompt_every','N/A'),
+            ('seed',eng.conf.seed),
+            ('zoom_scale',zoom_scale),
+            ('shift_x',shift_x),
+            ('shift_y',shift_y),
+            ('z_smoother',z_smoother),
+            ('z_smoother_buffer_len',z_smoother_buffer_len),
+            ('z_smoother_alpha',z_smoother_alpha)]
+        # if making a video, save a frame named for the video step
+        filepath_to_save = os.path.join(video_frames_path,f'frame_{video_frame_num:012d}.png')
+        if z_smoother:
+            smoothed_z.append(eng._z.clone())
+            output_tensor = eng.synth(smoothed_z._mean())
+            Engine.save_tensor_as_image(output_tensor,filepath_to_save,VF._png_info_chunks(png_info))
+        else:
+            eng.save_current_output(filepath_to_save,VF._png_info_chunks(png_info))
+
 except KeyboardInterrupt:
     pass
-
-# Encode the images into a video
-metadata_comment=f'iterations: {iterations}, '\
+# metadata to return so that it can be saved to the video file using e.g. ffmpeg.
+metadata_comment=f'iterations: {iterations_per_frame}, '\
+        f'image_prompts: {image_prompts}, '\
+        f'noise_prompts: {noise_prompts}, '\
         f'init_weight_method: {eng_config.init_image_method}, '\
-        f'init_weight {eng_config.init_weight:1.2f}'
+        f'init_weight {eng_config.init_weight:1.2f}, '\
+        f'init_image {init_image}, '\
+        f'seed {eng.conf.seed}, '\
+        f'zoom_scale {zoom_scale}, '\
+        f'shift_x {shift_x}, '\
+        f'shift_y {shift_y}, '\
+        f'z_smoother {z_smoother}, '\
+        f'z_smoother_buffer_len {z_smoother_buffer_len}, '\
+        f'z_smoother_alpha {z_smoother_alpha}'
+
 video_tools.encode_video(output_file=os.path.join('example_media','custom_zoom_video.mp4'),
         path_to_stills=video_frames_path,
         metadata_title=text_prompts,

@@ -14,7 +14,7 @@ final_output_filename = os.path.join('example_media','restyled_video.mp4')
 copy_audio = True
 extraction_framerate = 30
 output_framerate = 30
-
+# Set True if you installed the Real-ESRGAN package for upscaling. face_enhance is a feature of Real-ESRGAN.
 upscale_images = True
 face_enhance=False
 
