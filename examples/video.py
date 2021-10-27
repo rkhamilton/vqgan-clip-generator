@@ -1,7 +1,6 @@
 # Generate a vide based on a text prompt. Note that the image will stabilize after a hundred or so iteration with the same prompt,
 # so this is most useful if you are changing prompts over time. In the exmaple below the prompt changes on frames 60 and 100.
 
-
 from vqgan_clip import generate, video_tools, esrgan
 from vqgan_clip.engine import VQGAN_CLIP_Config
 import os, subprocess
@@ -38,7 +37,7 @@ metadata_comment = generate.video_frames(num_video_frames=num_video_frames,
         eng_config = config,
         text_prompts = text_prompts,
         init_image = init_image,
-        video_frames_path = generated_video_frames_path,
+        generated_video_frames_path = generated_video_frames_path,
         iterations_per_frame = 30,
         change_prompts_on_frame= [60, 100],
         z_smoother=True,

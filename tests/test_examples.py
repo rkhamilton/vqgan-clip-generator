@@ -28,6 +28,10 @@ def test_examples_restyle_video_naive():
     cmnd = 'python ' + os.path.join(EXAMPLES_PATH,'style_transfer.py')
     subprocess.check_output(cmnd)
 
+def test_examples_zoom_video():
+    cmnd = 'python ' + os.path.join(EXAMPLES_PATH,'style_transfer_exploration.py')
+    subprocess.check_output(cmnd)
+    
 def test_examples_upscaling_video():
     cmnd = 'python ' + os.path.join(EXAMPLES_PATH,'upscaling_video.py')
     subprocess.check_output(cmnd)
@@ -39,3 +43,5 @@ def test_examples_video():
 def test_examples_zoom_video():
     cmnd = 'python ' + os.path.join(EXAMPLES_PATH,'zoom_video.py')
     subprocess.check_output(cmnd)
+
+

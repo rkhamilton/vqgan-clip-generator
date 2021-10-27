@@ -40,6 +40,7 @@ def image(output_filename,
         * init_image (str, optional) : Path to an image file that will be used as the seed to generate output (analyzed for pixels).
         * iterations (int, optional) : Number of iterations of train() to perform before stopping. Default = 100 
         * save_every (int, optional) : An interim image will be saved as the final image is being generated. It's saved to the output location every save_every iterations, and training stats will be displayed. Default = None  
+        * verbose (boolean, optional) : When true, prints diagnostic data every time a video frame is saved. Defaults to False.
     """
     output_filename = _filename_to_png(output_filename)
     output_folder_name = os.path.dirname(output_filename)
@@ -261,7 +262,7 @@ def video_frames(num_video_frames,
         noise_prompts = [],
         change_prompts_on_frame = None,
         init_image = None,
-        video_frames_path='./video_frames',
+        generated_video_frames_path='./video_frames',
         zoom_scale=1.0,
         shift_x=0, 
         shift_y=0,
@@ -278,7 +279,7 @@ def video_frames(num_video_frames,
         * text_prompts (str, optional) : Text that will be turned into a prompt via CLIP. Default = []  
         * image_prompts (str, optional) : Path to image that will be turned into a prompt via CLIP. Default = []
         * noise_prompts (str, optional) : Random number seeds can be used as prompts using the same format as a text prompt. E.g. \'123:0.1|234:0.2|345:0.3\' Stories (^) are supported. Default = []
-        * change_prompts_on_frame (list(int)) : All prompts (separated by "^" will be cycled forward on the video frames provided here. Defaults to None.
+        * change_prompts_on_frame (list(int)) : All prompts (separated by "^") will be cycled forward on the video frames provided here. Defaults to None.
         * init_image (str, optional) : Path to an image file that will be used as the seed to generate output (analyzed for pixels).
         * iterations_per_frame (int, optional) : Number of iterations of train() to perform on each generated video frame. Default = 30
         * video_frames_path (str, optional) : Path where still images should be saved as they are generated before being combined into a video. Defaults to './video_frames'.
@@ -303,10 +304,10 @@ def video_frames(num_video_frames,
     eng.configure_optimizer()
 
     # if the location for the interim video frames doesn't exist, create it
-    if not os.path.exists(video_frames_path):
-        os.mkdir(video_frames_path)
+    if not os.path.exists(generated_video_frames_path):
+        os.mkdir(generated_video_frames_path)
     else:
-        VF.delete_files(video_frames_path)
+        VF.delete_files(generated_video_frames_path)
 
     # Smooth the latent vector z with recent results. Maintain a list of recent latent vectors.
     smoothed_z = Z_Smoother(buffer_len=z_smoother_buffer_len, alpha=z_smoother_alpha)
@@ -359,7 +360,7 @@ def video_frames(num_video_frames,
                 ('z_smoother_buffer_len',z_smoother_buffer_len),
                 ('z_smoother_alpha',z_smoother_alpha)]
             # if making a video, save a frame named for the video step
-            filepath_to_save = os.path.join(video_frames_path,f'frame_{video_frame_num:012d}.png')
+            filepath_to_save = os.path.join(generated_video_frames_path,f'frame_{video_frame_num:012d}.png')
             if z_smoother:
                 smoothed_z.append(eng._z.clone())
                 output_tensor = eng.synth(smoothed_z._mean())
