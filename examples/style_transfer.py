@@ -14,7 +14,7 @@ input_video_path = '20211004_132008000_iOS.MOV'
 video_framerate = 30
 final_video_filename = os.path.join('\"example_media','portrait.mp4\"')
 # Set True if you installed the Real-ESRGAN package for upscaling. face_enhance is a feature of Real-ESRGAN.
-upscale_images = True
+upscale_images = False
 face_enhance = False
 # Set True if you installed the RIFE package for optical flow interpolation
 # IMPORTANT - OF will increase the framerate by 4x (-exp=2 option) or 16x (-exp=4). Keep this in mind as you generate your VQGAN video.
@@ -34,7 +34,7 @@ original_video_frames = video_tools.extract_video_frames(input_video_path,
 generate.image(eng_config = config,
         text_prompts = text_prompts,
         init_image=original_video_frames[0],
-        iterations = 20,
+        iterations = 10,
         output_filename = init_image)
 
 # Apply a style to the extracted video frames.
@@ -46,7 +46,7 @@ metadata_comment = generate.style_transfer(original_video_frames,
         change_prompts_on_frame=[70, 150],
         init_image=init_image,
         generated_video_frames_path = generated_video_frames_path,
-        current_source_frame_prompt_weight=0.0,
+        current_source_frame_prompt_weight=0.5,
         z_smoother=True,
         z_smoother_alpha=0.7,
         z_smoother_buffer_len=3)
