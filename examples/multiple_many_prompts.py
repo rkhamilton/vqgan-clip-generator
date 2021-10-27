@@ -4,6 +4,7 @@ from vqgan_clip import generate, esrgan
 from vqgan_clip.engine import VQGAN_CLIP_Config
 from vqgan_clip import _functional as VF
 import os
+from tqdm import tqdm
 
 config = VQGAN_CLIP_Config()
 config.output_image_size = [128,128]
@@ -35,12 +36,13 @@ art_types=["8k resolution","pencil sketch","8K 3D","deviantart","CryEngine",
             "Soviet propaganda","Fine Art","Photorealism","drone shot",
             "poster art","Impressionism","Lowbrow","Egyptian art"]
 
-for art_type in art_types:
+for art_type in tqdm(art_types,unit='style',desc='art type'):
         metadata_comment = generate.image(eng_config = config,
                 text_prompts = text_prompts + ' ' + art_type,
                 image_prompts = 'input_image.jpg',
                 iterations = 100,
-                output_filename =  os.path.join(generated_images_path,f'{art_type}.png'))
+                output_filename =  os.path.join(generated_images_path,f'{art_type}.png'),
+                leave_progress_bar=False)
 
 # Upscale the image
 if upscale_images:

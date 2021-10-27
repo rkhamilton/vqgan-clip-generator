@@ -28,7 +28,8 @@ def image(output_filename,
         init_image = None,
         iterations = 100,
         save_every = None,
-        verbose = False):
+        verbose = False,
+        leave_progress_bar = True):
     """Generate a single image using VQGAN+CLIP. The configuration of the algorithms is done via a VQGAN_CLIP_Config instance.
 
     Args:
@@ -41,6 +42,7 @@ def image(output_filename,
         * iterations (int, optional) : Number of iterations of train() to perform before stopping. Default = 100 
         * save_every (int, optional) : An interim image will be saved as the final image is being generated. It's saved to the output location every save_every iterations, and training stats will be displayed. Default = None  
         * verbose (boolean, optional) : When true, prints diagnostic data every time a video frame is saved. Defaults to False.
+        * leave_progress_bar (boolean, optional) : When False, the tqdm progress bar will disappear when the work is completed. Useful for nested loops.
     """
     output_filename = _filename_to_png(output_filename)
     output_folder_name = os.path.dirname(output_filename)
@@ -71,7 +73,7 @@ def image(output_filename,
 
     # generate the image
     try:
-        for iteration_num in tqdm(range(1,iterations+1),unit='iteration',desc='single image'):
+        for iteration_num in tqdm(range(1,iterations+1),unit='iteration',desc='single image',leave=leave_progress_bar):
             #perform iterations of train()
             lossAll = eng.train(iteration_num)
 
@@ -269,7 +271,8 @@ def video_frames(num_video_frames,
         z_smoother=False,
         z_smoother_buffer_len=5,
         z_smoother_alpha=0.9,
-        verbose=False):
+        verbose=False,
+        leave_progress_bar = True):
     """Generate a series of PNG-formatted images using VQGAN+CLIP where each image is related to the previous image so they can be combined into a video. 
     The configuration of the VQGAN+CLIP algorithms is done via a VQGAN_CLIP_Config instance.
 
@@ -290,6 +293,7 @@ def video_frames(num_video_frames,
         * z_smoother_buffer_len (int, optional) : How many images' latent vectors should be combined in the smoothing algorithm. Bigger numbers will be smoother, and have more blurred motion. Must be an odd number. Defaults to 3.
         * z_smoother_alpha (float, optional) : When combining multiple latent vectors for smoothing, this sets how important the "keyframe" z is. As frames move further from the keyframe, their weight drops by (1-z_smoother_alpha) each frame. Bigger numbers apply more smoothing. Defaults to 0.7.
         * verbose (boolean, optional) : When true, prints diagnostic data every time a video frame is saved. Defaults to False.
+        * leave_progress_bar (boolean, optional) : When False, the tqdm progress bar will disappear when the work is completed. Useful for nested loops.
     """
     if init_image:
         eng_config.init_image = init_image
@@ -314,7 +318,7 @@ def video_frames(num_video_frames,
     output_image_size_x, output_image_size_y = eng.calculate_output_image_size()
     # generate images
     try:
-        for video_frame_num in tqdm(range(1,num_video_frames+1),unit='frame',desc='video frames'):
+        for video_frame_num in tqdm(range(1,num_video_frames+1),unit='frame',desc='video frames',leave=leave_progress_bar):
             for iteration_num in range(iterations_per_frame):
                 lossAll = eng.train(iteration_num)
 
@@ -409,7 +413,8 @@ def style_transfer(video_frames,
     z_smoother=False,
     z_smoother_buffer_len=3,
     z_smoother_alpha=0.7,
-    verbose=False):
+    verbose=False,
+    leave_progress_bar = True):
     """Apply a style to existing video frames using VQGAN+CLIP.
     Set values of iteration_per_frame to determine how much the style transfer effect will be.
     Set values of source_frame_weight to determine how closely the result will match the source image. Balance iteration_per_frame and source_frame_weight to influence output.
@@ -431,6 +436,7 @@ def style_transfer(video_frames,
     * z_smoother (boolean, optional) : If true, smooth the latent vectors (z) used for image generation by combining multiple z vectors through an exponentially weighted moving average (EWMA). Defaults to False.
     * z_smoother_buffer_len (int, optional) : How many images' latent vectors should be combined in the smoothing algorithm. Bigger numbers will be smoother, and have more blurred motion. Must be an odd number. Defaults to 3.
     * z_smoother_alpha (float, optional) : When combining multiple latent vectors for smoothing, this sets how important the "keyframe" z is. As frames move further from the keyframe, their weight drops by (1-z_smoother_alpha) each frame. Bigger numbers apply more smoothing. Defaults to 0.6.
+    * leave_progress_bar (boolean, optional) : When False, the tqdm progress bar will disappear when the work is completed. Useful for nested loops.
 """
     parsed_text_prompts, parsed_image_prompts, parsed_noise_prompts = VF.parse_all_prompts(text_prompts, image_prompts, noise_prompts)
 
@@ -448,7 +454,7 @@ def style_transfer(video_frames,
     output_size_X, output_size_Y = VF.filesize_matching_aspect_ratio(video_frames[0], eng_config.output_image_size[0], eng_config.output_image_size[1])
     eng_config.output_image_size = [output_size_X, output_size_Y]
     # alternate_img_target is required for restyling video
-    eng_config.init_image_method = 'alternate_img_target'
+    eng_config.init_image_method = 'alternate_img_target_decay'
     eng_config.init_weight = current_source_frame_image_weight
 
     # suppress stdout to keep the progress bar clear
@@ -471,7 +477,7 @@ def style_transfer(video_frames,
     try:
         # To generate the first frame of video, either use the init_image argument, or the first frame of source video.
         last_video_frame_generated = init_image if init_image else video_frames[0]
-        video_frames_loop = tqdm(video_frames,unit='image',desc='style transfer')
+        video_frames_loop = tqdm(video_frames,unit='image',desc='style transfer',leave=leave_progress_bar)
         for video_frame in video_frames_loop:
             filename_to_save = os.path.basename(os.path.splitext(video_frame)[0]) + '.png'
             filepath_to_save = os.path.join(generated_video_frames_path,filename_to_save)

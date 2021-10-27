@@ -4,6 +4,7 @@ from vqgan_clip import generate, esrgan
 from vqgan_clip.engine import VQGAN_CLIP_Config
 from vqgan_clip import _functional as VF
 import os
+from tqdm import tqdm
 
 config = VQGAN_CLIP_Config()
 config.output_image_size = [256,256]
@@ -15,11 +16,12 @@ number_images_to_generate = 5
 upscale_images = True
 face_enhance = False
 
-for image_number in range(1,number_images_to_generate+1):
+for image_number in tqdm(range(1,number_images_to_generate+1),unit='image',desc='random seeds'):
         metadata_comment = generate.image(eng_config = config,
                 text_prompts = text_prompts,
                 iterations = 50,
-                output_filename =  os.path.join(generated_images_path,f'frame_{image_number:012d}.png'))
+                output_filename =  os.path.join(generated_images_path,f'frame_{image_number:012d}.png'),
+                leave_progress_bar=False)
 
 # Upscale the image
 if upscale_images:
