@@ -454,7 +454,8 @@ def style_transfer(video_frames,
     output_size_X, output_size_Y = VF.filesize_matching_aspect_ratio(video_frames[0], eng_config.output_image_size[0], eng_config.output_image_size[1])
     eng_config.output_image_size = [output_size_X, output_size_Y]
     # alternate_img_target is required for restyling video
-    eng_config.init_image_method = 'alternate_img_target_decay'
+    if eng_config.init_image_method not in ['alternate_img_target_decay', 'alternate_img_target']:
+        eng_config.init_image_method = 'alternate_img_target'
     eng_config.init_weight = current_source_frame_image_weight
 
     # suppress stdout to keep the progress bar clear
