@@ -1,4 +1,4 @@
-# Generate a single image based on a text prompt
+# Generate a single image based on a image prompt
 from vqgan_clip import generate, esrgan
 from vqgan_clip.engine import VQGAN_CLIP_Config
 import os
