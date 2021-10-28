@@ -91,7 +91,7 @@ def inference_realesrgan(input='./video_frames',
         paths = sorted(glob.glob(os.path.join(input, '*')),
                        key=lambda x: int(re.sub('\D', '', x)))
 
-    for path in tqdm(paths, unit='image', desc='upscaling'):
+    for path in tqdm(paths, unit='image', desc='Real-ESRGAN'):
         imgname, extension = os.path.splitext(os.path.basename(path))
 
         img = cv2.imread(path, cv2.IMREAD_UNCHANGED)
