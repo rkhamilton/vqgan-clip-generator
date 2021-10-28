@@ -1,4 +1,6 @@
-import os, subprocess, glob
+import os
+import subprocess
+import glob
 
 
 def extract_video_frames(input_video_path, extraction_framerate, extracted_video_frames_path='./extracted_video_frames'):
@@ -27,19 +29,22 @@ def extract_video_frames(input_video_path, extraction_framerate, extracted_video
     # print("Extracting image frames from original video")
     # extract original video frames
     subprocess.call(['ffmpeg',
-        '-i', input_video_path,
-        '-filter:v', 'fps='+str(extraction_framerate),
-        '-hide_banner',
-        '-loglevel', 'error',
-        extracted_video_frames_path+os.sep+'frame_%12d.png'])
+                     '-i', input_video_path,
+                     '-filter:v', 'fps='+str(extraction_framerate),
+                     '-hide_banner',
+                     '-loglevel', 'error',
+                     extracted_video_frames_path+os.sep+'frame_%12d.png'])
 
-    video_frames = sorted(glob.glob(extracted_video_frames_path+os.sep+'*.png'))
+    video_frames = sorted(
+        glob.glob(extracted_video_frames_path+os.sep+'*.png'))
     if not len(video_frames):
         raise NameError('No video frames were extracted')
     return video_frames
 
+
 def copy_video_audio(original_video, destination_file_without_audio, output_file):
-    extracted_original_audio = 'extracted_original_audio.aac' # audio file, if any, from the original video file
+    # audio file, if any, from the original video file
+    extracted_original_audio = 'extracted_original_audio.aac'
     if os.path.exists(extracted_original_audio):
         os.remove(extracted_original_audio)
     if os.path.exists(output_file):
@@ -49,21 +54,19 @@ def copy_video_audio(original_video, destination_file_without_audio, output_file
     try:
         ffmpeg_command = f'ffmpeg -i {original_video} -vn -acodec copy -hide_banner -loglevel error {extracted_original_audio}'
         print(f'FFMPEG command used was:\n{ffmpeg_command}')
-        subprocess.Popen(ffmpeg_command,shell=True).wait()
-        assert(os.path.exists(extracted_original_audio.strip('"')))     
+        subprocess.Popen(ffmpeg_command, shell=True).wait()
+        assert(os.path.exists(extracted_original_audio.strip('"')))
     except:
         print("Audio extraction failed")
-       
 
     # if there is extracted audio from the original file, re-merge it here
     try:
         ffmpeg_command = f'ffmpeg -i {destination_file_without_audio} -i {extracted_original_audio} -c copy -map 0:v:0 -map 1:a:0 -hide_banner -loglevel error {output_file}'
         print(f'FFMPEG command used was:\n{ffmpeg_command}')
-        subprocess.Popen(ffmpeg_command,shell=True).wait()
-        assert(os.path.exists(output_file.strip('"')))  
+        subprocess.Popen(ffmpeg_command, shell=True).wait()
+        assert(os.path.exists(output_file.strip('"')))
     except:
         print("Generating output file failed")
-      
 
     # clean up
     os.remove(extracted_original_audio)
@@ -91,5 +94,5 @@ def encode_video(output_file, input_framerate, path_to_stills=f'./video_frames',
         output_framerate_option = f'-r {output_framerate_to_use}'
     metadata_option = f'-metadata title=\"{metadata_title}\" -metadata comment=\"{metadata_comment}\" -metadata description=\"Generated with https://github.com/rkhamilton/vqgan-clip-generator\"'
     ffmpeg_command = f'ffmpeg -y -f image2 -r {input_framerate} -i {path_to_stills}\\frame_%12d.png {output_framerate_option} -vcodec {vcodec} -crf {crf} -pix_fmt yuv420p -hide_banner -loglevel error {metadata_option} {output_file}'
-    subprocess.Popen(ffmpeg_command,shell=True).wait()
+    subprocess.Popen(ffmpeg_command, shell=True).wait()
     print(f'FFMPEG command used was:\n{ffmpeg_command}')
