@@ -84,14 +84,12 @@ def encode_video(output_file, input_framerate, path_to_stills=f'./video_frames',
     """
     if input_framerate and output_framerate and input_framerate != output_framerate:
         # a different input and output framerate are specified. Use interpolation
-        input_framerate_option = f'-r {input_framerate}'
         output_framerate_option = f"-filter:v minterpolate='mi_mode=mci:me=hexbs:me_mode=bidir:mc_mode=aobmc:vsbmc=1:mb_size=8:search_param=32:fps={str(output_framerate)}'"
     else:
         # no interpolation
-        input_framerate_option = ''
         output_framerate_to_use = output_framerate if output_framerate else input_framerate
         output_framerate_option = f'-r {output_framerate_to_use}'
     metadata_option = f'-metadata title=\"{metadata_title}\" -metadata comment=\"{metadata_comment}\" -metadata description=\"Generated with https://github.com/rkhamilton/vqgan-clip-generator\"'
-    ffmpeg_command = f'ffmpeg -y -f image2 {input_framerate_option} -i {path_to_stills}\\frame_%12d.png {output_framerate_option} -vcodec {vcodec} -crf {crf} -pix_fmt yuv420p -hide_banner -loglevel error {metadata_option} {output_file}'
+    ffmpeg_command = f'ffmpeg -y -f image2 -r {input_framerate} -i {path_to_stills}\\frame_%12d.png {output_framerate_option} -vcodec {vcodec} -crf {crf} -pix_fmt yuv420p -hide_banner -loglevel error {metadata_option} {output_file}'
     subprocess.Popen(ffmpeg_command,shell=True).wait()
     print(f'FFMPEG command used was:\n{ffmpeg_command}')

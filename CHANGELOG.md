@@ -18,7 +18,8 @@ This release also introduces major improvements to style transfers, in which VQG
 * video_tools now sets ffmpeg to output on error only
 
 **Bug Fixes**
-* upscaling video example file had a bug in the ffmpeg command. Fixed.
+* The upscaling video example file had a bug in the ffmpeg command.
+* The generate.encode_video method was not producing file with the expected framerate.
 
 # v1.3.1
 **New features:**
