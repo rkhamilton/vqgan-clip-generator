@@ -206,7 +206,7 @@ class Engine:
             elif self.conf.init_image_method == 'alternate_img_target':
                 result.append(F.mse_loss(self._z, self._alternate_img_target) * self.conf.init_weight / 2)
             elif self.conf.init_image_method == 'alternate_img_target_decay':
-                result.append(F.mse_loss(self._z, self._alternate_img_target) * ((self.conf.init_weight * 5/torch.tensor(iteration_number*2 + 1))))
+                result.append(F.mse_loss(self._z, self._alternate_img_target) * ((self.conf.init_weight * 5 / torch.tensor(iteration_number*2 + 1))))
             else:
                 raise NameError(f'Invalid init_weight_method {self.conf.init_image_method}')
 
