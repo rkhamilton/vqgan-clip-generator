@@ -9,8 +9,9 @@ import os
 
 input_video_path = 'small_video.mp4'
 final_output_filename = os.path.join('example_media','upscaled_video.mp4')
-extracted_video_frames_path = 'video_frames'
-upscaled_video_frames_path='upscaled_video_frames'
+output_root_dir = 'example_media'
+extracted_video_frames_path = os.path.join(output_root_dir,'video_frames')
+upscaled_video_frames_path=os.path.join(output_root_dir,'upscaled_video_frames')
 extraction_framerate = 30
 
 
@@ -31,7 +32,7 @@ esrgan.inference_realesrgan(input=extracted_video_frames_path,
         outscale=4)
 
 # Encode the video.
-generated_video_no_audio=os.path.join('example_media','output_no_audio.mp4')
+generated_video_no_audio=os.path.join(output_root_dir,'output_no_audio.mp4')
 os.system(f'ffmpeg -y -f image2 -i {upscaled_video_frames_path}\\frame_%12d.png -r 30 -vcodec libx264 -crf 23 -pix_fmt yuv420p -strict -2 \"{generated_video_no_audio}\"')
 
 # Copy audio from the original file

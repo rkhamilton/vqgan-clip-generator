@@ -8,10 +8,10 @@ from tqdm import tqdm
 
 config = VQGAN_CLIP_Config()
 config.output_image_size = [128,128]
-text_prompts = 'robot'
-generated_images_path='./video_frames'
-upscaled_video_frames_path='./video_frames_upscaled'
-number_images_to_generate = 10
+text_prompts = 'an abandoned theater'
+output_root_dir = 'example_media'
+generated_images_path=os.path.join(output_root_dir,'multi_prompt_images')
+upscaled_video_frames_path=os.path.join(output_root_dir,'multi_prompt_images_upscaled')
 # Set True if you installed the Real-ESRGAN package for upscaling. face_enhance is a feature of Real-ESRGAN.
 upscale_images = True
 face_enhance = False

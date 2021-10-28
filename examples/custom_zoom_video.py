@@ -24,7 +24,7 @@ def parameters_by_frame(frame_num):
 
 eng_config=VQGAN_CLIP_Config()
 num_video_frames = 150
-iterations_per_frame = 30
+iterations_per_frame = 15
 eng_config.output_image_size = [587,330]
 text_prompts = 'Impressionist painting of a red horse'
 image_prompts = []

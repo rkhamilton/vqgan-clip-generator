@@ -11,8 +11,7 @@ output_filename = os.path.join('example_media','image_prompt.png')
 
 metadata_comment = generate.image(eng_config = config,
         image_prompts = 'input_image.jpg',
-        iterations = 500,
-        save_every = 10,
+        iterations = 50,
         output_filename = output_filename)
 
 # Upscale the video frames

@@ -5,7 +5,7 @@ import os
 from vqgan_clip import _functional as VF
 
 config = VQGAN_CLIP_Config()
-config.output_image_size = [448,448]
+config.output_image_size = [587,330]
 # Set True if you installed the Real-ESRGAN package for upscaling.
 upscale_image = True
 text_prompts = 'A pastoral landscape painting by Rembrandt'
