@@ -319,7 +319,7 @@ def video_frames(num_video_frames,
     # generate images
     try:
         for video_frame_num in tqdm(range(1,num_video_frames+1),unit='frame',desc='video frames',leave=leave_progress_bar):
-            for iteration_num in range(iterations_per_frame):
+            for iteration_num in tqdm(range(iterations_per_frame),unit='iteration',desc='generating frame',leave=False):
                 lossAll = eng.train(iteration_num)
 
             if change_prompts_on_frame is not None:
@@ -505,7 +505,7 @@ def style_transfer(video_frames,
             eng.configure_optimizer()
 
             # Generate a new image
-            for iteration_num in range(1,iterations_per_frame+1):
+            for iteration_num in tqdm(range(1,iterations_per_frame+1),unit='iteration',desc='generating frame',leave=False):
                 #perform iterations of train()
                 lossAll = eng.train(iteration_num)          
 
