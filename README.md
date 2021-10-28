@@ -299,7 +299,7 @@ generate.video_frames(eng_config = config,
 
 # Use a wrapper for FFMPEG to encode the video.
 video_tools.encode_video(output_file=os.path.join('output','zoom_video.mp4'),
-        metadata=text_prompts,
+        metadata_title=text_prompts,
         output_framerate=60,
         input_framerate=30)
 ```
