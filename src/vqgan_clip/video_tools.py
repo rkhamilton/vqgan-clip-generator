@@ -24,7 +24,7 @@ def extract_video_frames(input_video_path, extraction_framerate, extracted_video
         for f in files:
             os.remove(f)
 
-    print("Extracting image frames from original video")
+    # print("Extracting image frames from original video")
     # extract original video frames
     subprocess.call(['ffmpeg',
         '-i', input_video_path,
