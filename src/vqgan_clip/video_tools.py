@@ -50,7 +50,7 @@ def copy_video_audio(original_video, destination_file_without_audio, output_file
         ffmpeg_command = f'ffmpeg -i {original_video} -vn -acodec copy -hide_banner -loglevel error {extracted_original_audio}'
         print(f'FFMPEG command used was:\n{ffmpeg_command}')
         subprocess.Popen(ffmpeg_command,shell=True).wait()
-        assert(os.path.exists(extracted_original_audio))     
+        assert(os.path.exists(extracted_original_audio.strip('"')))     
     except:
         print("Audio extraction failed")
        
@@ -60,7 +60,7 @@ def copy_video_audio(original_video, destination_file_without_audio, output_file
         ffmpeg_command = f'ffmpeg -i {destination_file_without_audio} -i {extracted_original_audio} -c copy -map 0:v:0 -map 1:a:0 -hide_banner -loglevel error {output_file}'
         print(f'FFMPEG command used was:\n{ffmpeg_command}')
         subprocess.Popen(ffmpeg_command,shell=True).wait()
-        assert(os.path.exists(output_file))  
+        assert(os.path.exists(output_file.strip('"')))  
     except:
         print("Generating output file failed")
       
