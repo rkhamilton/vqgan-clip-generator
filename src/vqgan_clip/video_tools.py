@@ -40,31 +40,29 @@ def extract_video_frames(input_video_path, extraction_framerate, extracted_video
 
 def copy_video_audio(original_video, destination_file_without_audio, output_file):
     extracted_original_audio = 'extracted_original_audio.aac' # audio file, if any, from the original video file
+    if os.path.exists(extracted_original_audio):
+        os.remove(extracted_original_audio)
+    if os.path.exists(output_file):
+        os.remove(output_file)
 
     # extract original audio
     try:
-        subprocess.call(['ffmpeg',
-            '-i', original_video,
-            '-vn', 
-            '-acodec', 'copy',
-            '-hide_banner',
-            '-loglevel', 'error',
-            extracted_original_audio])
+        ffmpeg_command = f'ffmpeg -i {original_video} -vn -acodec copy -hide_banner -loglevel error {extracted_original_audio}'
+        print(f'FFMPEG command used was:\n{ffmpeg_command}')
+        subprocess.Popen(ffmpeg_command,shell=True).wait()
     except:
         print("Audio extraction failed")
+    assert(os.path.exists(extracted_original_audio))    
 
     # if there is extracted audio from the original file, re-merge it here
-    # note that in order for the audio to sync up, extracted_video_fps must have matched the original video framerate
-    subprocess.call(['ffmpeg',
-        '-i', destination_file_without_audio,
-        '-i', extracted_original_audio,
-        '-c', 'copy', 
-        '-map', '0:v:0',
-        '-map', '1:a:0',
-        '-hide_banner',
-        '-loglevel', 'error',
-    output_file])
-    
+    try:
+        ffmpeg_command = f'ffmpeg -i {destination_file_without_audio} -i {extracted_original_audio} -c copy -map 0:v:0 -map 1:a:0 -hide_banner -loglevel error {output_file}'
+        print(f'FFMPEG command used was:\n{ffmpeg_command}')
+        subprocess.Popen(ffmpeg_command,shell=True).wait()
+    except:
+        print("Generating output file failed")
+    assert(os.path.exists(output_file))    
+
     # clean up
     os.remove(extracted_original_audio)
 
