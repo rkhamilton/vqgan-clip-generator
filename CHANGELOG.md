@@ -22,6 +22,7 @@ Associated with the style transfer improvements, there are major changes in the 
 **Bug Fixes**
 * The upscaling video example file had a bug in the ffmpeg command.
 * The generate.encode_video method was not producing file with the expected framerate.
+* Many problems were resolved that impacted paths that included spaces. In general, be sure to pass f-strings as paths (f'my path{os.sep}here').
 
 # v1.3.1
 **New features:**
