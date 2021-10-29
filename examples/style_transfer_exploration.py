@@ -14,10 +14,6 @@ import itertools
 import shutil
 from tqdm import tqdm
 
-config = VQGAN_CLIP_Config()
-config.seed = 1
-config.cudnn_determinism = True
-config.output_image_size = [256, 256]
 text_prompts = 'portrait on deviantart'
 input_video_path = '20211004 132008000_iOS.MOV'
 # all folders will be created within the output_root_dir
@@ -56,6 +52,10 @@ all_iterables = tqdm(itertools.product(current_source_frame_image_weights, itera
                      total=total_iterables, unit='combo', desc='parameter combinations')
 
 for current_source_frame_image_weight, iterations_per_frame, current_source_frame_prompt_weight, z_smoother_buffer_len, z_smoother_alpha in all_iterables:
+    config = VQGAN_CLIP_Config()
+    config.seed = 1
+    config.cudnn_determinism = True
+    config.output_image_size = [256, 256]
     # Apply a style to the extracted video frames.
     metadata_comment = generate.style_transfer(original_video_frames,
                                                eng_config=config,
@@ -70,8 +70,7 @@ for current_source_frame_image_weight, iterations_per_frame, current_source_fram
                                                leave_progress_bar=False)
 
     # save the last generated image with a descriptive filename
-    final_output_filename = os.path.join(
-        final_output_images_path, f'image_weight_{current_source_frame_image_weight:1.1f}_prompt_weight_{current_source_frame_prompt_weight:1.1f}_iterations_{iterations_per_frame}_buf_len_{z_smoother_buffer_len}_alpha_{z_smoother_alpha:1.1f}.png')
+    final_output_filename = f'{final_output_images_path}{os.sep}image_weight_{current_source_frame_image_weight:1.1f}_prompt_weight_{current_source_frame_prompt_weight:1.1f}_iterations_{iterations_per_frame}_buf_len_{z_smoother_buffer_len}_alpha_{z_smoother_alpha:1.1f}.png'
     generated_files = glob.glob(os.path.join(
         generated_video_frames_path, '*.png'))
     shutil.copy(generated_files[-1], final_output_filename)
