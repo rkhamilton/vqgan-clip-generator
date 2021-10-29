@@ -1,6 +1,5 @@
 # v2.0.0
-This release also introduces major improvements to style transfers, in which VQGAN style is applied to an existing video. The improvements should result in videos that are more consistant from frame-to-frame (less flicker).
-Associated with the style transfer improvements, there are major changes in the video generation API to make it easier to calculate video durations.
+This release introduces major improvements to style transfers, in which VQGAN style is applied to an existing video. The improvements should result in videos that are more consistant from frame-to-frame (less flicker). Associated with the style transfer improvements, there are major changes in the video generation API to make it easier to calculate video durations.
 
 **API changes**
 * generate.style_transfer added with the new video generation features.
