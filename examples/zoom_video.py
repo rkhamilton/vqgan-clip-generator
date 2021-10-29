@@ -25,7 +25,7 @@ face_enhance = False
 interpolate_with_RIFE = True
 
 # set some paths
-generated_video_frames_path = os.path.join(output_root_dir, 'video_frames')
+generated_video_frames_path = os.path.join(output_root_dir, 'video frames')
 upscaled_video_frames_path = os.path.join(output_root_dir, 'upscaled video frames')
 
 # Now generate a zoom video starting from that initial frame.

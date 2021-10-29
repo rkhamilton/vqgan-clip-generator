@@ -34,7 +34,7 @@ image_prompts = []
 noise_prompts = []
 change_prompts_on_frame = [50, 100],
 init_image = None
-video_frames_path = './video_frames'
+video_frames_path = f'example media{os.sep}custom video frames'
 z_smoother = False
 z_smoother_buffer_len = 3
 z_smoother_alpha = 0.7
@@ -159,7 +159,7 @@ metadata_comment = f'iterations: {iterations_per_frame}, '\
     f'z_smoother_buffer_len {z_smoother_buffer_len}, '\
     f'z_smoother_alpha {z_smoother_alpha}'
 
-video_tools.encode_video(output_file=os.path.join('example_media', 'custom_zoom_video.mp4'),
+video_tools.encode_video(output_file=f'example media{os.sep}custom zoom video.mp4',
                          path_to_stills=video_frames_path,
                          metadata_title=text_prompts,
                          metadata_comment=metadata_comment,
