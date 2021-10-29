@@ -29,6 +29,8 @@ final_output_images_path = os.path.join(output_root_dir, 'parameter tests')
 
 # ensure the output folder exists and is empty.
 os.makedirs(final_output_images_path, exist_ok=True)
+for f in glob.glob(os.path.join(output_root_dir, '*.png')):
+    os.remove(f)
 for f in glob.glob(os.path.join(final_output_images_path, '*.png')):
     os.remove(f)
 
@@ -42,7 +44,7 @@ del original_video_frames[frames_to_process:]
 # set the parameters below to lists of values that you would like to explore. All combinations will be tested.
 # For parameters you want to stay fixed, use lists with one element, e.g. [0.2]
 current_source_frame_image_weights = [0.1, 0.2, 0.4, 0.8, 1.6, 3.2, 6.4]
-iterations_per_frames = [15]  # [5, 10, 15, 30, 60, 100]
+iterations_per_frames = [5, 10, 15, 30, 60, 100]
 current_source_frame_prompt_weights = [0]  # [0.0, 0.1, 0.5, 0.8, 1.5]
 z_smoother_buffer_lens = [3]  # [3,5,7]
 z_smoother_alphas = [0.9]  # [0.6, 0.7, 0.8, 0.9]
@@ -70,7 +72,7 @@ for current_source_frame_image_weight, iterations_per_frame, current_source_fram
                                                leave_progress_bar=False)
 
     # save the last generated image with a descriptive filename
-    final_output_filename = f'{final_output_images_path}{os.sep}image_weight_{current_source_frame_image_weight:1.1f}_prompt_weight_{current_source_frame_prompt_weight:1.1f}_iterations_{iterations_per_frame}_buf_len_{z_smoother_buffer_len}_alpha_{z_smoother_alpha:1.1f}.png'
+    final_output_filename = f'{final_output_images_path}{os.sep}image_weight {current_source_frame_image_weight:1.1f} prompt_weight {current_source_frame_prompt_weight:1.1f} iterations {iterations_per_frame} buf_len {z_smoother_buffer_len} alpha {z_smoother_alpha:1.1f}.png'
     generated_files = glob.glob(os.path.join(
         generated_video_frames_path, '*.png'))
     shutil.copy(generated_files[-1], final_output_filename)
