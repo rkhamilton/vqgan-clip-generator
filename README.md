@@ -12,7 +12,7 @@ Some example images:
 <img src="./samples/Pastoral landscape painting in the impressionist style initial.png" width="256px"></img>
 <img src="./samples/The_sadness_of_Colonel_Sanders_by_Thomas_Kinkade.png" width="256px"></img>  
 <img src="./samples/portrait_v2.gif" width="256px"></img>
-
+<img src="./samples/style_transfer_charcoal_spiders.gif" width="256px"></img>
 
 Environment:
 
@@ -171,6 +171,7 @@ These parameters are passed to the functions of vqgan_clip.generate: image(), vi
 |---------|---------|---------|
 |num_video_frames||Number of frames of video to generate.|
 |iterations_per_frame|30|Number of iterations of train() to perform on each generated video frame|
+|iterations_for_first_frame|100|Number of extra iterations of train() to perform on the first frame of video so the image isn't a gray field.|
 |change_prompts_on_frame|None|All serial prompts (separated by "^") will be cycled forward on the video frames provided here. If more changes are requested than prompts are available, the last prompt is used.|
 |generated_video_frames_path|'./video_frames'|Location where multiple_images() will save output.|
 |zoom_scale|1.0|When using zoom_video(), this parameter sets the ratio by which each frame will be zoomed in relative to the previous.|

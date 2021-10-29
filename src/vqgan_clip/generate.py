@@ -258,6 +258,7 @@ def restyle_video_frames(video_frames,
 
 def video_frames(num_video_frames,
         iterations_per_frame = 30,
+        iterations_for_first_frame = 100,
         eng_config=VQGAN_CLIP_Config(),
         text_prompts = [],
         image_prompts = [],
@@ -279,6 +280,7 @@ def video_frames(num_video_frames,
     Args:
         * num_video_frames (int) : Number of video frames to be generated.  
         * iterations_per_frame (int, optional) : Number of iterations of train() to perform on each generated video frame. Default = 30
+        * iterations_for_first_frame (int, optional) : Number of additional iterations of train() to perform on the first frame so that the image is not a gray/random field. Default = 30
         * eng_config (VQGAN_CLIP_Config, optional): An instance of VQGAN_CLIP_Config with attributes customized for your use. See the documentation for VQGAN_CLIP_Config().
         * text_prompts (str, optional) : Text that will be turned into a prompt via CLIP. Default = []  
         * image_prompts (str, optional) : Path to image that will be turned into a prompt via CLIP. Default = []
@@ -323,9 +325,8 @@ def video_frames(num_video_frames,
                 lossAll = eng.train(iteration_num)
 
             # without an initial image, the first frame usually takes more iterations to converge away from a gray field.
-            # we will just run another set of iterations
             if video_frame_num == 1 and not init_image:
-                for iteration_num in tqdm(range(iterations_per_frame),unit='iteration',desc='generating frame',leave=False):
+                for iteration_num in tqdm(range(iterations_for_first_frame),unit='iteration',desc='generating frame',leave=False):
                     lossAll = eng.train(iteration_num)
 
             if change_prompts_on_frame is not None:
