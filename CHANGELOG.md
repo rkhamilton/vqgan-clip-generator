@@ -1,4 +1,29 @@
-# v.1.3.1
+# v2.0.0
+This release introduces major improvements to style transfers, in which VQGAN style is applied to an existing video. The improvements should result in videos that are more consistant from frame-to-frame (less flicker). Associated with the style transfer improvements, there are major changes in the video generation API to make it easier to calculate video durations.
+
+**API changes**
+* generate.style_transfer added with the new video generation features.
+* generate.zoom_video_frames and generate.video_frames have been combined to a single function: generate.video_frames. If you do not specify zoom_scale, shift_x, or shift_y, these values default to 0, and non-zooming images are generated.
+* generate.video_frames arguments changed. iterations and save_every are removed. New arguments are provided to make it easier to calculate video durations.
+  * num_video_frames : Set the number of video frames (images) to be generated.
+  * iterations_per_frame : Set the number of vqgan training iterations to perform for each frame of video. Higher numbers are more stylized.
+* generate.multiple_images removed. Functionally it was identical to repeatedly running generate.single_image
+* generate.single_image renamed to generate.image
+* generate.single_image argument change_prompt_every is removed. It is not relevant for generating a single image.
+* generate.restyle_video renamed to generate.restyle_video_legacy. It will be removed in a future version.
+* generate.restyle_video_naive removed. Use generate.style_transfer instead.
+* video_tools.RIFE_interpolation added as a wrapper to the arXiv2020-RIFE inference_video.py script.
+
+**New Features**
+* generate.zoom_video lets you specify specific video frames where prompts should be changed using the argument change_prompts_on_frame. E.g. to change prompts on frames 150 and 200, use change_prompts_on_frame = [150,200]. Examples are updated with this argument.
+* video_tools now sets ffmpeg to output on error only
+
+**Bug Fixes**
+* The upscaling video example file had a bug in the ffmpeg command.
+* The generate.encode_video method was not producing file with the expected framerate.
+* Many problems were resolved that impacted paths that included spaces. In general, be sure to pass f-strings as paths (f'my path{os.sep}here').
+
+# v1.3.1
 **New features:**
 * Single_image generation creates an image that matches the aspect ratio of any init_image provided. The output will have the same number of pixels as your specified output_size, in order to stay within your memory constraints. 
 

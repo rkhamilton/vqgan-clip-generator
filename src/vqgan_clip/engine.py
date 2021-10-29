@@ -47,7 +47,7 @@ class VQGAN_CLIP_Config:
     * self.cuda_device (str, optional): Select your GPU. Default to the first gpu, device 0.  Defaults to \'cuda:0\'
     * self.adaptiveLR (boolean, optional): If true, use an adaptive learning rate. If the quality of the image stops improving, it will change less with each iteration. Generate.zoom output is more stable. Defaults to False.
     * self.conf.model_dir (str, optional): If set to a folder name (e.g. 'models') then model files will be downloaded to a subfolder of the current working directory. Defaults to None.
-    * init_image_method (str, optional): Method used to compare current image to init_image. Options=['original','decay']. Defaults to 'decay'
+    * init_image_method (str, optional): Method used to compare current image to init_image. Options=['original','decay']. Defaults to 'original'
 
     """
     def __init__(self):
@@ -69,7 +69,7 @@ class VQGAN_CLIP_Config:
         self.cuda_device = 'cuda:0' # select your GPU. Default to the first gpu, device 0
         self.adaptiveLR = False # If true, use an adaptive learning rate. If the quality of the image stops improving, it will change less with each iteration. Generate.zoom output is more stable.
         self.model_dir = None # If set to a folder name (e.g. 'models') then model files will be downloaded to a subfolder of the current working directory.
-        self.init_image_method = 'decay' # Method used to compare current image to init_image. Options=['original','decay'] Default = 'original'
+        self.init_image_method = 'original' # Method used to compare current image to init_image. Options=['original','decay'] Default = 'original'
 
 class Engine:
     def __init__(self, config=VQGAN_CLIP_Config()):
@@ -203,8 +203,12 @@ class Engine:
                 result.append(F.mse_loss(self._z, self._z_orig) * self.conf.init_weight / 2)
             elif self.conf.init_image_method == 'decay':
                 result.append(F.mse_loss(self._z, torch.zeros_like(self._z_orig)) * ((1/torch.tensor(iteration_number*2 + 1))*self.conf.init_weight) / 2)
+            elif self.conf.init_image_method == 'alternate_img_target':
+                result.append(F.mse_loss(self._z, self._alternate_img_target) * self.conf.init_weight / 2)
+            elif self.conf.init_image_method == 'alternate_img_target_decay':
+                result.append(F.mse_loss(self._z, self._alternate_img_target) * ((self.conf.init_weight * 5 / torch.tensor(iteration_number*2 + 1))))
             else:
-                raise NameError('Invalid init_weight_method f{self.conf.init_image_method}')
+                raise NameError(f'Invalid init_weight_method {self.conf.init_image_method}')
 
         for prompt in self.pMs:
             result.append(prompt(encoded_image))
@@ -310,13 +314,26 @@ class Engine:
             self._make_cutouts = VF.MakeCutoutsOrig(self._perceptor.visual.input_resolution, self.conf.num_cuts, cut_pow=self.conf.cut_power)
 
     def convert_image_to_init_image(self, pil_image):
+        self._z = self.pil_image_to_latent_vector(pil_image)
+        self._z_orig = self._z.clone()
+        self._z.requires_grad_(True)
+
+    def pil_image_to_latent_vector(self, pil_image):
         output_image_size_X, output_image_size_Y = self.calculate_output_image_size()
         pil_image = pil_image.convert('RGB')
         pil_image = pil_image.resize((output_image_size_X, output_image_size_Y), Image.LANCZOS)
         pil_tensor = TF.to_tensor(pil_image)
-        self._z, *_ = self._model.encode(pil_tensor.to(self._device).unsqueeze(0) * 2 - 1)
-        self._z_orig = self._z.clone()
-        self._z.requires_grad_(True)
+        latent_vector, *_ = self._model.encode(pil_tensor.to(self._device).unsqueeze(0) * 2 - 1)
+        return latent_vector
+
+    def set_alternate_image_target(self, pil_image):
+        """Sets an alternate image target to replace the init_image when training.
+        Use this when you want to have the image evolve toward a different image than the initial image.
+
+        Args:
+            pil_image (PIL image): A pil image "Image.open(self.conf.init_image)"
+        """
+        self._alternate_img_target = self.pil_image_to_latent_vector(pil_image)
 
     def clear_all_prompts(self):
         """Clear all encoded prompts. You might use this during video generation to reset the prompts so that you can cause the video to steer in a new direction.

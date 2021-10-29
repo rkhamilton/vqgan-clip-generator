@@ -1,12 +1,16 @@
 from setuptools import setup, find_packages
-import pathlib
+import pathlib, os
+
+pkg_vars = {}
+with open(f'src{os.sep}vqgan_clip{os.sep}_version.py') as fp:
+    exec(fp.read(), pkg_vars)
 
 here = pathlib.Path(__file__).parent.resolve()
 
 long_description = (here / 'README.md').read_text(encoding='utf-8')
 setup(
     name='vqgan-clip-generator',
-    version='1.3.1',
+    version=pkg_vars['__version__'],
     description='Implements VQGAN+CLIP for image and video generation, and style transfers, based on text and image prompts. Emphasis on ease-of-use, documentation, and smooth video creation.',
     long_description=long_description,
     long_description_content_type='text/markdown',

@@ -356,12 +356,53 @@ def filesize_matching_aspect_ratio(file_name, desired_x, desired_y):
     restyled_image_x = int(source_aspect_ratio * restyled_image_y)
     return restyled_image_x, restyled_image_y
 
-
-
-
 def supress_stdout(func):
     def wrapper(*a, **ka):
         with open(os.devnull, 'w') as devnull:
             with contextlib.redirect_stdout(devnull):
                 func(*a, **ka)
     return wrapper
+
+def png_info_chunks(list_of_info):
+    """Create a series of PNG info chunks that contain various details of image generation.
+
+    Args:
+        * list_of_info (list): A list of data to encode in a PNG file. Structure is [['chunk_name']['chunk_data'],['chunk_name']['chunk_data'],...]
+
+    Returns:
+        [PngImagePlugin.PngInfo()]: A PngImagePlugin.PngInfo() object populated with various information about the image generation.
+    """
+    # model_output = self.synth()
+    info = PngImagePlugin.PngInfo()
+    for chunk_tuple in list_of_info:
+        encode_me = chunk_tuple[1] if chunk_tuple[1] else ''  
+        info.add_text(chunk_tuple[0], str(encode_me))
+    return info
+
+def copy_PNG_metadata(files_with_metadata_path,files_needing_metadata_path):
+    if os.path.isfile(files_with_metadata_path):
+        source_files = [files_with_metadata_path]
+    if os.path.isdir(files_with_metadata_path):
+        source_files = glob.glob(files_with_metadata_path + os.sep + '*.png')
+
+    if os.path.isfile(files_needing_metadata_path):
+        dest_files = [files_needing_metadata_path]
+    if os.path.isdir(files_needing_metadata_path):
+        # use source filenames
+        dest_files = []
+        for src in source_files:
+            dest_files.append(os.path.join(files_needing_metadata_path,os.path.basename(src)))
+    
+    assert len(source_files) == len(dest_files)
+
+    file_set = zip(source_files, dest_files)
+
+    for source_file, dest_file in file_set:
+        info = PngImagePlugin.PngInfo()
+        pil_source = Image.open(source_file)
+        pil_dest = Image.open(dest_file)
+        
+        for key, value in zip(pil_source.info.keys(), pil_source.info.values()):
+            info.add_text(key, value)
+        pil_dest.save(dest_file, "png", pnginfo=info)
+        

@@ -1,8 +1,8 @@
 # VQGAN-CLIP-GENERATOR Overview
 
-This is a package for running VQGAN+CLIP locally, with a focus on ease of use. I was motivated to create a version of this tool that would let me mix and match functions so that I could more easily experiment with way to apply a GAN style to an existing video. The key feature in this package is generate.restyle_video(), which will create a smoothly animating, GAN-styled video from an existing video.
+This is a package for running VQGAN+CLIP locally, with a focus on ease of use, good documentation, and generating smooth style transfer videos. I was motivated to create a version of this tool that would let me mix and match functions so that I could more easily experiment with permutations of settings, and style transfer methods. There are three main user-facing functions: generate.image(), generate.video_frames(), and generate.style_transfer().
 
-This package started as a complete refactor of the code provided by [NerdyRodent](https://github.com/nerdyrodent/), which started out as a Katherine Crowson VQGAN+CLIP derived Google colab notebook.
+This package started as a complete refactor of the code provided by [NerdyRodent](https://github.com/nerdyrodent/), which started out as a Katherine Crowson VQGAN+CLIP-derived Google colab notebook.
 
 In addition to refactoring NerdyRodent's code into a more pythonic package to improve usability, this project adds unit tests, and adds improvements to the ability to restyle an existing video.
 
@@ -11,8 +11,7 @@ Some example images:
 <img src="./samples/A child throwing the ducks into a wood chipper painting by Rembrandt initial.png" width="256px"></img>
 <img src="./samples/Pastoral landscape painting in the impressionist style initial.png" width="256px"></img>
 <img src="./samples/The_sadness_of_Colonel_Sanders_by_Thomas_Kinkade.png" width="256px"></img>  
-<img src="./samples/portrait on deviantart.gif" width="256px"></img>
-
+<img src="./samples/style_transfer_charcoal_spiders.gif" width="256px"></img>
 
 Environment:
 
@@ -24,9 +23,9 @@ Environment:
   * 10 GB for a 512x512 image (684x384 in 16:9 format)
   * 8 GB for a 380x380 image (507x285 in 16:9 format)
 
-## Setup
-### Virtual environment
-This example uses [Anaconda](https://docs.conda.io/en/latest/miniconda.html) to manage virtual Python environments. Create a new virtual Python environment for VQGAN-CLIP-GENERATOR. Then, install the VQGAN-CLIP-GENERATOR package using pip. If you are completely new to python and just want to make some art, I have a [quick start guide](BEGINNERS.md).
+# Setup
+## Virtual environment
+This example uses [Anaconda](https://docs.conda.io/en/latest/miniconda.html) to manage virtual Python environments. Create a new virtual Python environment for VQGAN-CLIP-GENERATOR. Then, install the dependencies and my VQGAN-CLIP-GENERATOR package using pip. If you are completely new to python and just want to make some art, I have a [quick start guide](BEGINNERS.md).
 
 ```sh
 conda create --name vqgan python=3.9 pip ffmpeg numpy pytest tqdm git pytorch==1.9.0 torchvision==0.10.0 torchaudio==0.9.0 cudatoolkit=11.1 -c pytorch -c conda-forge
@@ -36,7 +35,7 @@ pip install git+https://github.com/openai/CLIP.git taming-transformers ftfy rege
 pip install git+https://github.com/rkhamilton/vqgan-clip-generator.git
 ```
 
-### Quick example to confirm that it works
+## Quick example to confirm that it works
 ```python
 import vqgan_clip.generate
 from vqgan_clip.engine import VQGAN_CLIP_Config
@@ -44,18 +43,16 @@ import os
 
 config = VQGAN_CLIP_Config()
 config.output_image_size = [128,128]
-text_prompts = 'A pastoral landscape painting by Rembrandt'
-vqgan_clip.generate.single_image(eng_config = config,
-        text_prompts = text_prompts,
+vqgan_clip.generate.image(eng_config = config,
+        text_prompts = 'A pastoral landscape painting by Rembrandt',
         iterations = 100,
-        save_every = 10,
-        output_filename = 'output')
+        output_filename = 'output.png')
 ```
 
-### Optionally, install and configure Real-ESRGAN for image upscaling
-[Real-ESRGAN](https://github.com/xinntao/Real-ESRGAN) is a package that uses machine learning for image restoration, including upscaling and cleaning up noisy images. Given that VQGAN+CLIP can only generate lower-resolution images (significantly limited by available VRAM), applying ESRGAN for upscaling can be useful. 
+## Optionally, install Real-ESRGAN for image upscaling
+[Real-ESRGAN](https://github.com/xinntao/Real-ESRGAN) is a package that uses machine learning for image restoration, including upscaling and cleaning up noisy images. Given that VQGAN+CLIP output sizes are significantly limited by available VRAM, using a sophisticated upscaler can be useful.
 
-See [Real-ESRGAN.md](https://github.com/rkhamilton/vqgan-clip-generator/blob/main/Real-ESRGAN.md) for installation instructions for use with this package.
+To install Real-ESRGAN for use in this package, run the commands below. See [Real-ESRGAN.md](Real-ESRGAN.md) for additional instructions, including use of custom upscaling/restoration models.
 ```sh
 conda activate vqgan
 pip install opencv-python scipy
@@ -64,8 +61,21 @@ pip install facexlib
 pip install gfpgan
 pip install git+https://github.com/xinntao/Real-ESRGAN
 ```
+## Optionally, download arXiv2020-RIFE
+The project [arXiv2020-RIFE](https://github.com/hzwer/arXiv2020-RIFE) is an optical flow interpolation implementation for increasing the framerate of existing video. Optical flow creates extra frames of video that smoothly move visual elements from their positions in the first frame to their positions in the second frame. 
 
-### If using an AMD graphics card
+I've provided [examples](examples) of how you can combine Real-ESRGAN and RIFE to upscale and interpolate generated content.
+
+In addition to the setup commands above, run the following commands to set up RIFE. Please note that RIFE does not offer an installable python package, unlike the packages above. You will have to clone their repository to the working directory you plan to use for your VQGAN+CLIP projects. Then, [download the RIFE trained model v3.8](https://drive.google.com/file/d/1O5KfS3KzZCY3imeCr2LCsntLhutKuAqj/view?usp=sharing) to the *./arXiv2020-RIFE/train_log/* folder.
+```sh
+conda activate vqgan
+pip install sk-video
+pip install opencv-python
+pip install moviepy
+git clone git@github.com:hzwer/arXiv2020-RIFE.git
+```
+
+## If using an AMD graphics card
 
 The instructions above assume an nvidia GPU with support for CUDA 11.1. Instructions for an AMD GPU below are courtesy of NerdyRodent. Note: I have not tested this advice.
 
@@ -79,15 +89,13 @@ The usage and set up instructions above are the same, except for the line where 
 Instead of `pip install torch==1.9.0+cu111 ...`, use the one or two lines which are displayed here (select Pip -> Python-> ROCm):
 <https://pytorch.org/get-started/locally/>
 
-### If using the CPU
+## If using the CPU
 
-If no graphics card can be found, the CPU is automatically used and a warning displayed.
-
-Regardless of an available graphics card, the CPU can also be used by adding this command line argument: `-cd cpu`
+If no graphics card can be found, the CPU is automatically used and a warning displayed. In my testing, a RTX 3080 GPU is >25x faster than a 5900X CPU. Using a CPU may be impractically slow.
 
 This works with the CUDA version of Pytorch, even without CUDA drivers installed, but doesn't seem to work with ROCm as of now.
 
-### Uninstalling
+## Uninstalling
 
 Remove the Python enviroment:
 
@@ -95,30 +103,25 @@ Remove the Python enviroment:
 conda deactivate
 conda remove --name vqgan --all
 ```
-Remove any cached model files at ~
+Remove any cached model files at *~\cache\torch\hub\models*.
 
-## Generating images and video
-### Functions
+# Generating images and video
+## Functions
 Generating images and video is done through functions in the vqgan_clip.generate module. For the functions that generate folders of images, you may optionally conver them to video using the included video_tools.encode_video() method, which is a wrapper for ffmpeg.
 |Function|Purpose|
 |--------|-------|
-|single_image|Generate a single image.|
-|multiple_images|Generate multiple, independent images. Each image has it's own random seed. This is useful if you want to fish for interesting images from the same prompt. It is equivalent to running single_image repeatedly. It generates a folder of images.|
-|restyle_video_frames_naive|Apply VQGAN_CLIP to each frame of a video separately as if you extracted the image and used it as an initial image for a call to single_image. This is the most common approach for VQGAN style transfers. It generates a folder of images which can be encoded to a video.|
-|restyle_video_frames|This is an enhanced version of restyle_video_frames_naive. Enhancements include using previous generated frames as image prompts, blending previous generated frames with the current input frame to create a new initial image that retains features of previous frames, and using the current source frame as an image prompt. The emphasis of these additions is better frame-to-frame consistency of generated content.|
-|video_frames|Generate a sequence of images by running the same VQGAN training while periodically saving the generated images to unique files. Images don't change much after 100-200 iterations, so this is most useful if you are using story prompts (see below).|
-|zoom_video_frames|Similar to video_frame, except that the image continually zooms in or out, and moves up/down/left/right. The images never stabilize, and create interesting patterns depending on the prompts.|
+|generate.image()|Generate a single image.|
+|generate.video_frames()|Generate a sequence of images by running the VQGAN training while periodically saving the generated images to unique files. The resulting images can "zoom in" or translate around if you use optional arguments to transform each generated frame of video. The result is a folder of images that can be combined using (e.g.) ffmpeg.|
+|generate.style_transfer()|Apply VQGAN_CLIP to each frame of an existing video. This is an enhancement of the standard style transfer algorithm that has improvements to the fluidity of the resulting video. The result is a folder of images that can be combined using (e.g.) ffmpeg.|
 
-
-
-### Prompts
-Prompts are objects that can be analyzed by CLIP to identify their contents. The resulting images will be those that are similar to the prompts, as evaluated by CLIP. Prompts can be any combination of text phrases, example images, or random number generator seeds. Each of these types of prompts is in a separate string, discussed below.
+## Prompts
+Prompts are objects that can be analyzed by CLIP to identify their contents. The resulting images will be those that are similar to the prompts. Prompts can be any combination of text phrases, example images, or random number generator seeds. Each of these types of prompts is in a separate string, discussed below.
 
 Multiple prompts can be combined, both in parallel and in series. Prompts that should be used in parallel are separated by a pipe symbol, like so:
 ```python
 'first parallel prompt | second parallel prompt'
 ```
-Prompts that should be processed in series should be separated by a carat (^). Serial prompts, sepated by ^, will be cycled through every change_prompt_every iterations. Prompts will loop if more cycles are requested than there are prompts. This feature is primarily intended for use when generating videos.
+Prompts that should be processed in series should be separated by a carat (^). Serial prompts, sepated by ^, will be cycled through after a user-specified number of video frames. If more prompt changes are requested than there are serial prompts available, the last prompt will be used. This feature is not applicable to generating single images.
 
 ```python
 'first serial prompt ^ second serial prompt'
@@ -134,61 +137,72 @@ These methods may be used in any combination.
 'prompt 1:1.0 | prompt 2:0.1 | prompt 3:0.5 ^ prompt 4 | prompt 5 | prompt 6:2.0'
 ```
 
-### Image generation parameters
+# Parameters
+There are a lot of degrees of freedom you can change when creating generative art. I describe the parameters of this package below, and try to highlight the most important considerations in the text.
+
 The parameters used for image generation are either passed to a method of generate.py, or stored in a VQGAN_CLIP_Config instance. These two groups of configuration parameters are discussed below.
 
-### vqgan_clip.generate function arguments
-These parameters are passed to the functions of vqgan_clip.generate: single_image(), multiple_images(), video_frames(), restyle_video_frames(), restyle_video_frames_naive(), and zoom_video_frames().
+## Parameters common to vqgan_clip.generate.*
+These parameters are common to all of the functions of vqgan_clip.generate: image(), video_frames(), style_transfer().
 |Function Argument|Default|Meaning
 |---------|---------|---------|
 |text_prompts|'A painting of flowers in the renaissance style:0.5\|rembrandt:0.5^fish:0.2\|love:1'|Text prompt for image generation|
-|image_prompts|[]|Path to image(s) that will be turned into a prompt via CLIP. The contents of the resulting image will have simiar content to the prompt image(s) as evaluated by CLIP.|
+|image_prompts|[]|Path to image(s) that will be turned into a prompt via CLIP. The contents of the resulting image will have simiar content to the prompt image(s), as evaluated by CLIP.|
 |noise_prompts|[]|Random number seeds can be used as prompts using the same format as a text prompt. E.g. '123:0.1\|234:0.2\|345:0.\|3' Stories (^) are supported. |
-|init_image|None|A Seed image that can be used to start the training. Without an initial image, random noise will be used.|
-|iterations|100|Number of iterations of train() to perform before stopping and outputing the image. The resulting still image will eventually converge to an image that doesn't perceptually change much in content.|
+|init_image|None|A seed image that can be used to start the training. Without an initial image, random noise will be used.|
 |save_every|50|An interim image will be saved to the output location every save_every iterations. If you are generating a video, a frame of video will be created every save_every iterations.|
-|change_prompt_every|0|Serial prompts, sepated by ^, will be cycled through every change_prompt_every iterations. Prompts will loop if more cycles are requested than there are prompts.|
 |output_filename|'output.png'|Location to save the output image file when a single file is being created.|
-|num_images_to_generate|10|How many images multiple_images() will generate.|
-|output_images_path|'./video_frames'|Location where multiple_images() will save output.|
+|verbose|False|Determines whether training diagnostics should be displayed every time a file is saved.|
+
+## Parameters specific to generate.image()
+|Function Argument|Default|Meaning
+|---------|---------|---------|
+|iterations|100|Number of iterations of train() to perform before stopping and outputing the image. The resulting still image will eventually converge to an image that doesn't perceptually change much in content.|
+
+## Parameters specific to generate.video_frames()
+|Function Argument|Default|Meaning
+|---------|---------|---------|
+|num_video_frames||Number of frames of video to generate.|
+|iterations_per_frame|30|Number of iterations of train() to perform on each generated video frame|
+|iterations_for_first_frame|100|Number of extra iterations of train() to perform on the first frame of video so the image isn't a gray field.|
+|change_prompts_on_frame|None|All serial prompts (separated by "^") will be cycled forward on the video frames provided here. If more changes are requested than prompts are available, the last prompt is used.|
+|generated_video_frames_path|'./video_frames'|Location where multiple_images() will save output.|
 |zoom_scale|1.0|When using zoom_video(), this parameter sets the ratio by which each frame will be zoomed in relative to the previous.|
 |shift_x|0| When using zoom_video(), this parameter sets how many pixels each new frame will be shifted in the x direction.|
 |shift_y|0| When using zoom_video(), this parameter sets how many pixels each new frame will be shifted in the x direction.|
-|current_source_frame_prompt_weight|0.1| When restyling video, you can use the current frame of source video as an image prompt. This assigns a weight to that image prompt, and makes the output have content more like the input. Try values 0-1.0.|
-|previous_generated_frame_prompt_weight|0.1| When restyling video, you can use the previous generated frame of source video as an image prompt. This assigns a weight to that image prompt and promotes style consistency. It doesn't seem to have a large effect. Try values 0-0.5|
-|generated_frame_init_blend|0.1| When restyling video, each original frame of video is used as an init_image for the new frame of generated video. This parameter lets you also blend the previous generated frame with the new source frame. This is an important feature for making the resulting video smooth, since the new frame will start with some elements that CLIP has determined are similar to the prompts. Try values 0.0-0.3. Larger values cause runaway image evolution (which may be fun to see!).|
-|extraction_framerate|30|When extracting video frames from an existing video, this sets how many frames per second will be extracted. Interpolation will be used if the video's native framerate differs.|
-|extracted_video_frames_path|'./extracted_video_frames'| Location where extract_video_frames will save extracted frames of video from the source file.|
-|output_framerate|None|Desired framerate of the output video from encode_video.|
-|input_framerate|30|When combining still images to make a video, this parameter can be used to force an assumed original framerate. For example, you could assume you started with 10fps, and interpolate to 60fps.|
-|copy_audio|False|When restyling a video, you can copy the audio from the original video to the result video.|
-|z_smoother|False|When enabled, recent latent vectors used for image generation are combined using a modified [EWMA](https://en.wikipedia.org/wiki/Moving_average) calculation. This average together multiple latent vectors, giving more weight to a central vector, and exponentially less weight to preceeding and succeeding vectors.|
-|z_smoother_buffer_len|5|Sets how many latent vectors (image generation data) are combined using an EWMA. Bigger numbers will combine more images for more smoothing, but may make rapid changes blur. The center element of this buffer is given the greatest weight. Must be an odd number.|
-|z_smoother_alpha|0.7|Sets how much the adjacent latent vectors contribute to the final average. Smaller values mean the adjacent images will contribute more to the final output, smoothing changes from frame to frame and increasing the appearance of motion blur.|
+|z_smoother|False|When True, flicker is reduced and frame-to-frame consistency is increased at the cost of some motion blur. Recent latent vectors used for image generation are combined using a modified [EWMA](https://en.wikipedia.org/wiki/Moving_average) calculation. This averages together multiple adjacent image latent vectors, giving more weight to a central frame, and exponentially less weight to preceeding and succeeding frames.|
+|z_smoother_buffer_len|5|Sets how many latent vectors (images) are combined using an EWMA. Bigger numbers will combine more images for more smoothing, but may make blur rapid changes. The center element of this buffer is given the greatest weight. Must be an odd number.|
+|z_smoother_alpha|0.7|Sets how much the adjacent latent vectors contribute to the final average. Bigger numbers mean the keyframe image will contribute more to the final output, sharpening the result and increasing flicker from frame to frame.|
 
-
-### VQGAN_CLIP_Config
-Other configuration attributes can be seen in vqgan_clip.engine.VQGAN_CLIP_Config. Those options are related to the function of the algorithm itself. For example, you can change the learning rate of the GAN, or change the optimization algorithm used, or change the GPU used. Instantiate this class and customize the attributes as needed, then pass this configuratio object to a method of vqgan_clip.generate. For example:
+## Parameters specific to generate.style_transfer()
+|Function Argument|Default|Meaning
+|---------|---------|---------|
+|iterations_per_frame|30|Number of iterations of train() to perform on each generated video frame|
+|change_prompts_on_frame|None|All serial prompts (separated by "^") will be cycled forward on the video frames provided here. If 
+|current_source_frame_image_weight|2.0|Higher numbers make the output video look more like the input video.|
+|current_source_frame_prompt_weight|0.0|Higher numbers make the output video look more like the *content* of the input video *as assessed by CLIP*. It treats the source frame as an image_prompt.|
+## VQGAN_CLIP_Config
+Other configuration attributes can be seen in vqgan_clip.engine.VQGAN_CLIP_Config. These options are related to the function of the algorithm itself. For example, you can change the learning rate of the GAN, or change the optimization algorithm used, or change the GPU used. Instantiate this class and customize the attributes as needed, then pass this configuration object to a method of vqgan_clip.generate. For example:
 ```python
 config = VQGAN_CLIP_Config()
 config.output_image_size = [587,330]
-vqgan_clip.generate.single_image(eng_config = config)
+vqgan_clip.generate.image(eng_config = config,text_prompt='a horse')
 ```
 |VQGAN_CLIP_Config Attribute|Default|Meaning
 |---------|---------|---------|
-|output_image_size|[256,256]|x/y dimensions of the output image in pixels. This will be adjusted slightly based on the GAN model used. VRAM requirements increase steeply with image size. My video card with 10GB of VRAM can handle a size of [448,448], or [587,330] in 16:9 aspect ratio.|
+|output_image_size|[256,256]|x/y dimensions of the output image in pixels. This will be adjusted slightly based on the CLIP model used. VRAM requirements increase steeply with image size. My video card with 10GB of VRAM can handle a size of [448,448], or [587,330] in 16:9 aspect ratio.|
+|vqgan_model_name|f'models/vqgan_imagenet_f16_16384'|Name of the pre-trained VQGAN model to be used.|
+|vqgan_model_yaml_url|f'https://heibox.uni-heidelberg.de/d/a7530b09fed84f80a887/files/?p=%2Fconfigs%2Fmodel.yaml&dl=1'|Name of the pre-trained VQGAN model to be used. [Select a valid model name](#dynamic-model-download-and-caching).|
+|vqgan_model_ckpt_url|f'https://heibox.uni-heidelberg.de/d/a7530b09fed84f80a887/files/?p=%2Fckpts%2Flast.ckpt&dl=1'|Name of the pre-trained VQGAN model to be used. [Select a valid model name](#dynamic-model-download-and-caching).|
+|model_dir|None|If set to a folder name (e.g. 'models') then model files will be downloaded to a subfolder of the current working directory. This may be helpful if your default drive, used by PyTorch, is small.|
 |init_noise|None|Seed an image with noise. Options None, 'pixels' or 'gradient' |
 |init_weight|0.0|A weight can be given to the initial image used so that the result will 'hold on to' the look of the starting point.
 |init_noise|None|Seed an image with noise. Options None, 'pixels' or 'gradient'|
-|vqgan_model_name|f'models/vqgan_imagenet_f16_16384.yaml'|Path to model yaml file. This must be customized to match the location where you downloaded the model file.|
-|vqgan_checkpoint|f'models/vqgan_imagenet_f16_16384.ckpt'|Name of the pre-trained VQGAN model to be used. Select a valid model name.|
-|vqgan_model_yaml_url|f'https://heibox.uni-heidelberg.de/d/a7530b09fed84f80a887/files/?p=%2Fconfigs%2Fmodel.yaml&dl=1'|Name of the pre-trained VQGAN model to be used. [Select a valid model name](#dynamic-model-download-and-caching).|
-|vqgan_model_ckpt_url|f'https://heibox.uni-heidelberg.de/d/a7530b09fed84f80a887/files/?p=%2Fckpts%2Flast.ckpt&dl=1'|Name of the pre-trained VQGAN model to be used. [Select a valid model name](#dynamic-model-download-and-caching).|
+|seed|None|Random number generator seed used for image generation. Reusing the same seed does not ensure perfectly identical output due to some nondeterministic algorithms used in PyTorch.|
 |optimizer|'Adam'|Different optimizers are provided for training the GAN. These all perform differently, and may give you a different result. See [torch.optim documentation](https://pytorch.org/docs/stable/optim.html).|
-|model_dir|None|If set to a folder name (e.g. 'models') then model files will be downloaded to a subfolder of the current working directory. This may be helpful if your default drive, used by PyTorch, is small.|
-|init_weight_method|'decay'|Method used to compare current image to init_image. 'Decay' will let the output image get further from the source. 'original' is the method used in the original Katherine Crowson colab notebook, and keeps the output image closer to the original input.|
+|init_weight_method|'original'|Method used to compare current image to init_image. 'decay' will let the output image get further from the source by flattening the original image before letting the new image evolve from the flattened source. The 'decay' method may give a more creative output for longer iterations. 'original' is the method used in the original Katherine Crowson colab notebook, and keeps the output image closer to the original input. This argument is ignored for style transfers.|
 
-### Dynamic model download and caching
+# Dynamic model download and caching
 
 The VQGAN algorithm requires use of a compatible model. These models consist of a configuration file (.yaml) and a checkpoint file (.ckpt). These files are not provided with the pip intallation, and must be downloaded separately. As of version 1.1 of VQGAN_CLIP_GENERATOR, these files are downloaded the first time they are used, and cached locally in the users ~/.cache/torch/hub/models folder. Depending on the models you've used, these can take up several gigabytes of storage, so be aware that they are cached in this location. Uninstallation of this package does not remove cached files.
 
@@ -209,215 +223,116 @@ config = VQGAN_CLIP_Config()
 config.vqgan_model_name = 'sflckr'
 config.vqgan_model_yaml_url = f'https://heibox.uni-heidelberg.de/d/73487ab6e5314cb5adba/files/?p=%2Fconfigs%2F2020-11-09T13-31-51-project.yaml&dl=1'
 config.vqgan_model_ckpt_url = f'https://heibox.uni-heidelberg.de/d/73487ab6e5314cb5adba/files/?p=%2Fcheckpoints%2Flast.ckpt&dl=1'
-vqgan_clip.generate.single_image(eng_config = config,
+vqgan_clip.generate.image(eng_config = config,
         text_prompts='an apple')
 ```
 
-## Examples
-### Generating a single image from a text prompt
-Examples are provided in [the examples folder](https://github.com/rkhamilton/vqgan-clip-generator/tree/main/examples). In the example below, an image is generated from two text prompts: "A pastoral landscape painting by Rembrandt" and "A blue fence." These prompts are given different weights during image genration, with the first weighted ten-fold more heavily than the second. This method of applying weights may optionally be used for all three types of prompts: text, images, and noise. If a weight is not specified, a weight of 1.0 is assumed.
+# Examples
+## Example Scripts
+The [examples folder](examples) has the follow scripts available for you to download and customize. These scripts combine all of the available function arguments and additional tools that I've found useful for routine use: upscaling using Real-ESRGAN, and optical flow interpolation using RIFE.
+|Example|Description|
+|-------|-----------|
+|[single_image.py](examples/single_image.py)|Generate a single image from a text prompt.|
+|[image_prompt.py](examples/image_prompt.py)|Generate a single image from an image prompt. The output will have the same content as the image prompt, as assessed by CLIP.|
+|[multiple_same_prompts.py](examples/multiple_same_prompts.py)|Generate a folder of images using the same prompt, but different random number seeds. This is useful to fish for interesting images.|
+|[multiple_many_prompts.py](examples/multiple_many_prompts.py)|Generate a folder of images by combining your prompt with a number of "keyword" prompts that have a big impact on image generation.|
+|[video.py](examples/video.py)|Generate images where the prompts change over time, and use those images to create a video.|
+|[zoom_video.py](examples/zoom_video.py)|Generate images where the images zoom and shift over time, and use those images to create a video.|
+|[upscaling_video.py](examples/upscaling_video.py)|Demo of how to use Real-ESRGAN to upscale an existing video.|
+|[custom_zoom_video.py](examples/custom_zoom_video.py)|Example of how you can re-use and modify the generate.video_frames() function to create unique behaviors. In this example the zooming and shifting changes over the course of the video.|
+|[style_transfer.py](examples/style_transfer.py)|Apply a VQGAN+CLIP style to an existing video. This is the showcase feature of the package (discussed below).|
+|[style_transfer_exploration.py](examples/style_transfer_exploration.py)|Explore the output of generate.style_transfer() for combinations of parameter values. Useful to dial in the settings for your style transfer, and then use the best settings to generate your video using generate.style_transfer().|
+
+Below is a brief discussion of a few specific examples.
+## Generating a single image from a text prompt
+In the example below, an image is generated from two text prompts: "A pastoral landscape painting by Rembrandt" and "A blue fence." These prompts are given different weights during image genration, with the first weighted ten-fold more heavily than the second. This method of applying weights may optionally be used for all three types of prompts: text, images, and noise. If a weight is not specified, a weight of 1.0 is assumed.
 
 ```python
 # Generate a single image based on a text prompt
-import vqgan_clip.generate
+from vqgan_clip import generate, esrgan
 from vqgan_clip.engine import VQGAN_CLIP_Config
 import os
 
 config = VQGAN_CLIP_Config()
 config.output_image_size = [587,330]
 text_prompts = 'A pastoral landscape painting by Rembrandt:1.0 | A blue fence:0.1'
-vqgan_clip.generate.single_image(eng_config = config,
+
+generate.image(eng_config = config,
         text_prompts = text_prompts,
         iterations = 100,
-        save_every = 50,
-        output_filename = os.path.join('output','output'))
+        output_filename = 'output.png')
 ```
 
-### Generating a single image from a text prompt and initial image
-In this example, an initial image is added to the code above, so that the GAN is seeded with this starting point. The initial image is part of the model configuration, not a parameter for generate.single_image().
+## Generating a single image from a text prompt and initial image
+In this example, an initial image is added to the code above, so that the GAN is seeded with this starting point. The output image will have the same aspect ratio as the initial image.
 
 ```python
-import vqgan_clip.generate
+from vqgan_clip import generate, esrgan
 from vqgan_clip.engine import VQGAN_CLIP_Config
 import os
 
 config = VQGAN_CLIP_Config()
 config.output_image_size = [587,330]
 text_prompts = 'A pastoral landscape painting by Rembrandt:1.0 | A blue fence:0.1'
-vqgan_clip.generate.single_image(eng_config = config,
+
+generate.image(eng_config = config,
         text_prompts = text_prompts,
+        iterations = 100,
         init_image = 'starting_image.jpg',
-        iterations = 100,
-        save_every = 50,
-        output_filename = os.path.join('output','output'))
+        output_filename = 'output.png')
 ```
+## Style Transfer
+The method generate.style_transfer() will apply VQGAN+CLIP prompts to an existing video by extracting frames of video from the original and using them as inputs to create a frame of output video. The resulting frames may be combined into a video, and the original audio is optionally copied to the new file. As an example, here is a video of my face restyled with the prompt "portrait covered in spiders charcoal drawing" with 60 iterations per frame, and current_source_frame_image_weight = 3.2 ([full code to generate this video](examples/style_transfer.py)).  
+<img src="./samples/style_transfer_charcoal_spiders.gif" width="256px"></img>
 
-### Multiple images for the same prompt
-You may want to generate a lot of images with the same prompts, but with different random seeds. This is a way to fish for interesting images. This is not doing anything different than running generate.single_image() repeatedly.
+The innovations used in this approach are:
+* Each frame of generated video is initialized using the previous *output* frame of *generated* video. This ensures that the next generated frame has a starting image that partially satisfies the CLIP loss function. Doing so greatly reduces the changes that the new frame of video will train toward a very different optimimum, which is responsible for the characteristic flicker in most VQGAN+CLIP style transfer videos.
+* The training process evolves the image from the previous generated image toward the next source frame of video, thereby tracking the original source video frame-by-frame. Increasing current_source_frame_image_weight causes the output video to follow the source image more closely.
+* You may elect to set the current source image frame as an image prompt. This will cause the resulting output frames to have more similarity (according to CLIP) to the source frame. This is done by increasing current_source_frame_prompt_weight.
 
-```python
-import vqgan_clip.generate
-from vqgan_clip.engine import VQGAN_CLIP_Config
-import os
-
-config = VQGAN_CLIP_Config()
-config.output_image_size = [587,330]
-text_prompts = 'A pastoral landscape painting by Rembrandt'
-vqgan_clip.generate.multiple_images(eng_config = config,
-        text_prompts = text_prompts,
-        iterations = 50,
-        save_every = 51,
-        num_images_to_generate=3)
-```
-
-### Video
-The generate.video_frames method is provided to create a video based on prompt(s). Note that the image will stabilize after a hundred or so iteration with the same prompt so this is most useful if you are changing prompts over time. In the exmaple below the prompt cycles between two every 300 iterations.
-
-```python
-from vqgan_clip import generate, video_tools
-from vqgan_clip.engine import VQGAN_CLIP_Config
-import os
-
-#Let's generate a single image to initialize the video.
-config = VQGAN_CLIP_Config()
-config.output_image_size = [587,330]
-text_prompts = 'A pastoral landscape painting by Rembrandt^A black dog with red eyes in a cave'
-init_image = os.path.join('output','init_image')
-generate.single_image(eng_config = config,
-        text_prompts = text_prompts,
-        iterations = 100,
-        save_every = None,
-        output_filename = init_image)
-
-# Now generate a zoom video starting from that initial frame.
-generate.video_frames(eng_config = config,
-        text_prompts = text_prompts,
-        init_image = init_image+'.png',
-        iterations = 1000,
-        save_every = 10,
-        change_prompt_every = 300)
-
-# Use a wrapper for FFMPEG to encode the video.
-video_tools.encode_video(output_file=os.path.join('output','zoom_video.mp4'),
-        metadata_title=text_prompts,
-        output_framerate=60,
-        input_framerate=30)
-```
-
-### Zoom video
-The method generate.zoom_video is provided create a video with movement. Every frame that is generated has a shift or zoom applied to it. This gives the appearance of motion in the result. These videos do not stabilize.
-
-This is one of the more interesting application of VQGAN+CLIP provided here.
-
-```python
-# This is one of the more interesting application of VQGAN+CLIP here.
-from vqgan_clip import generate, video_tools
-from vqgan_clip.engine import VQGAN_CLIP_Config
-import os
-
-#Let's generate a single image to initialize the video.
-config = VQGAN_CLIP_Config()
-config.output_image_size = [587,330]
-text_prompts = 'An abandoned shopping mall haunted by wolves^The war of the worlds'
-init_image = os.path.join('output','init_image')
-generate.single_image(eng_config = config,
-        text_prompts = text_prompts,
-        iterations = 100,
-        save_every = None,
-        output_filename = init_image)
-
-# Now generate a zoom video starting from that initial frame.
-generate.zoom_video_frames(eng_config = config,
-        text_prompts = text_prompts,
-        init_image = init_image+'.png',
-        iterations = 1000,
-        save_every = 5,
-        change_prompt_every = 300,
-        zoom_scale=1.02, 
-        shift_x=1, 
-        shift_y=1)
-
-video_tools.encode_video(output_file=os.path.join('output','zoom_video.mp4'),
-        metadata=text_prompts,
-        output_framerate=60,
-        input_framerate=30)
-```
-
-### Restyle Video / Style Transfer
-The method generate.restyle_video will apply VQGAN+CLIP prompts to an existing video by extracting frames of video from the original and using them as inputs to create a frame of output video. The resulting frames are combined into an HEVC video, and the original audio is optionally copied to the new file. As an example, here is a video of my face restyled with the prompt "portrait on deviantart" and an init_weight of 1.0 (full code to generate this video is below).  
-<img src="./samples/portrait on deviantart.gif" width="256px"></img>
-
-The innovation in this approach is that each new frame of video uses several adjustable parameters.
-* The init_image used to seed each new frame is a blend of the current original frame, plus the previous generated frame. This is critical for having videos where each frame has similar GAN-generated features, and the video looks smooth and continuous.
-* Using a non-zero init_weight is important for causing the algorithm to hold on to the structure of the original video frame. If you want the result to look more like the original video, increase this init_weight.
-* You may elect to set the current source image frame as an image prompt. This will cause the resulting output frames to have more similarity (according to CLIP) to the source frame.
-* You may elect to set the previous output frame as an image prompt. This may amplify the rate of change of the source footage, or create interesting effects. It doesn't seem to contribute to smoothness of video.
-
-In the example below, each new frame is initialized with the new source frame with a 20% blend of the previous generated frame. Higher values of generated_frame_init_blend, combined with higher values of iterations, result in a runaway effect where the video diverges completely from the source material.
-
-```python
-from vqgan_clip import generate, video_tools
-from vqgan_clip.engine import VQGAN_CLIP_Config
-import os
-
-config = VQGAN_CLIP_Config()
-config.output_image_size = [587,330]
-config.init_weight = 1.0
-text_prompts = 'portrait on deviantart'
-input_video_path = 'original_video.MOV'
-final_output_filename = os.path.join('output','output.mp4')
-copy_audio = True
-extraction_framerate = 30
-output_framerate = 60
-
-# Use a wrapper for FFMPEG to extract stills from the original video.
-original_video_frames = video_tools.extract_video_frames(input_video_path, 
-        extraction_framerate = extraction_framerate)
-
-# Apply a style to the extracted video frames.
-generate.restyle_video_frames(original_video_frames,
-        eng_config=config,
-        text_prompts = text_prompts,
-        iterations = 20,
-        save_every=None,
-        current_source_frame_prompt_weight=0.1,
-        previous_generated_frame_prompt_weight=0.0,
-        generated_frame_init_blend=0.2)
-
-# Use a wrapper for FFMPEG to encode the video.
-generated_video_no_audio=os.path.join('output','output_no_audio.mp4')
-video_tools.encode_video(output_file=generated_video_no_audio,
-        metadata=text_prompts,
-        output_framerate=output_framerate,
-        input_framerate=extraction_framerate)
-
-# Copy audio from the original file
-if copy_audio:
-        video_tools.copy_video_audio(input_video_path, generated_video_no_audio, final_output_filename)
-        os.remove(generated_video_no_audio)
-else:
-        os.rename(generated_video_no_audio,final_output_filename)
-```
-
+A few tips for style transfers:
+* If you want the output to look more like the input, your prompts should describ the original video as well as the new style. In the example above, I started with a selfie-video, and the prompt included the word "portrait." Without the word portrait, the result shifts much more toward a charcoal drawing of spiders with fewer human elements. You may also have success using the current_source_frame_prompt_weight parameter to use the source frame as an image prompt if you want to retain elements of the original video without describing the source material in a text prompt.
+* The parameter current_source_frame_image_weight affects how close the final pixels of the image will be to the source material. At a weight of >8, the output will be very similar to the input. At a weight of <1.0 the output will be very different from the source material. A weight of 0.0 would not track the rest of the video after the first frame, and would be very similar to a generate.video_frames().
+* The iterations_per_frame has a strong effect on the look of the output, and on the frame-to-frame consistency. At high iterations (>100) each frame has a lot of opportunity to change significantly from the previous frame. At low iterations (<5), and low current_source_frame_image_weight values, the output may not have a chance to change toward the new source material image.
+* For example:
+  * iterations_per_frame=300, current_source_frame_image_weight=0.2, [is a wild ride](samples/style_transfer_wild.mp4) with a lot of change from the source, and variation from frame to frame (flicker). The flicker could be smoothed by using z_smoother_alpha=0.7 or lower.
+  * iterations_per_frame=15, current_source_frame_image_weight=4, would be gentle stylig applied to the original video.
+* You may have success using a lower extraction_framerate (7.5 or 15) and then using RIFE (optical flow interpolation) to interpolate the output up to 60/120 FPS.
 ## Custom scripts
-The [generate.py](https://github.com/rkhamilton/vqgan-clip-generator/blob/main/src/vqgan_clip/generate.py) file contains the common functions that users are expected to use to create content. However, you should feel free to copy methods from this file and customize them for your own projects. The code in generate.py is still pretty high level, with the implementation details buried in engine and _functional. I've provided [an example file](https://github.com/rkhamilton/vqgan-clip-generator/blob/main/examples/custom_zoom_video.py) where I just extracted the zoom_video_frames method and turned it into a script so that you can see how you might make some creative changes. A few ideas:
+The [generate.py](src/vqgan_clip/generate.py) file contains the common functions that users are expected to use to create content. However, you should feel free to copy methods from this file and customize them for your own projects. The code in generate.py is still pretty high level, with the implementation details buried in engine and _functional. I've provided [an example file](examples/custom_zoom_video.py) where I just extracted the zoom_video_frames method and turned it into a script so that you can see how you might make some creative changes. A few ideas:
 * Change the image prompt weights over time to create smoother content transitions
 * Change the interval at which video frames are exported over time, to create the effect of speeding or slowing video
 * Create style transfer videos where each frame uses many image prompts, or many previous frames as image prompts
 * Create a zoom video where the shift_x and shift_x change over time to create spiraling zooms, or the look of camera movements
 * It's art. Go nuts!
 
+# Support functions
+A few supporting tools are provided. Documentation is provided in docstrings, and the examples folder demonstrates their use.
+## Functions
+|Function|Purpose|
+|--------|-------|
+|video_tools.extract_video_frames()|Wrapper for ffmpeg to extract video frames.|
+|video_tools.copy_video_audio()|Wrapper for ffmpeg to copy audio from one video to another.|
+|video_tools.encode_video()|Wrapper for ffmpeg to encode a folder of images to a video.|
+|esrgam.inference_realesrgan()|Functionalized version of the Real-ESRGAN inference_realesrgan.py script for upscaling images.|
+## Function arguments
+|Function Argument|Default|Meaning
+|---------|---------|---------|
+|extraction_framerate|30|When extracting video frames from an existing video, this sets how many frames per second will be extracted. Interpolation will be used if the video's native framerate differs.|
+|extracted_video_frames_path|'./extracted_video_frames'| Location where extract_video_frames will save extracted frames of video from the source file.|
+|input_framerate|30|When combining still images to make a video, this parameter can be used to force an assumed original framerate. For example, you could assume you started with 10fps, and interpolate to 60fps using ffmpeg or RIFE.|
+|output_framerate|None|Desired framerate of the output video from encode_video. If ommitted, the input_framerate willb e used. If supplied, ffmpeg will interpolate the video to the new output framerate. If you are using RIFE for optical flow interpolation, it is not recommended to first interpolte with ffmpeg.|
 
-## Troubleshooting
+# Troubleshooting
 
-### RuntimeError: CUDA out of memory
+## RuntimeError: CUDA out of memory
 For example:
 ```
 RuntimeError: CUDA out of memory. Tried to allocate 150.00 MiB (GPU 0; 23.70 GiB total capacity; 21.31 GiB already allocated; 78.56 MiB free; 21.70 GiB reserved in total by PyTorch)
 ```
 Your request doesn't fit into your GPU's VRAM. Reduce the image size and/or number of cuts.
 
-## Citations
+# Citations
 
 ```bibtex
 @misc{unpublished2021clip,
