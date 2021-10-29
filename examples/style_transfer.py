@@ -26,7 +26,7 @@ face_enhance = False
 interpolate_with_RIFE = True
 
 # Set some paths
-generated_video_frames_path = os.path.join(output_root_dir, 'video frames')
+generated_video_frames_path = os.path.join(output_root_dir, 'generated video frames')
 upscaled_video_frames_path = os.path.join(output_root_dir, 'upscaled video frames')
 
 # Use a wrapper for FFMPEG to extract stills from the original video.
