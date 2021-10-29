@@ -13,7 +13,7 @@ config = VQGAN_CLIP_Config()
 config.output_image_size = [256, 144]
 text_prompts = 'A pastoral landscape painting by Rembrandt^A black dog with red eyes in a cave^Apple pie'
 num_video_frames = 150
-video_framerate = 30
+video_framerate = 15
 output_root_dir = 'example_media'
 final_video_filename = os.path.join(output_root_dir, 'zoom_video.mp4')
 # Set True if you installed the Real-ESRGAN package for upscaling
@@ -26,21 +26,12 @@ interpolate_with_RIFE = True
 
 # set some paths
 generated_video_frames_path = os.path.join(output_root_dir, 'video_frames')
-init_image = os.path.join(output_root_dir, 'init_image.png')
-upscaled_video_frames_path = os.path.join(
-    output_root_dir, 'upscaled_video_frames')
-
-generate.image(eng_config=config,
-               text_prompts=text_prompts,
-               iterations=100,
-               save_every=None,
-               output_filename=init_image)
+upscaled_video_frames_path = os.path.join(output_root_dir, 'upscaled_video_frames')
 
 # Now generate a zoom video starting from that initial frame.
 metadata_comment = generate.video_frames(num_video_frames=num_video_frames,
                                          eng_config=config,
                                          text_prompts=text_prompts,
-                                         init_image=init_image,
                                          generated_video_frames_path=generated_video_frames_path,
                                          iterations_per_frame=30,
                                          change_prompts_on_frame=[60, 100],

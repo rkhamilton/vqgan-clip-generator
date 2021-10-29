@@ -24,22 +24,12 @@ interpolate_with_RIFE = True
 
 # set some paths
 generated_video_frames_path = os.path.join(output_root_dir, 'generated video frames')
-init_image = os.path.join(output_root_dir, 'init image.png')
-upscaled_video_frames_path = os.path.join(
-    output_root_dir, 'upscaled video frames')
-
-# Let's generate a single image to initialize the video.
-generate.image(eng_config=config,
-               text_prompts=text_prompts,
-               iterations=100,
-               save_every=None,
-               output_filename=init_image)
+upscaled_video_frames_path = os.path.join(output_root_dir, 'upscaled video frames')
 
 # Now generate a zoom video starting from that initial frame.
 metadata_comment = generate.video_frames(num_video_frames=num_video_frames,
                                          eng_config=config,
                                          text_prompts=text_prompts,
-                                         init_image=init_image,
                                          generated_video_frames_path=generated_video_frames_path,
                                          iterations_per_frame=30,
                                          change_prompts_on_frame=[60, 100],

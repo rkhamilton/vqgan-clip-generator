@@ -278,13 +278,13 @@ def video_frames(num_video_frames,
 
     Args:
         * num_video_frames (int) : Number of video frames to be generated.  
+        * iterations_per_frame (int, optional) : Number of iterations of train() to perform on each generated video frame. Default = 30
         * eng_config (VQGAN_CLIP_Config, optional): An instance of VQGAN_CLIP_Config with attributes customized for your use. See the documentation for VQGAN_CLIP_Config().
         * text_prompts (str, optional) : Text that will be turned into a prompt via CLIP. Default = []  
         * image_prompts (str, optional) : Path to image that will be turned into a prompt via CLIP. Default = []
         * noise_prompts (str, optional) : Random number seeds can be used as prompts using the same format as a text prompt. E.g. \'123:0.1|234:0.2|345:0.3\' Stories (^) are supported. Default = []
         * change_prompts_on_frame (list(int)) : All prompts (separated by "^") will be cycled forward on the video frames provided here. Defaults to None.
         * init_image (str, optional) : Path to an image file that will be used as the seed to generate output (analyzed for pixels).
-        * iterations_per_frame (int, optional) : Number of iterations of train() to perform on each generated video frame. Default = 30
         * video_frames_path (str, optional) : Path where still images should be saved as they are generated before being combined into a video. Defaults to './video_frames'.
         * zoom_scale (float) : Every save_every iterations, a video frame is saved. That frame is shifted scaled by a factor of zoom_scale, and used as the initial image to generate the next frame. Default = 1.0
         * shift_x (int, optional) : Every save_every iterations, a video frame is saved. That frame is shifted shift_x pixels in the x direction, and used as the initial image to generate the next frame. Default = 0
@@ -321,6 +321,12 @@ def video_frames(num_video_frames,
         for video_frame_num in tqdm(range(1,num_video_frames+1),unit='frame',desc='video frames',leave=leave_progress_bar):
             for iteration_num in tqdm(range(iterations_per_frame),unit='iteration',desc='generating frame',leave=False):
                 lossAll = eng.train(iteration_num)
+
+            # without an initial image, the first frame usually takes more iterations to converge away from a gray field.
+            # we will just run another set of iterations
+            if video_frame_num == 1 and not init_image:
+                for iteration_num in tqdm(range(iterations_per_frame),unit='iteration',desc='generating frame',leave=False):
+                    lossAll = eng.train(iteration_num)
 
             if change_prompts_on_frame is not None:
                 if video_frame_num in change_prompts_on_frame:
