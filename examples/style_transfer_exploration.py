@@ -50,15 +50,13 @@ iterations_per_frames = [15]  # [5, 10, 15, 30, 60, 100]
 current_source_frame_prompt_weights = [0]  # [0.0, 0.1, 0.5, 0.8, 1.5]
 z_smoother_buffer_lens = [3]  # [3,5,7]
 z_smoother_alphas = [0.9]  # [0.6, 0.7, 0.8, 0.9]
-init_image_methods = ['alternate_img_target', 'alternate_img_target_decay']
 total_iterables = len(current_source_frame_image_weights)*len(iterations_per_frames)*len(
-    current_source_frame_prompt_weights)*len(z_smoother_buffer_lens)*len(z_smoother_alphas)*len(init_image_methods)
-all_iterables = tqdm(itertools.product(init_image_methods, current_source_frame_image_weights, iterations_per_frames, current_source_frame_prompt_weights, z_smoother_buffer_lens, z_smoother_alphas),
+    current_source_frame_prompt_weights)*len(z_smoother_buffer_lens)*len(z_smoother_alphas)
+all_iterables = tqdm(itertools.product(current_source_frame_image_weights, iterations_per_frames, current_source_frame_prompt_weights, z_smoother_buffer_lens, z_smoother_alphas),
                      total=total_iterables, unit='combo', desc='parameter combinations')
 
-for init_image_method, current_source_frame_image_weight, iterations_per_frame, current_source_frame_prompt_weight, z_smoother_buffer_len, z_smoother_alpha in all_iterables:
+for current_source_frame_image_weight, iterations_per_frame, current_source_frame_prompt_weight, z_smoother_buffer_len, z_smoother_alpha in all_iterables:
     # Apply a style to the extracted video frames.
-    config.init_image_method = init_image_method
     metadata_comment = generate.style_transfer(original_video_frames,
                                                eng_config=config,
                                                current_source_frame_image_weight=current_source_frame_image_weight,
@@ -73,7 +71,7 @@ for init_image_method, current_source_frame_image_weight, iterations_per_frame, 
 
     # save the last generated image with a descriptive filename
     final_output_filename = os.path.join(
-        final_output_images_path, f'{init_image_method}_image_weight_{current_source_frame_image_weight:1.1f}_prompt_weight_{current_source_frame_prompt_weight:1.1f}_iterations_{iterations_per_frame}_buf_len_{z_smoother_buffer_len}_alpha_{z_smoother_alpha:1.1f}.png')
+        final_output_images_path, f'image_weight_{current_source_frame_image_weight:1.1f}_prompt_weight_{current_source_frame_prompt_weight:1.1f}_iterations_{iterations_per_frame}_buf_len_{z_smoother_buffer_len}_alpha_{z_smoother_alpha:1.1f}.png')
     generated_files = glob.glob(os.path.join(
         generated_video_frames_path, '*.png'))
     shutil.copy(generated_files[-1], final_output_filename)
