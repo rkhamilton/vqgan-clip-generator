@@ -7,12 +7,12 @@ import os
 from tqdm import tqdm
 
 config = VQGAN_CLIP_Config()
-config.output_image_size = [128, 128]
+config.output_image_size = [256, 144]
 text_prompts = 'an abandoned theater'
-output_root_dir = 'example_media'
-generated_images_path = os.path.join(output_root_dir, 'multi_prompt_images')
+output_root_dir = 'example media'
+generated_images_path = os.path.join(output_root_dir, 'multi prompt images')
 upscaled_video_frames_path = os.path.join(
-    output_root_dir, 'multi_prompt_images_upscaled')
+    output_root_dir, 'multi prompt images upscaled')
 # Set True if you installed the Real-ESRGAN package for upscaling. face_enhance is a feature of Real-ESRGAN.
 upscale_images = True
 face_enhance = False
@@ -40,10 +40,10 @@ art_types = ["8k resolution", "pencil sketch", "8K 3D", "deviantart", "CryEngine
 for art_type in tqdm(art_types, unit='style', desc='art type'):
     metadata_comment = generate.image(eng_config=config,
                                       text_prompts=text_prompts + ' ' + art_type,
-                                      image_prompts='input_image.jpg',
-                                      iterations=100,
-                                      output_filename=os.path.join(
-                                          generated_images_path, f'{art_type}.png'),
+                                      image_prompts='input image.jpg',
+                                      iterations=1000,
+                                      save_every=50,
+                                      output_filename=f'{generated_images_path}{os.sep}{art_type}.png',
                                       leave_progress_bar=False)
 
 # Upscale the image

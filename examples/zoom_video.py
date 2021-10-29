@@ -14,8 +14,8 @@ config.output_image_size = [256, 144]
 text_prompts = 'A pastoral landscape painting by Rembrandt^A black dog with red eyes in a cave^Apple pie'
 num_video_frames = 150
 video_framerate = 15
-output_root_dir = 'example_media'
-final_video_filename = os.path.join(output_root_dir, 'zoom_video.mp4')
+output_root_dir = 'example media'
+final_video_filename = os.path.join(output_root_dir, 'zoom video.mp4')
 # Set True if you installed the Real-ESRGAN package for upscaling
 upscale_images = True
 face_enhance = False
@@ -26,7 +26,7 @@ interpolate_with_RIFE = True
 
 # set some paths
 generated_video_frames_path = os.path.join(output_root_dir, 'video_frames')
-upscaled_video_frames_path = os.path.join(output_root_dir, 'upscaled_video_frames')
+upscaled_video_frames_path = os.path.join(output_root_dir, 'upscaled video frames')
 
 # Now generate a zoom video starting from that initial frame.
 metadata_comment = generate.video_frames(num_video_frames=num_video_frames,

@@ -8,11 +8,11 @@ from vqgan_clip import esrgan, video_tools
 import os
 
 input_video_path = 'small_video.mp4'
-final_output_filename = os.path.join('example_media', 'upscaled_video.mp4')
+final_output_filename = os.path.join('example media', 'upscaled video.mp4')
 output_root_dir = 'example_media'
-extracted_video_frames_path = os.path.join(output_root_dir, 'video_frames')
+extracted_video_frames_path = os.path.join(output_root_dir, 'video frames')
 upscaled_video_frames_path = os.path.join(
-    output_root_dir, 'upscaled_video_frames')
+    output_root_dir, 'upscaled video frames')
 extraction_framerate = 30
 
 
@@ -34,7 +34,7 @@ esrgan.inference_realesrgan(input=extracted_video_frames_path,
                             outscale=4)
 
 # Encode the video.
-generated_video_no_audio = os.path.join(output_root_dir, 'output_no_audio.mp4')
+generated_video_no_audio = os.path.join(output_root_dir, 'output no audio.mp4')
 ffmpeg_input_path = f'\"{upscaled_video_frames_path}\\frame_%12d.png\"'
 os.system(
     f'ffmpeg -y -f image2 -i {ffmpeg_input_path} -r 30 -vcodec libx264 -crf 23 -pix_fmt yuv420p -strict -2 \"{generated_video_no_audio}\"')

@@ -403,7 +403,8 @@ def _filename_to_png(file_path):
     basename_without_ext, ext = os.path.splitext(filename_without_path)
     if ext.lower() not in ['.png','']:
         warnings.warn('vqgan_clip_generator can only create and save .PNG files.')
-    return os.path.join(dir,basename_without_ext+'.png')
+    path_str = os.path.join(dir,basename_without_ext+'.png')
+    return f'{path_str}'
 
 def style_transfer(video_frames,
     eng_config=VQGAN_CLIP_Config(),

@@ -19,17 +19,17 @@ config.seed = 1
 config.cudnn_determinism = True
 config.output_image_size = [256, 256]
 text_prompts = 'portrait on deviantart'
-input_video_path = '20211004_132008000_iOS.MOV'
+input_video_path = '20211004 132008000_iOS.MOV'
 # all folders will be created within the output_root_dir
-output_root_dir = 'example_media'
+output_root_dir = 'example media'
 # Generated video framerate. Images will be extracted from the source video at this framerate, using interpolation if needed.
 video_framerate = 30
 # number of frames of video to process before stopping. If using z_smoothing, suggest at least 10 frames.
 frames_to_process = 10
 
 # Set some paths
-generated_video_frames_path = os.path.join(output_root_dir, 'video_frames')
-final_output_images_path = os.path.join(output_root_dir, 'parameter_tests')
+generated_video_frames_path = os.path.join(output_root_dir, 'video frames')
+final_output_images_path = os.path.join(output_root_dir, 'parameter tests')
 
 # ensure the output folder exists and is empty.
 os.makedirs(final_output_images_path, exist_ok=True)
