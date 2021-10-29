@@ -404,7 +404,6 @@ def style_transfer(video_frames,
     text_prompts = 'Covered in spiders | Surreal:0.5',
     image_prompts = [],
     noise_prompts = [],
-    init_image = None,
     iterations_per_frame = 15,
     current_source_frame_image_weight = 2.0,
     change_prompts_on_frame = None,
@@ -427,7 +426,6 @@ def style_transfer(video_frames,
     * text_prompts (str, optional) : Text that will be turned into a prompt via CLIP. Default = []  
     * image_prompts (str, optional) : Path to image that will be turned into a prompt via CLIP. Default = []
     * noise_prompts (str, optional) : Random number seeds can be used as prompts using the same format as a text prompt. E.g. \'123:0.1|234:0.2|345:0.3\' Stories (^) are supported. Default = []
-    * init_image (str, optional) : Path to an image file that may be used as the starting frame for video generation. Defaults to None.
     * change_prompts_on_frame (list(int)) : All prompts (separated by "^" will be cycled forward on the video frames provided here. Defaults to None.
     * iterations_per_frame (int, optional) : Number of iterations of train() to perform for each frame of video. Default = 15 
     * generated_video_frames_path (str, optional) : Path where still images should be saved as they are generated before being combined into a video. Defaults to './video_frames'.
@@ -438,6 +436,19 @@ def style_transfer(video_frames,
     * z_smoother_alpha (float, optional) : When combining multiple latent vectors for smoothing, this sets how important the "keyframe" z is. As frames move further from the keyframe, their weight drops by (1-z_smoother_alpha) each frame. Bigger numbers apply more smoothing. Defaults to 0.6.
     * leave_progress_bar (boolean, optional) : When False, the tqdm progress bar will disappear when the work is completed. Useful for nested loops.
 """
+    # Let's generate a single image to initialize the video. Otherwise it takes a few frames for the new video to stabilize on the generated imagery.
+    init_image = 'init_image.png'
+    image(output_filename=init_image,
+        eng_config=eng_config,
+        text_prompts=text_prompts,
+        image_prompts = image_prompts,
+        noise_prompts = noise_prompts,
+        init_image = video_frames[0],
+        iterations = iterations_per_frame,
+        save_every = None,
+        verbose = False,
+        leave_progress_bar = False)
+
     parsed_text_prompts, parsed_image_prompts, parsed_noise_prompts = VF.parse_all_prompts(text_prompts, image_prompts, noise_prompts)
 
     # lock in a seed to use for each frame
@@ -465,19 +476,17 @@ def style_transfer(video_frames,
             eng.initialize_VQGAN_CLIP()
 
     if z_smoother:
-        if init_image:
-            # Populate the z smoother with the initial image
-            init_image_pil = Image.open(init_image).convert('RGB').resize([output_size_X,output_size_Y], resample=Image.LANCZOS)
-            init_img_z = eng.pil_image_to_latent_vector(init_image_pil)
-            smoothed_z = Z_Smoother(buffer_len=z_smoother_buffer_len, alpha=z_smoother_alpha, init_z=init_img_z)
-        else:
-            smoothed_z = Z_Smoother(buffer_len=z_smoother_buffer_len, alpha=z_smoother_alpha)
+        # Populate the z smoother with the initial image
+        init_image_pil = Image.open(init_image).convert('RGB').resize([output_size_X,output_size_Y], resample=Image.LANCZOS)
+        init_img_z = eng.pil_image_to_latent_vector(init_image_pil)
+        smoothed_z = Z_Smoother(buffer_len=z_smoother_buffer_len, alpha=z_smoother_alpha, init_z=init_img_z)
+
     # generate images
     video_frame_num = 1
     current_prompt_number = 0
     try:
         # To generate the first frame of video, either use the init_image argument, or the first frame of source video.
-        last_video_frame_generated = init_image if init_image else video_frames[0]
+        last_video_frame_generated = init_image
         video_frames_loop = tqdm(video_frames,unit='image',desc='style transfer',leave=leave_progress_bar)
         for video_frame in video_frames_loop:
             filename_to_save = os.path.basename(os.path.splitext(video_frame)[0]) + '.png'
