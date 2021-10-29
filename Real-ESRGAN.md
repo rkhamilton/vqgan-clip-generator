@@ -5,8 +5,8 @@
 
 [Example images](https://github.com/xinntao/Real-ESRGAN/blob/master/README.md#book-real-esrgan-training-real-world-blind-super-resolution-with-pure-synthetic-data) are provided by [the Real-ESRGAN developer](https://github.com/xinntao/Real-ESRGAN).
 
-## Setup
-### Virtual environment
+# Setup
+## Virtual environment
 Install [Real-ESRGAN](https://github.com/xinntao/Real-ESRGAN) to the same virtual environment where you are running vqgan_clip_generator using the commands below.
 
 ```sh
@@ -18,7 +18,7 @@ pip install gfpgan
 pip install git+https://github.com/xinntao/Real-ESRGAN
 ```
 
-### Dyamic download and caching of models
+## Dyamic download and caching of models
 
 Real-ESRGAN requires use of a compatible model file. There are many compatible models that have been trained for many image restoration tasks. Using the same approach as VQGAN models, these Real-ESRGAN models are used by providing the name of the model file and the URL where it can be downloaded as arguments to the inference_realesrgan() method. The first time a model is used it will be downloaded and cached locally. Subsequent calls to the same model will use the cached copy. Caches are stored in the ~/.cache/torch/hub/models folder.
 
@@ -34,7 +34,7 @@ The model files provided by the developer of Real-ESRGAN are shown below, and ar
 
 Many additional models can be found at the [Upscale Wiki Model Database](https://upscale.wiki/wiki/Model_Database). None of these have been tested with this package, but are described as being compatible, and as having been trained for specific image restoration / processing tasks.
 
-## Using Real-ESRGAN
+# Using Real-ESRGAN
 A wrapper for Real-ESRGAN is provided that is an adaptation of the command-line script created by the authors. The esrgan.inference_realesrgan() method provided here converts the original method into a python-callable function, and provides dynamic model file downloading and caching.
 
 A few key arguments are discussed below. See [the original Real-ESRGAN repository](https://github.com/xinntao/Real-ESRGAN) for more discussion.
@@ -82,69 +82,85 @@ esrgan.inference_realesrgan(input='.\\video_frames',
         outscale=2)
 ```
 
-Here is an example of using Real-ESRGAN to upscale a generated image.
+Here is an [example of using Real-ESRGAN to upscale a generated image](examples/single_image.py).
 ```python
+# Generate a single image based on a text prompt
 from vqgan_clip import generate, esrgan
 from vqgan_clip.engine import VQGAN_CLIP_Config
 import os
+from vqgan_clip import _functional as VF
 
 config = VQGAN_CLIP_Config()
-config.output_image_size = [587,330]
+config.output_image_size = [587, 330]
+# Set True if you installed the Real-ESRGAN package for upscaling.
 upscale_image = True
 text_prompts = 'A pastoral landscape painting by Rembrandt'
 
-output_filename = os.path.join('output',text_prompts)
-generate.single_image(eng_config = config,
-        text_prompts = text_prompts,
-        iterations = 100,
-        save_every = 50,
-        output_filename = output_filename)
+output_filename = f'example media{os.sep}example image.png'
+metadata_comment = generate.image(eng_config=config,
+                                  text_prompts=text_prompts,
+                                  iterations=100,
+                                  output_filename=output_filename)
 
-# Upscale the video frames
+# Upscale the image
 if upscale_image:
-        esrgan.inference_realesrgan(input=output_filename+'.png',
-                output_images_path='output',
-                face_enhance=True)
+    esrgan.inference_realesrgan(input=output_filename,
+                                output_images_path='example media',
+                                face_enhance=False,
+                                netscale=4,
+                                outscale=4)
+    VF.copy_PNG_metadata(output_filename, os.path.splitext(output_filename)[0]+'_upscaled.png')
+print(f'generation parameters: {metadata_comment}')
 ```
 
-Here is an example of upscaling an existing video. This may not be the best way to do it, but it works using the tools provided here.
-
+Here is an [example script for upscaling an existing video](examples/upscaling_video.py). This may not be the best way to upscale an existing video, but it works using the tools provided here.
 ```python
+# This example demonstrates upscaling an existing video using the tools provided in this package.
+# This is not a primary use case for the package, but it may be useful. It also illustrates how you
+# may prefer to integrate shell commands to ffmpeg into your video workflows, rather than using
+# generate.video_tools methods.
+# Note that Real-ESRGAN will run out of VRAM if you try to upscale a large video.
+
 from vqgan_clip import esrgan, video_tools
 import os
 
 input_video_path = 'small_video.mp4'
-final_output_filename = 'upscaled_video.mp4'
-extracted_video_frames_path = 'video_frames'
+output_root_dir = 'example_media'
+final_output_filename = f'{output_root_dir}{os.sep}upscaled video.mp4'
+extracted_video_frames_path = f'{output_root_dir}{os.sep}video frames'
+upscaled_video_frames_path = f'{output_root_dir}{os.sep}upscaled video frames'
 extraction_framerate = 30
 
 
-# # Use a wrapper for FFMPEG to extract stills from the original video.
-original_video_frames = video_tools.extract_video_frames(input_video_path, 
-        extraction_framerate = extraction_framerate,
-        extracted_video_frames_path=extracted_video_frames_path)
+# Use a wrapper for FFMPEG to extract stills from the original video.
+original_video_frames = video_tools.extract_video_frames(input_video_path,
+                                                         extraction_framerate=extraction_framerate,
+                                                         extracted_video_frames_path=extracted_video_frames_path)
 
 # This is equivalent to
 # os.system(f'ffmpeg -i small_video.mp4 -filter:v fps=30 video_frames\\frame_%12d.jpg')
 
 # Upscale using Real-ESRGAN
-upscaled_video_frames_path='upscaled_video_frames'
 esrgan.inference_realesrgan(input=extracted_video_frames_path,
-        output_images_path=upscaled_video_frames_path,
-        face_enhance=False,
-        purge_existing_files=True, # Careful! This will delete everything in the output_images_path!
-        netscale=4,
-        outscale=4)
+                            output_images_path=upscaled_video_frames_path,
+                            face_enhance=False,
+                            # Careful! This will delete everything in the output_images_path!
+                            purge_existing_files=True,
+                            netscale=4,
+                            outscale=4)
 
 # Encode the video.
-generated_video_no_audio=os.path.join('output','output_no_audio.mp4')
-os.system(f'ffmpeg -y -f image2 -i upscaled_video_frames\\frame_%12d.jpg -r 30 -vcodec libx264 -crf 23 -pix_fmt yuv420p -strict -2 output_no_audio.mp4')
+generated_video_no_audio = f'{output_root_dir}{os.sep}output no audio.mp4'
+ffmpeg_input_path = f'\"{upscaled_video_frames_path}\\frame_%12d.png\"'
+os.system(
+    f'ffmpeg -y -f image2 -i {ffmpeg_input_path} -r 30 -vcodec libx264 -crf 23 -pix_fmt yuv420p -strict -2 \"{generated_video_no_audio}\"')
 
 # Copy audio from the original file
-video_tools.copy_video_audio(input_video_path, generated_video_no_audio, final_output_filename)
+video_tools.copy_video_audio(
+    input_video_path, generated_video_no_audio, final_output_filename)
 os.remove(generated_video_no_audio)
 
-# This is equivalent to
+# This is equiavalent to
 # os.system(f'ffmpeg -i small_video.mp4 -vn -acodec copy extracted_original_audio.aac')
 # os.system(f'ffmpeg -i output_no_audio.mp4 -i extracted_original_audio.aac -c copy -map 0:v:0 -map 1:a:0 upscaled_video.mp4')
 ```
