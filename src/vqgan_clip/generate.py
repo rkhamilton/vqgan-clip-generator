@@ -444,6 +444,8 @@ def style_transfer(video_frames,
     * z_smoother_alpha (float, optional) : When combining multiple latent vectors for smoothing, this sets how important the "keyframe" z is. As frames move further from the keyframe, their weight drops by (1-z_smoother_alpha) each frame. Bigger numbers apply more smoothing. Defaults to 0.6.
     * leave_progress_bar (boolean, optional) : When False, the tqdm progress bar will disappear when the work is completed. Useful for nested loops.
 """
+    eng_config.init_weight = current_source_frame_image_weight
+
     # Let's generate a single image to initialize the video. Otherwise it takes a few frames for the new video to stabilize on the generated imagery.
     init_image = 'init_image.png'
     image(output_filename=init_image,
@@ -472,10 +474,9 @@ def style_transfer(video_frames,
 
     output_size_X, output_size_Y = VF.filesize_matching_aspect_ratio(video_frames[0], eng_config.output_image_size[0], eng_config.output_image_size[1])
     eng_config.output_image_size = [output_size_X, output_size_Y]
-    # alternate_img_target is required for restyling video
+    # alternate_img_target is required for restyling video. alternate_img_target_decay is experimental.
     if eng_config.init_image_method not in ['alternate_img_target_decay', 'alternate_img_target']:
         eng_config.init_image_method = 'alternate_img_target'
-    eng_config.init_weight = current_source_frame_image_weight
 
     # suppress stdout to keep the progress bar clear
     with open(os.devnull, 'w') as devnull:
