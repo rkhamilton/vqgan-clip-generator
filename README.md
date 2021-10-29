@@ -295,7 +295,7 @@ A few tips for style transfers:
 * The parameter current_source_frame_image_weight affects how close the final pixels of the image will be to the source material. At a weight of >8, the output will be very similar to the input. At a weight of <1.0 the output will be very different from the source material. A weight of 0.0 would not track the rest of the video after the first frame, and would be very similar to a generate.video_frames().
 * The iterations_per_frame has a strong effect on the look of the output, and on the frame-to-frame consistency. At high iterations (>100) each frame has a lot of opportunity to change significantly from the previous frame. At low iterations (<5), and low current_source_frame_image_weight values, the output may not have a chance to change toward the new source material image.
 * For example:
-  * iterations_per_frame=300, current_source_frame_image_weight=0.2, would be a wild ride with a lot of change from the source, and variation from frame to frame.
+  * iterations_per_frame=300, current_source_frame_image_weight=0.2, [is a wild ride](samples/style_transfer_wild.mp4) with a lot of change from the source, and variation from frame to frame (flicker). The flicker could be smoothed by using z_smoother_alpha=0.7 or lower.
   * iterations_per_frame=15, current_source_frame_image_weight=4, would be gentle stylig applied to the original video.
 * You may have success using a lower extraction_framerate (7.5 or 15) and then using RIFE (optical flow interpolation) to interpolate the output up to 60/120 FPS.
 ## Custom scripts
