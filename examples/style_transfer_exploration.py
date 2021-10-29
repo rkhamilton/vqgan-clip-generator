@@ -61,7 +61,6 @@ for init_image_method, current_source_frame_image_weight, iterations_per_frame, 
     config.init_image_method = init_image_method
     metadata_comment = generate.style_transfer(original_video_frames,
                                                eng_config=config,
-                                               # effects how closely the output video will be to the source video. Values of 0.5-8.0 are reasonable.
                                                current_source_frame_image_weight=current_source_frame_image_weight,
                                                text_prompts=text_prompts,
                                                iterations_per_frame=iterations_per_frame,
