@@ -448,8 +448,10 @@ def style_transfer(video_frames,
 
     # Let's generate a single image to initialize the video. Otherwise it takes a few frames for the new video to stabilize on the generated imagery.
     init_image = 'init_image.png'
+    eng_config_init_img = eng_config
+    eng_config_init_img.init_image_method = 'original'
     image(output_filename=init_image,
-        eng_config=eng_config,
+        eng_config=eng_config_init_img,
         text_prompts=text_prompts,
         image_prompts = image_prompts,
         noise_prompts = noise_prompts,
