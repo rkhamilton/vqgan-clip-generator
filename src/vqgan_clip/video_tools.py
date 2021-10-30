@@ -123,10 +123,10 @@ def RIFE_interpolation(input, output, interpolation_factor=4, metadata_title='',
     # This section runs RIFE optical flow interpolation and then compresses the resulting (uncompressed) video to h264 format.
     # Valid choices are 4 or 16
 
-    if not os.path.exists('arXiv2020-RIFE\\inference_video.py'):
-        raise NameError('RIFE NOT FOUND at arXiv2020-RIFE\\inference_video.py')
-    if not os.path.exists('arXiv2020-RIFE\\train_log\\flownet.pkl'):
-        raise NameError('RIFE MODEL NOT FOUND in arXiv2020-RIFE\\train_log\\')
+    if not os.path.exists(f'arXiv2020-RIFE{os.sep}inference_video.py'):
+        raise NameError('RIFE NOT FOUND at arXiv2020-RIFE{os.sep}inference_video.py')
+    if not os.path.exists(f'arXiv2020-RIFE{os.sep}train_log{os.sep}flownet.pkl'):
+        raise NameError('RIFE MODEL NOT FOUND in arXiv2020-RIFE{os.sep}train_log{os.sep}')
 
     if os.path.exists(output):
         os.remove(output)

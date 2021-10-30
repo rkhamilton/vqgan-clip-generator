@@ -1,3 +1,6 @@
+# v2.0.2
+**Bug Fixes**
+* video_tools.encode_video() further fixed to work on linux systems (Google Colab).
 # v2.0.1
 **Bug Fixes**
 * The tqdm progressbar has been updated to work correctly in Jupyter notebooks.
