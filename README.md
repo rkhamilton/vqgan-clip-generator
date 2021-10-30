@@ -30,6 +30,7 @@ This example uses [Anaconda](https://docs.conda.io/en/latest/miniconda.html) to 
 ```sh
 conda create --name vqgan python=3.9 pip ffmpeg numpy pytest tqdm git pytorch==1.9.0 torchvision==0.10.0 torchaudio==0.9.0 cudatoolkit=11.1 -c pytorch -c conda-forge
 conda install -c conda-forge ffmpeg
+conda install ipykernel
 conda activate vqgan
 pip install git+https://github.com/openai/CLIP.git taming-transformers ftfy regex tqdm pytorch-lightning kornia imageio omegaconf torch_optimizer
 pip install git+https://github.com/rkhamilton/vqgan-clip-generator.git

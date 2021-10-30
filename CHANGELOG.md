@@ -1,3 +1,6 @@
+# v2.0.3
+**Bug Fixes**
+* Fixed regression in RIFE wrapper. Now tested and working on Google Colab.
 # v2.0.2
 **Bug Fixes**
 * video_tools.encode_video() further fixed to work on linux systems (Google Colab).
