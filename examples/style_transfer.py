@@ -58,7 +58,7 @@ if upscale_images:
                                 netscale=4,
                                 outscale=4)
     # copy PNG metadata from generated images to upscaled images
-    # This function is unreasonably slow for many files. If you plan to keep the generated images, uncommend the lines below.
+    # copy PNG metadata from generated images to upscaled images. This step is very slow so it's commented out by default.
     # VF.copy_PNG_metadata(generated_video_frames_path, upscaled_video_frames_path)
     video_frames_to_encode = upscaled_video_frames_path
 else:

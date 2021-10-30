@@ -53,9 +53,8 @@ if upscale_images:
                                 model_url='https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.2.4/RealESRGAN_x4plus_anime_6B.pth',
                                 netscale=4,
                                 outscale=4)
-    # copy PNG metadata from generated images to upscaled images
-    VF.copy_PNG_metadata(generated_video_frames_path,
-                         upscaled_video_frames_path)
+    # copy PNG metadata from generated images to upscaled images. This step is very slow so it's commented out by default.
+    VF.copy_PNG_metadata(generated_video_frames_path,upscaled_video_frames_path)
     video_frames_to_encode = upscaled_video_frames_path
 else:
     video_frames_to_encode = generated_video_frames_path
