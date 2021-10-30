@@ -142,6 +142,9 @@ def RIFE_interpolation(input, output, interpolation_factor=4, metadata_title='',
     metadata_option = f'-metadata title=\"{metadata_title}\" -metadata comment=\"{metadata_comment}\" -metadata description=\"Generated with https://github.com/rkhamilton/vqgan-clip-generator\"'
     # RIFE appends a string to the original filename of the form "original filename_4X_120fps.mp4"
     RIFE_output_filename = f'{os.path.splitext(input)[0]}_{interpolation_factor}X_{int(input_framerate*interpolation_factor)}fps.mp4'
+    if not os.path.exists(RIFE_output_filename):
+        raise NameError('RIFE_interpolation failed to generate an output file')
+
     ffmpeg_command = f'ffmpeg -y -i {enquote_paths_with_spaces(RIFE_output_filename)} -vcodec libx264 -crf 23 -pix_fmt yuv420p -hide_banner -loglevel error {metadata_option} {enquote_paths_with_spaces(output)}'
     subprocess.Popen(ffmpeg_command, shell=True).wait()
     if not os.path.exists(output):
