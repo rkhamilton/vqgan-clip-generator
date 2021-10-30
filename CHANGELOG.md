@@ -1,3 +1,7 @@
+# v2.0.4
+**Bug Fixes**
+* Improvements to progress bar accuracy for generate.video_frames().
+
 # v2.0.3
 **Bug Fixes**
 * Fixed regression in RIFE wrapper. Now tested and working on Google Colab.

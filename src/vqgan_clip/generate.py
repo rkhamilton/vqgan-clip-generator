@@ -320,14 +320,15 @@ def video_frames(num_video_frames,
     output_image_size_x, output_image_size_y = eng.calculate_output_image_size()
     # generate images
     try:
+        # without an initial image, the first frame usually takes more iterations to converge away from a gray field.
+        if not init_image and iterations_for_first_frame:
+            for iteration_num in tqdm(range(iterations_for_first_frame),unit='iteration',desc='first frame',leave=False):
+                lossAll = eng.train(iteration_num)
+
+        # generate the video frames
         for video_frame_num in tqdm(range(1,num_video_frames+1),unit='frame',desc='video frames',leave=leave_progress_bar):
             for iteration_num in tqdm(range(iterations_per_frame),unit='iteration',desc='generating frame',leave=False):
                 lossAll = eng.train(iteration_num)
-
-            # without an initial image, the first frame usually takes more iterations to converge away from a gray field.
-            if video_frame_num == 1 and not init_image:
-                for iteration_num in tqdm(range(iterations_for_first_frame),unit='iteration',desc='generating frame',leave=False):
-                    lossAll = eng.train(iteration_num)
 
             if change_prompts_on_frame is not None:
                 if video_frame_num in change_prompts_on_frame:
