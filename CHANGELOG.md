@@ -1,6 +1,8 @@
 # v2.0.1
 **Bug Fixes**
 * The tqdm progressbar has been updated to work correctly in Jupyter notebooks.
+* video_tools.encode_video() fixed to work on linux systems (Google Colab).
+
 # v2.0.0
 This release introduces major improvements to style transfers, in which VQGAN style is applied to an existing video. The improvements should result in videos that are more consistant from frame-to-frame (less flicker). Associated with the style transfer improvements, there are major changes in the video generation API to make it easier to calculate video durations.
 
