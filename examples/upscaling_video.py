@@ -34,7 +34,7 @@ esrgan.inference_realesrgan(input=extracted_video_frames_path,
 
 # Encode the video.
 generated_video_no_audio = f'{output_root_dir}{os.sep}output no audio.mp4'
-ffmpeg_input_path = f'\"{upscaled_video_frames_path}\\frame_%12d.png\"'
+ffmpeg_input_path = f'\"{upscaled_video_frames_path}{os.sep}frame_%12d.png\"'
 os.system(
     f'ffmpeg -y -f image2 -i {ffmpeg_input_path} -r 30 -vcodec libx264 -crf 23 -pix_fmt yuv420p -strict -2 \"{generated_video_no_audio}\"')
 

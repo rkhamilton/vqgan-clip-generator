@@ -48,3 +48,17 @@ def test_video_tools(tmpdir):
     os.remove(output_video_filename)
     for f in output_files:
         os.remove(f)
+
+def test_RIFE_wrapper(tmpdir):
+    output_images_path = str(tmpdir.mkdir('video_frames'))
+    output_video_filename = os.path.join(output_images_path,'test_video.mp4')
+
+    RIFE_output_filename = f'{os.path.splitext(output_video_filename)[0]}_RIFE.mp4'
+    video_tools.RIFE_interpolation(input=TEST_VIDEO,
+                       output=RIFE_output_filename,
+                       interpolation_factor=4,
+                       metadata_title='text_prompts',
+                       metadata_comment='metadata_comment')
+
+    assert os.path.exists(RIFE_output_filename)
+    os.remove(RIFE_output_filename)

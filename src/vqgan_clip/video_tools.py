@@ -134,7 +134,7 @@ def RIFE_interpolation(input, output, interpolation_factor=4, metadata_title='',
     # we need the framerate of the source video to know what name RIFE will use in the output
     input_framerate = cv2.VideoCapture(input).get(cv2.CAP_PROP_FPS)
 
-    of_cmnd = f'python arXiv2020-RIFE{os.sep}inference_video.py --exp={2 if interpolation_factor==4 else 4} --model=arXiv2020-RIFE{os.sep}rain_log --video={enquote_paths_with_spaces(input)}'
+    of_cmnd = f'python arXiv2020-RIFE{os.sep}inference_video.py --exp={2 if interpolation_factor==4 else 4} --model=arXiv2020-RIFE{os.sep}train_log --video={enquote_paths_with_spaces(input)}'
     subprocess.Popen(of_cmnd, shell=True).wait()
     # print(f'RIFE optical flow command used was:\n{of_cmnd}')
 
