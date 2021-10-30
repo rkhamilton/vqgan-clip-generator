@@ -24,9 +24,9 @@ art_types = ["8k resolution", "pencil sketch", "8K 3D", "deviantart", "CryEngine
              "Zbrush Central", "Rendered in Cinema4D", "Rendered in Maya", "Tilt Shift",
              "Mixed Media", "Detailed painting", "Volumetric lighting",
              "Storybook Illustration", "#vfxfriday", "Ultrafine detail", "matte painting",
-             "Watercolor", "CGSocity", "child's draing", "marble sculpture", "airbrush art",
+             "Watercolor", "CGSocity", "child's drawing", "marble sculpture", "airbrush art",
              "renaissance painting", "Velvia", "dye-transfer", "stipple", "Parrallax",
-             "Bryce 3D", "Terragen", "Bokeh", "charcoal drawing", "commission for",
+             "Bryce 3D", "Terragen", "charcoal drawing", "commission for",
              "polished", "aftereffects", "datamosh", "holographic", "dutch golden age",
              "digitally enhanced", "Art on Instagram", "bokeh", "psychedelic", "wavy",
              "groovy", "movie poster", "pop art", "made of beads and yarn", "made of feathers",
@@ -35,7 +35,16 @@ art_types = ["8k resolution", "pencil sketch", "8K 3D", "deviantart", "CryEngine
              "made of paperclips", "made of rubber", "made of wire", "made of trash",
              "made of wrought iron", "tattoo", "woodcut", "American propaganda",
              "Soviet propaganda", "Fine Art", "Photorealism", "drone shot",
-             "poster art", "Impressionism", "Lowbrow", "Egyptian art"]
+             "poster art", "Impressionism", "Lowbrow", "Egyptian art", "filmic", "stock photo",
+             "DSLR", "in the style of Rembrandt", "Provia", "criterion collection", "flat shading",
+             "ink drawing", "oil on canvas", "#film", "national geographic photo", "associate press photo", 
+             "digital illustration", "made of insects", "made of plastic", "pre-Raphaelite", 
+             "chiaroscuro", "masterpiece", "art deco", "picasso", "Da Vinci", "cubism",
+             "surrealist", "DC comics", "Marvel Comics", "Ukiyo-e", "Flemish Baroque", 
+             "vray tracing", "Bob Ross", "photocopy", "infrared", "angelic photograph",
+             "biomorphic", "physically based rendering", "concert poster", "steampunk",
+             "trending on artstation", "instax", "ilford HPS", "matte drawing", "by Ed Hopper",
+             "Kodak Portra", "Rococo", "by James Gurney", "by Thomas Kinkade", "by Paul Cezanne"]
 
 for art_type in tqdm(art_types, unit='style', desc='art type'):
     metadata_comment = generate.image(eng_config=config,
