@@ -33,7 +33,7 @@ metadata_comment = generate.restyle_video_frames(original_video_frames,
                                                  previous_generated_frame_prompt_weight=0.0,
                                                  generated_frame_init_blend=0.05,
                                                  z_smoother=True,
-                                                 z_smoother_buffer_len=5,
+                                                 z_smoother_buffer_len=3,
                                                  z_smoother_alpha=0.9)
 
 # Upscale the video frames

@@ -34,7 +34,7 @@ metadata_comment = generate.video_frames(num_video_frames=num_video_frames,
                                          iterations_per_frame=30,
                                          change_prompts_on_frame=[60, 100],
                                          z_smoother=True,
-                                         z_smoother_buffer_len=5,
+                                         z_smoother_buffer_len=3,
                                          z_smoother_alpha=0.9)
 
 # Upscale the video frames
