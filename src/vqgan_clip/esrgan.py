@@ -6,7 +6,7 @@ import glob
 import os
 from basicsr.archs.rrdbnet_arch import RRDBNet
 import re
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 from realesrgan import RealESRGANer
 from vqgan_clip.download import load_file_from_url

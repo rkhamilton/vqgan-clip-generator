@@ -12,7 +12,7 @@ import glob
 from vqgan_clip import _functional as VF
 import itertools
 import shutil
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 text_prompts = 'portrait on deviantart'
 input_video_path = '20211004 132008000_iOS.MOV'

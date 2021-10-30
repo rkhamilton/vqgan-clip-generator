@@ -10,7 +10,7 @@
 
 from vqgan_clip.engine import Engine, VQGAN_CLIP_Config
 from vqgan_clip.z_smoother import Z_Smoother
-from tqdm import tqdm
+from tqdm.auto import tqdm
 import os
 import contextlib
 import torch

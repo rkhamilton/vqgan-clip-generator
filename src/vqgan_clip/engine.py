@@ -14,7 +14,7 @@ import clip
 from PIL import ImageFile, Image, PngImagePlugin
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 import imageio
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 from urllib.request import urlopen
 

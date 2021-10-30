@@ -4,7 +4,7 @@ from vqgan_clip import generate, esrgan
 from vqgan_clip.engine import VQGAN_CLIP_Config
 from vqgan_clip import _functional as VF
 import os
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 config = VQGAN_CLIP_Config()
 config.output_image_size = [256, 144]
