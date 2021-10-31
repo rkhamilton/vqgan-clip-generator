@@ -1,3 +1,7 @@
+# v2.0.5
+**Bug Fixes**
+* Real-ESRGAN script was not handling folders of complex filenames with spaces and special character.
+
 # v2.0.4
 **Bug Fixes**
 * Improvements to progress bar accuracy for generate.video_frames().
