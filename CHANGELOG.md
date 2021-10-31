@@ -1,6 +1,7 @@
 # v2.0.5
 **Bug Fixes**
 * Real-ESRGAN script was not handling folders of complex filenames with spaces and special character.
+* Fix for extracting video from folders with long paths with spaces.
 
 # v2.0.4
 **Bug Fixes**
