@@ -87,9 +87,10 @@ def inference_realesrgan(input='./video_frames',
     if os.path.isfile(input):
         paths = [input]
     else:
+        paths = glob.glob(f'{input}{os.sep}*')
         # do a natural sort on the image filenames to handle files named 1.png, 2.png ... 10.png, 11.png.
-        paths = sorted(glob.glob(os.path.join(input, '*')),
-                       key=lambda x: int(re.sub('\D', '', x)))
+        # paths = sorted(glob.glob(f'{input}{os.sep}*'),
+        #                key=lambda x: int(re.sub('\D', '', x)))
 
     for path in tqdm(paths, unit='image', desc='Real-ESRGAN'):
         imgname, extension = os.path.splitext(os.path.basename(path))
