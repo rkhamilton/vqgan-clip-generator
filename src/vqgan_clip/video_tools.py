@@ -40,10 +40,10 @@ def extract_video_frames(input_video_path, extraction_framerate, extracted_video
                      '-filter:v', 'fps='+str(extraction_framerate),
                      '-hide_banner',
                      '-loglevel', 'error',
-                     extracted_video_frames_path+os.sep+'frame_%12d.png'])
+                     enquote_paths_with_spaces(f'{extracted_video_frames_path}{os.sep}frame_%12d.png')])
 
     video_frames = sorted(
-        glob.glob(extracted_video_frames_path+os.sep+'*.png'))
+        glob.glob(f'{extracted_video_frames_path}{os.sep}*.png'))
     if not len(video_frames):
         raise NameError('No video frames were extracted')
     return video_frames
