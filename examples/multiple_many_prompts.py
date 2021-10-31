@@ -9,7 +9,7 @@ from tqdm.auto import tqdm
 
 config = VQGAN_CLIP_Config()
 config.output_image_size = [256, 144]
-text_prompts = 'an abandoned theater'
+text_prompts = 'A Victorian House on a hill'
 output_root_dir = 'example media'
 generated_images_path = os.path.join(output_root_dir, 'multi prompt images')
 upscaled_video_frames_path = os.path.join(
