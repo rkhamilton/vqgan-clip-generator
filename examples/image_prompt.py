@@ -1,4 +1,6 @@
 # Generate a single image based on a image prompt
+# Note that any input images or video are not provided for example scripts, you will have to provide your own.
+
 from vqgan_clip import generate, esrgan
 from vqgan_clip.engine import VQGAN_CLIP_Config
 import os

@@ -1,4 +1,5 @@
 # This is an example of using restyle_video to apply VQGAN styling to an existing video.
+# Note that any input images or video are not provided for example scripts, you will have to provide your own.
 
 from vqgan_clip import generate, video_tools, esrgan
 from vqgan_clip.engine import VQGAN_CLIP_Config

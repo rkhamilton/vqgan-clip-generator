@@ -1,5 +1,6 @@
 # This is an example of using style_transfer to apply VQGAN styling to images extracted from a video.
 # Key parameters to experiment with are iterations_per_frame, current_source_frame_image_weight, and current_source_frame_prompt_weight
+# Note that any input images or video are not provided for example scripts, you will have to provide your own.
 
 from vqgan_clip import generate, video_tools, esrgan
 from vqgan_clip.engine import VQGAN_CLIP_Config

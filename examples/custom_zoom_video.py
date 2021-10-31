@@ -2,7 +2,8 @@
 # With the script exposed like this you could experiment with many different elements of image generation. For example
 # you could change it so that prompt weights change with each iteration, thereby giving you a smoother style transition.
 # You could vary the config.learning_rate, so that the amount of change from frame-to-frame varies.
-# T
+# Note that any input images or video are not provided for example scripts, you will have to provide your own.
+
 import contextlib
 from vqgan_clip import _functional as VF
 from torchvision.transforms import functional as TF

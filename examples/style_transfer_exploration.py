@@ -4,6 +4,7 @@
 # There are interactions between init_image_methods, current_source_frame_image_weights, and iterations_per_frames
 # The configuration in this example is a useful set of initial images to evaluate. Pick your favorite combination and use that
 # to generate your style transfer video.
+# Note that any input images or video are not provided for example scripts, you will have to provide your own.
 
 from vqgan_clip import generate, video_tools, esrgan
 from vqgan_clip.engine import VQGAN_CLIP_Config

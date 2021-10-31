@@ -1,5 +1,7 @@
 # Generate a folder of multiple images based on a text prompt.
 # This might be useful if you want to try different random number generator seeds
+# Note that any input images or video are not provided for example scripts, you will have to provide your own.
+
 from vqgan_clip import generate, esrgan
 from vqgan_clip.engine import VQGAN_CLIP_Config
 from vqgan_clip import _functional as VF
