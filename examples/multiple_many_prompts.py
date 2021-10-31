@@ -52,7 +52,7 @@ for art_type in tqdm(art_types, unit='style', desc='art type'):
                                       text_prompts=text_prompts + ' ' + art_type,
                                       #image_prompts='input image.jpg',
                                       iterations=1000,
-                                      save_every=50,
+                                      save_every=None,
                                       output_filename=f'{generated_images_path}{os.sep}{art_type}.png',
                                       leave_progress_bar=False)
 
