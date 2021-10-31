@@ -49,7 +49,7 @@ art_types = ["8k resolution", "pencil sketch", "8K 3D", "deviantart", "CryEngine
 for art_type in tqdm(art_types, unit='style', desc='art type'):
     metadata_comment = generate.image(eng_config=config,
                                       text_prompts=text_prompts + ' ' + art_type,
-                                      image_prompts='input image.jpg',
+                                      #image_prompts='input image.jpg',
                                       iterations=1000,
                                       save_every=50,
                                       output_filename=f'{generated_images_path}{os.sep}{art_type}.png',
