@@ -40,7 +40,7 @@ def extract_video_frames(input_video_path, extraction_framerate, extracted_video
                      '-filter:v', 'fps='+str(extraction_framerate),
                      '-hide_banner',
                      '-loglevel', 'error',
-                     enquote_paths_with_spaces(f'{extracted_video_frames_path}{os.sep}frame_%12d.png')])
+                     extracted_video_frames_path+os.sep+'frame_%12d.png'])
 
     video_frames = sorted(
         glob.glob(f'{extracted_video_frames_path}{os.sep}*.png'))
