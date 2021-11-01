@@ -11,15 +11,15 @@ from vqgan_clip import _functional as VF
 config = VQGAN_CLIP_Config()
 config.output_image_size = [256, 256]
 text_prompts = 'portrait covered in spiders charcoal drawing'
-input_video_path = '20211004 132008000_iOS.MOV'
+input_video_path = '20211004_132008000_iOS.MOV'
 output_root_dir = 'example media'
 # Generated video framerate. Images will be extracted from the source video at this framerate, using interpolation if needed.
 video_exraction_framerate = 30
 final_video_filename = os.path.join(output_root_dir, 'style transfer.mp4')
 # Set True if you want to copy audio from the original video to the output
-copy_audio = True
+copy_audio = False
 # Set True if you installed the Real-ESRGAN package for upscaling. face_enhance is a feature of Real-ESRGAN.
-upscale_images = True
+upscale_images = False
 face_enhance = False
 # Set True if you installed the RIFE package for optical flow interpolation
 # IMPORTANT - RIFE will increase the framerate by 4x (-exp=2 option) or 16x (-exp=4). Keep this in mind as you generate your VQGAN video.
