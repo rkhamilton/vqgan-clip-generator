@@ -23,6 +23,7 @@ Environment:
   * 10 GB for a 512x512 image (684x384 in 16:9 format)
   * 8 GB for a 380x380 image (507x285 in 16:9 format)
 
+Also tested in Google Colab (free tier) using [this notebook](vqgan_clip_generator.ipynb).
 # Setup
 ## Virtual environment
 This example uses [Anaconda](https://docs.conda.io/en/latest/miniconda.html) to manage virtual Python environments. Create a new virtual Python environment for VQGAN-CLIP-GENERATOR. Then, install the dependencies and my VQGAN-CLIP-GENERATOR package using pip. If you are completely new to python and just want to make some art, I have a [quick start guide](BEGINNERS.md).
