@@ -76,7 +76,7 @@ def image(output_filename,
         for iteration_num in tqdm(range(1,iterations+1),unit='iteration',desc='single image',leave=leave_progress_bar):
             #perform iterations of train()
             lossAll = eng.train(iteration_num)
-
+           
             if save_every and iteration_num % save_every == 0:
                 if verbose:
                     # display some statistics about how the GAN training is going whever we save an interim image
@@ -414,6 +414,7 @@ def style_transfer(video_frames,
     image_prompts = [],
     noise_prompts = [],
     iterations_per_frame = 15,
+    iterations_for_first_frame = 15,
     current_source_frame_image_weight = 2.0,
     change_prompts_on_frame = None,
     generated_video_frames_path='./video_frames',
@@ -447,6 +448,10 @@ def style_transfer(video_frames,
 """
     eng_config.init_weight = current_source_frame_image_weight
 
+    # by default, run the first frame for the same number of iterations as the rest of the frames. It can be useful to use more though.
+    if not iterations_for_first_frame:
+        iterations_for_first_frame = iterations_per_frame
+
     # Let's generate a single image to initialize the video. Otherwise it takes a few frames for the new video to stabilize on the generated imagery.
     init_image = 'init_image.png'
     eng_config_init_img = eng_config
@@ -457,7 +462,7 @@ def style_transfer(video_frames,
         image_prompts = image_prompts,
         noise_prompts = noise_prompts,
         init_image = video_frames[0],
-        iterations = iterations_per_frame,
+        iterations = iterations_for_first_frame,
         save_every = None,
         verbose = False,
         leave_progress_bar = False)
@@ -491,7 +496,7 @@ def style_transfer(video_frames,
         # Populate the z smoother with the initial image
         init_image_pil = Image.open(init_image).convert('RGB').resize([output_size_X,output_size_Y], resample=Image.LANCZOS)
         init_img_z = eng.pil_image_to_latent_vector(init_image_pil)
-        smoothed_z = Z_Smoother(buffer_len=z_smoother_buffer_len, alpha=z_smoother_alpha, init_z=init_img_z)
+        smoothed_z = Z_Smoother(buffer_len=z_smoother_buffer_len, alpha=z_smoother_alpha)
 
     # generate images
     video_frame_num = 1
