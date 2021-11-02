@@ -40,10 +40,10 @@ def extract_video_frames(input_video_path, extraction_framerate, extracted_video
                      '-filter:v', 'fps='+str(extraction_framerate),
                      '-hide_banner',
                      '-loglevel', 'error',
-                     extracted_video_frames_path+os.sep+'frame_%12d.png'])
+                     extracted_video_frames_path+os.sep+'frame_%12d.jpg'])
 
     video_frames = sorted(
-        glob.glob(f'{extracted_video_frames_path}{os.sep}*.png'))
+        glob.glob(f'{extracted_video_frames_path}{os.sep}*.jpg'))
     if not len(video_frames):
         raise NameError('No video frames were extracted')
     return video_frames
@@ -82,7 +82,7 @@ def copy_video_audio(original_video, destination_file_without_audio, output_file
 
 
 def encode_video(output_file, input_framerate, path_to_stills=f'video_frames', output_framerate=None, metadata_title='', metadata_comment='', vcodec='libx264', crf=23):
-    """Wrapper for FFMPEG. Encodes a folder of PNG images to a video in HEVC format using ffmpeg with optional interpolation. Input stills must be sequentially numbered png files named in the format frame_%12d.png.
+    """Wrapper for FFMPEG. Encodes a folder of jpg images to a video in HEVC format using ffmpeg with optional interpolation. Input stills must be sequentially numbered jpg files named in the format frame_%12d.jpg.
     Note that this wrapper will print to the command line the exact ffmpeg command that was used. You can copy this and run it from the command line with any tweaks necessary.
 
     Args:
@@ -102,7 +102,7 @@ def encode_video(output_file, input_framerate, path_to_stills=f'video_frames', o
         output_framerate_to_use = output_framerate if output_framerate else input_framerate
         output_framerate_option = f'-r {output_framerate_to_use}'
     metadata_option = f'-metadata title=\"{metadata_title}\" -metadata comment=\"{metadata_comment}\" -metadata description=\"Generated with https://github.com/rkhamilton/vqgan-clip-generator\"'
-    input_path = enquote_paths_with_spaces(f'{path_to_stills}{os.sep}frame_%12d.png')
+    input_path = enquote_paths_with_spaces(f'{path_to_stills}{os.sep}frame_%12d.jpg')
     ffmpeg_command = f'ffmpeg -y -f image2 -r {input_framerate} -i {input_path} {output_framerate_option} -vcodec {vcodec} -crf {crf} -pix_fmt yuv420p -hide_banner -loglevel error {metadata_option} {enquote_paths_with_spaces(output_file)}'
     subprocess.Popen(ffmpeg_command, shell=True).wait()
     print(f'FFMPEG command used was:\n{ffmpeg_command}')

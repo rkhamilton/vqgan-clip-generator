@@ -16,7 +16,7 @@ def test_video_tools(tmpdir):
         extraction_framerate = 30,
         extracted_video_frames_path=output_images_path)
         
-    output_files = glob.glob(os.path.join(output_images_path,'*.png'))
+    output_files = glob.glob(os.path.join(output_images_path,'*.jpg'))
     assert len(output_files) == len(original_video_frames)
 
     # Non-interpolated video
