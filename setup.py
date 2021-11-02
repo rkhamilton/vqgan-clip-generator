@@ -37,6 +37,7 @@ setup(
     packages=find_packages(where='src'),  # Required
     python_requires='>=3.6, <4',
     install_requires=[
+        'exif',
         'ftfy',
         'regex',
         'tqdm',

@@ -33,7 +33,7 @@ conda create --name vqgan python=3.9 pip ffmpeg numpy pytest tqdm git pytorch==1
 conda install -c conda-forge ffmpeg
 conda install ipykernel
 conda activate vqgan
-pip install git+https://github.com/openai/CLIP.git taming-transformers ftfy regex tqdm pytorch-lightning kornia imageio omegaconf torch_optimizer
+pip install git+https://github.com/openai/CLIP.git taming-transformers ftfy regex tqdm pytorch-lightning kornia imageio omegaconf torch_optimizer exif
 pip install git+https://github.com/rkhamilton/vqgan-clip-generator.git
 ```
 
