@@ -40,6 +40,23 @@ def test_image_png(testing_config, tmpdir):
     assert os.path.exists(output_filename)
     os.remove(output_filename)
 
+def test_image_bmp(testing_config, tmpdir):
+    '''Generate a single bmp image based on a text prompt. Testing a format with no package metadata support.
+    '''
+    config = testing_config
+    config.output_image_size = [128,128]
+    output_filename = str(tmpdir.mkdir('output').join('output.bmp'))
+    vqgan_clip.generate.image(eng_config=config,
+        text_prompts = 'A painting of flowers in the renaissance style:0.5|rembrandt:0.5^fish:0.2|love:1',
+        image_prompts = [],
+        noise_prompts = [],
+        init_image = [],
+        iterations = 5,
+        save_every = 50,
+        output_filename = output_filename)
+    assert os.path.exists(output_filename)
+    os.remove(output_filename)
+
 def test_image_jpg_save_every(testing_config, tmpdir):
     '''Generate a single jpg image based on a text prompt
     '''

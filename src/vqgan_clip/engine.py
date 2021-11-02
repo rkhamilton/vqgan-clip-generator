@@ -180,12 +180,18 @@ class Engine:
     @staticmethod
     def save_tensor_as_image(image_tensor, save_filename, img_metadata=None):
         with torch.inference_mode():
-            # if we weren't passed any info, generated a blank info object
-            info = img_metadata if img_metadata else PngImagePlugin.PngInfo()
-            if os.path.splitext(save_filename)[1].lower() == '.png':
-                TF.to_pil_image(image_tensor[0].cpu()).save(save_filename, pnginfo=VF.png_info_chunks(img_metadata))
-            if os.path.splitext(save_filename)[1].lower() == '.jpg':
-                TF.to_pil_image(image_tensor[0].cpu()).save(save_filename, quality=90)
+            try:
+                # if we weren't passed any info, generated a blank info object
+                info = img_metadata if img_metadata else PngImagePlugin.PngInfo()
+                if os.path.splitext(save_filename)[1].lower() == '.png':
+                    TF.to_pil_image(image_tensor[0].cpu()).save(save_filename, pnginfo=VF.png_info_chunks(img_metadata))
+                elif os.path.splitext(save_filename)[1].lower() == '.jpg':
+                    TF.to_pil_image(image_tensor[0].cpu()).save(save_filename, quality=90)
+                else:
+                    # unknown file extension so we can't include metadata, but if torch supports it try to save in that format.
+                    TF.to_pil_image(image_tensor[0].cpu()).save(save_filename)
+            except:
+                raise NameError('Unable to save image. Unknown file format?')
 
     def ascend_txt(self,iteration_number):
         """Part of the process of training a GAN
