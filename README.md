@@ -33,7 +33,7 @@ conda create --name vqgan python=3.9 pip ffmpeg numpy pytest tqdm git pytorch==1
 conda install -c conda-forge ffmpeg
 conda install ipykernel
 conda activate vqgan
-pip install git+https://github.com/openai/CLIP.git taming-transformers ftfy regex tqdm pytorch-lightning kornia imageio omegaconf torch_optimizer exif
+pip install git+https://github.com/openai/CLIP.git taming-transformers ftfy regex tqdm pytorch-lightning kornia imageio omegaconf torch_optimizer piexif
 pip install git+https://github.com/rkhamilton/vqgan-clip-generator.git
 ```
 
@@ -153,7 +153,7 @@ These parameters are common to all of the functions of vqgan_clip.generate: imag
 |noise_prompts|[]|Random number seeds can be used as prompts using the same format as a text prompt. E.g. '123:0.1\|234:0.2\|345:0.\|3' Stories (^) are supported. |
 |init_image|None|A seed image that can be used to start the training. Without an initial image, random noise will be used.|
 |save_every|50|An interim image will be saved to the output location every save_every iterations. If you are generating a video, a frame of video will be created every save_every iterations.|
-|output_filename|'output.png'|Location to save the output image file when a single file is being created.|
+|output_filename|'output.jpg'|Location to save the output image file when a single file is being created. All [filetypes supported by Pillow](https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html) should work. Only PNG and jpg files will have metadata embedded that describes generation parameters.|
 |verbose|False|Determines whether training diagnostics should be displayed every time a file is saved.|
 
 ## Parameters specific to generate.image()
