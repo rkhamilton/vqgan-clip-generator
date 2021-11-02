@@ -14,6 +14,7 @@ from taming.models import cond_transformer, vqgan
 import glob, os
 import subprocess
 import contextlib
+import piexif
 
 def sinc(x):
     return torch.where(x != 0, torch.sin(math.pi * x) / (math.pi * x), x.new_ones([]))
@@ -378,6 +379,34 @@ def png_info_chunks(list_of_info):
         encode_me = chunk_tuple[1] if chunk_tuple[1] else ''  
         info.add_text(chunk_tuple[0], str(encode_me))
     return info
+
+def info_to_jpg_exif(list_of_info):
+    """Creates a PIL exif object from a list of info
+
+    Args:
+        * list_of_info (list): A list of data to encode in a PNG file. Structure is [['chunk_name']['chunk_data'],['chunk_name']['chunk_data'],...]
+    """
+    # concatenate everything in the info dict into one string
+    concat_info = ''
+    for item in list_of_info:
+        encode_me = item[1] if item[1] else '[]'  
+        concat_info = concat_info + f'{item[0]}: {str(encode_me)}, '
+
+    xptitle = list_of_info[0][1] if list_of_info[0][1] else ''
+    # assemble the structure for piexif to process
+    zeroth_ifd = {
+        piexif.ImageIFD.Software: "https://github.com/rkhamilton/vqgan-clip-generator",
+        piexif.ImageIFD.XPTitle: xptitle.encode('utf_16_le'),
+        piexif.ImageIFD.XPComment: concat_info[:-2].encode('utf_16_le'),  
+    }
+    exif_ifd = {
+        piexif.ExifIFD.DateTimeOriginal: u"2099:09:29 10:10:10",
+        piexif.ExifIFD.UserComment: concat_info[:-2].encode('utf_16_le')
+    }
+    exif_dict = {"0th": zeroth_ifd, "Exif": exif_ifd}
+    exif_bytes = piexif.dump(exif_dict)
+    
+    return exif_bytes
 
 def copy_PNG_metadata(files_with_metadata_path,files_needing_metadata_path):
     if os.path.isfile(files_with_metadata_path):
