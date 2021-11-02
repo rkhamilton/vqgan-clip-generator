@@ -12,7 +12,7 @@ config.output_image_size = [587, 330]
 upscale_image = True
 text_prompts = 'A pastoral landscape painting by Rembrandt'
 
-output_filename = f'example media{os.sep}example image.png'
+output_filename = f'example media{os.sep}example image.jpg'
 metadata_comment = generate.image(eng_config=config,
                                   text_prompts=text_prompts,
                                   iterations=100,

@@ -169,20 +169,23 @@ class Engine:
         
         return lossAll
 
-    def save_current_output(self, save_filename, png_info=None):
+    def save_current_output(self, save_filename, img_metadata=None):
         """Save the current output from the image generator as a PNG file to location save_filename
 
         Args:
             save_filename (str): string containing the path to save the generated image. e.g. 'output.png' or 'outputs/my_file.png'
         """
-        self.save_tensor_as_image(self.output_tensor, save_filename, png_info)
+        self.save_tensor_as_image(self.output_tensor, save_filename, img_metadata)
 
     @staticmethod
-    def save_tensor_as_image(image_tensor, save_filename, png_info=None):
+    def save_tensor_as_image(image_tensor, save_filename, img_metadata=None):
         with torch.inference_mode():
             # if we weren't passed any info, generated a blank info object
-            info = png_info if png_info else PngImagePlugin.PngInfo()
-            TF.to_pil_image(image_tensor[0].cpu()).save(save_filename, pnginfo=info)
+            info = img_metadata if img_metadata else PngImagePlugin.PngInfo()
+            if os.path.splitext(save_filename)[1].lower() == '.png':
+                TF.to_pil_image(image_tensor[0].cpu()).save(save_filename, pnginfo=VF.png_info_chunks(img_metadata))
+            if os.path.splitext(save_filename)[1].lower() == '.jpg':
+                TF.to_pil_image(image_tensor[0].cpu()).save(save_filename, quality=90)
 
     def ascend_txt(self,iteration_number):
         """Part of the process of training a GAN

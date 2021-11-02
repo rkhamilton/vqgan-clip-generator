@@ -10,7 +10,7 @@ config = VQGAN_CLIP_Config()
 config.output_image_size = [448, 448]
 upscale_image = True
 face_enhance = False
-output_filename = f'example media{os.sep}image prompt.png'
+output_filename = f'example media{os.sep}image prompt.jpg'
 
 metadata_comment = generate.image(eng_config=config,
                                   image_prompts='input image.jpg',
@@ -24,6 +24,6 @@ if upscale_image:
                                 face_enhance=face_enhance,
                                 netscale=4,
                                 outscale=4)
-    VF.copy_PNG_metadata(output_filename, os.path.splitext(output_filename)[0]+'_upscaled.png')
+    VF.copy_jpg_metadata(output_filename, os.path.splitext(output_filename)[0]+'_upscaled.jpg')
 
 print(f'generation parameters: {metadata_comment}')

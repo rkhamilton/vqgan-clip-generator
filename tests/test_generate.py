@@ -23,12 +23,12 @@ IMAGE_2 = os.path.join(TEST_DATA_DIR,'prompt2.jpg')
 IMAGE_PROMPTS = f'{IMAGE_1}:0.5|{IMAGE_2}:0.5'
 TEST_VIDEO = os.path.join(TEST_DATA_DIR,'small.mp4')
 
-def test_image(testing_config, tmpdir):
-    '''Generate a single image based on a text prompt
+def test_image_png(testing_config, tmpdir):
+    '''Generate a single png image based on a text prompt
     '''
     config = testing_config
     config.output_image_size = [128,128]
-    output_filename = str(tmpdir.mkdir('output').join('output'))
+    output_filename = str(tmpdir.mkdir('output').join('output.png'))
     vqgan_clip.generate.image(eng_config=config,
         text_prompts = 'A painting of flowers in the renaissance style:0.5|rembrandt:0.5^fish:0.2|love:1',
         image_prompts = [],
@@ -37,140 +37,147 @@ def test_image(testing_config, tmpdir):
         iterations = 5,
         save_every = 50,
         output_filename = output_filename)
-    output = output_filename + '.png'
-    assert os.path.exists(output)
-    os.remove(output)
+    assert os.path.exists(output_filename)
+    os.remove(output_filename)
+
+def test_image_jpg_save_every(testing_config, tmpdir):
+    '''Generate a single jpg image based on a text prompt
+    '''
+    config = testing_config
+    config.output_image_size = [128,128]
+    output_filename = str(tmpdir.mkdir('output').join('output.jpg'))
+    vqgan_clip.generate.image(eng_config=config,
+        text_prompts = 'A painting of flowers in the renaissance style:0.5|rembrandt:0.5^fish:0.2|love:1',
+        image_prompts = [],
+        noise_prompts = [],
+        init_image = [],
+        iterations = 5,
+        save_every = 2,
+        output_filename = output_filename)
+    assert os.path.exists(output_filename)
+    os.remove(output_filename)
+
+def test_image_jpg(testing_config, tmpdir):
+    '''Generate a single jpg image based on a text prompt, no save every
+    '''
+    config = testing_config
+    config.output_image_size = [128,128]
+    output_filename = str(tmpdir.mkdir('output').join('output.jpg'))
+    vqgan_clip.generate.image(eng_config=config,
+        text_prompts = 'A painting of flowers in the renaissance style:0.5|rembrandt:0.5^fish:0.2|love:1',
+        image_prompts = [],
+        noise_prompts = [],
+        init_image = [],
+        iterations = 5,
+        output_filename = output_filename)
+    assert os.path.exists(output_filename)
+    os.remove(output_filename)
 
 def test_image_story(testing_config, tmpdir):
     '''Generate a single image based on a text prompt changing every 10 iterations
     '''
     config = testing_config
     config.output_image_size = [128,128]
-    output_filename = str(tmpdir.mkdir('output').join('output'))
+    output_filename = str(tmpdir.mkdir('output').join('output.jpg'))
     vqgan_clip.generate.image(eng_config=config,
         text_prompts = 'A painting of flowers in the renaissance style:0.5|rembrandt:0.5^fish:0.2|love:1',
         iterations = 100,
         save_every = 50,
         output_filename = output_filename)
-    output = output_filename + '.png'
-    assert os.path.exists(output)
-    os.remove(output)
+    assert os.path.exists(output_filename)
+    os.remove(output_filename)
 
 def test_image_noise_prompt(testing_config, tmpdir):
-    '''Generate a single image based on a noise prompt
+    '''Generate a single image based on a noise prompt with save_every==50
     '''
     config = testing_config
     config.output_image_size = [128,128]
-    output_filename = str(tmpdir.mkdir('output').join('output'))
+    output_filename = str(tmpdir.mkdir('output').join('output.jpg'))
     vqgan_clip.generate.image(eng_config=config,
         noise_prompts = '123:0.1|234:0.2|345:0.3',
         iterations = 100,
         save_every = 50,
         output_filename = output_filename)
-    output = output_filename + '.png'
-    assert os.path.exists(output)
-    os.remove(output)
+    assert os.path.exists(output_filename)
+    os.remove(output_filename)
 
 def test_image_noise_prompt_story(testing_config, tmpdir):
-    '''Generate a single image based on a noise prompt changing every 10 iterations
+    '''Generate a single image based on a noise prompt no save every
     '''
     config = testing_config
     config.output_image_size = [128,128]
-    output_filename = str(tmpdir.mkdir('output').join('output'))
+    output_filename = str(tmpdir.mkdir('output').join('output.jpg'))
     vqgan_clip.generate.image(eng_config=config,
         noise_prompts = '123:0.1|234:0.2|345:0.3^700',
         iterations = 100,
         output_filename = output_filename)
-    output = output_filename + '.png'
-    assert os.path.exists(output)
-    os.remove(output)
+    assert os.path.exists(output_filename)
+    os.remove(output_filename)
 
 def test_image_image_prompt(testing_config, tmpdir):
     '''Generate a single image based on a image prompt
     '''
     config = testing_config
     config.output_image_size = [128,128]
-    output_filename = str(tmpdir.mkdir('output').join('output'))
+    output_filename = str(tmpdir.mkdir('output').join('output.jpg'))
     vqgan_clip.generate.image(eng_config=config,
         image_prompts = IMAGE_PROMPTS,
         iterations = 5,
         output_filename = output_filename)
-    output = output_filename + '.png'
-    assert os.path.exists(output)
-    os.remove(output)
+    assert os.path.exists(output_filename)
+    os.remove(output_filename)
 
 def test_image_init_image(testing_config, tmpdir):
     '''Generate a single image based on a image prompt
     '''
     config = testing_config
     config.output_image_size = [128,128]
-    output_filename = str(tmpdir.mkdir('output').join('output'))
+    output_filename = str(tmpdir.mkdir('output').join('output.jpg'))
     init_image = IMAGE_1
     vqgan_clip.generate.image(eng_config=config,
         text_prompts = 'A painting of flowers in the renaissance style',
         init_image = init_image,
         iterations = 5,
         output_filename = output_filename)
-    output = output_filename + '.png'
-    assert os.path.exists(output)
-    os.remove(output)
+    assert os.path.exists(output_filename)
+    os.remove(output_filename)
 
 def test_image_all_prompts(testing_config, tmpdir):
     '''Generate a single image based on a text prompt, image prompt, and noise prompt.
     '''
     config = testing_config
     config.output_image_size = [128,128]
-    output_filename = str(tmpdir.mkdir('output').join('output'))
+    output_filename = str(tmpdir.mkdir('output').join('output.jpg'))
     vqgan_clip.generate.image(eng_config=config,
         text_prompts = 'A painting of flowers in the renaissance style:0.5|rembrandt:0.5^fish:0.2|love:1',
         image_prompts = IMAGE_PROMPTS,
         noise_prompts = '123:0.1|234:0.2|345:0.3^700',
         iterations = 100,
         output_filename = output_filename)
-    output = output_filename + '.png'
-    assert os.path.exists(output)
-    os.remove(output)
+    assert os.path.exists(output_filename)
+    os.remove(output_filename)
 
 def test_image_all_prompts_story(testing_config, tmpdir):
     '''Generate a single image based on a text prompt, image prompt, and noise prompt.
     '''
     config = testing_config
     config.output_image_size = [128,128]
-    output_filename = str(tmpdir.mkdir('output').join('output'))
+    output_filename = str(tmpdir.mkdir('output').join('output.jpg'))
     vqgan_clip.generate.image(eng_config=config,
         text_prompts = 'A painting of flowers in the renaissance style:0.5|rembrandt:0.5^fish:0.2|love:1',
         image_prompts = IMAGE_PROMPTS,
         noise_prompts = '123:0.1|234:0.2|345:0.3^700',
         iterations = 100,
         output_filename = output_filename)
-    output = output_filename + '.png'
-    assert os.path.exists(output)
-    os.remove(output)
-
-def test_image_output_jpg(testing_config, tmpdir):
-    ''' Incorrect output filetype specified
-    '''
-    config = testing_config
-    config.output_image_size = [128,128]
-    output_filename = str(tmpdir.mkdir('output').join('output'))
-    vqgan_clip.generate.image(eng_config=config,
-        text_prompts = 'A painting of flowers in the renaissance style:0.5|rembrandt:0.5^fish:0.2|love:1',
-        image_prompts = [],
-        noise_prompts = [],
-        init_image = [],
-        iterations = 5,
-        save_every = 50,
-        output_filename = output_filename+'.jpg')
-    output = output_filename + '.png'
-    assert os.path.exists(output)
-    os.remove(output)
+    assert os.path.exists(output_filename)
+    os.remove(output_filename)
 
 def test_image_no_folder(testing_config):
     '''Output filename specified without a folder
     '''
     config = testing_config
     config.output_image_size = [128,128]
-    output_filename = str('output')
+    output_filename = str('output.jpg')
     vqgan_clip.generate.image(eng_config=config,
         text_prompts = 'A painting of flowers in the renaissance style:0.5|rembrandt:0.5^fish:0.2|love:1',
         image_prompts = [],
@@ -179,9 +186,8 @@ def test_image_no_folder(testing_config):
         iterations = 5,
         save_every = 50,
         output_filename = output_filename)
-    output = output_filename + '.png'
-    assert os.path.exists(output)
-    os.remove(output)
+    assert os.path.exists(output_filename)
+    os.remove(output_filename)
 
 def test_video(testing_config, tmpdir):
     '''Generate a zoom video based on a text prompt changing every 10 iterations

@@ -44,7 +44,7 @@ def image(output_filename,
         * verbose (boolean, optional) : When true, prints diagnostic data every time a video frame is saved. Defaults to False.
         * leave_progress_bar (boolean, optional) : When False, the tqdm progress bar will disappear when the work is completed. Useful for nested loops.
     """
-    output_filename = _filename_to_png(output_filename)
+    # output_filename = _filename_to_jpg(output_filename)
     output_folder_name = os.path.dirname(output_filename)
     if output_folder_name:
         os.makedirs(output_folder_name, exist_ok=True)
@@ -62,8 +62,8 @@ def image(output_filename,
     parsed_text_prompts, parsed_image_prompts, parsed_noise_prompts = VF.parse_all_prompts(text_prompts, image_prompts, noise_prompts)
     eng.encode_and_append_prompts(0, parsed_text_prompts, parsed_image_prompts, parsed_noise_prompts)
     eng.configure_optimizer()
-    # metadata to save to PNG file as data chunks
-    png_info =  [('text_prompts',text_prompts),
+    # metadata to save to jpge file as data chunks
+    img_info =  [('text_prompts',text_prompts),
             ('image_prompts',image_prompts),
             ('noise_prompts',noise_prompts),
             ('iterations',iterations),
@@ -83,10 +83,10 @@ def image(output_filename,
                     losses_str = ', '.join(f'{loss.item():7.3f}' for loss in lossAll)
                     tqdm.write(f'iteration:{iteration_num:6d}\tloss sum: {sum(lossAll).item():7.3f}\tloss for each prompt:{losses_str}')
                 # save an interim copy of the image so you can look at it as it changes if you like
-                eng.save_current_output(output_filename,VF.png_info_chunks(png_info)) 
+                eng.save_current_output(output_filename,img_info) 
 
         # Always save the output at the end
-        eng.save_current_output(output_filename,VF.png_info_chunks(png_info)) 
+        eng.save_current_output(output_filename,img_info) 
     except KeyboardInterrupt:
         pass
 
@@ -399,13 +399,13 @@ def video_frames(num_video_frames,
     return config_info
 
 
-def _filename_to_png(file_path):
+def _filename_to_jpg(file_path):
     dir = os.path.dirname(file_path)
     filename_without_path = os.path.basename(file_path)
     basename_without_ext, ext = os.path.splitext(filename_without_path)
-    if ext.lower() not in ['.png','']:
-        warnings.warn('vqgan_clip_generator can only create and save .PNG files.')
-    path_str = os.path.join(dir,basename_without_ext+'.png')
+    if ext.lower() not in ['.jpg','']:
+        warnings.warn('vqgan_clip_generator can only create and save .jpg files.')
+    path_str = os.path.join(dir,basename_without_ext+'.jpg')
     return f'{path_str}'
 
 def style_transfer(video_frames,
@@ -453,7 +453,7 @@ def style_transfer(video_frames,
         iterations_for_first_frame = iterations_per_frame
 
     # Let's generate a single image to initialize the video. Otherwise it takes a few frames for the new video to stabilize on the generated imagery.
-    init_image = 'init_image.png'
+    init_image = 'init_image.jpg'
     eng_config_init_img = eng_config
     eng_config_init_img.init_image_method = 'original'
     image(output_filename=init_image,
