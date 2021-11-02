@@ -27,6 +27,7 @@ def test_upscale_jpg(tmpdir):
     
     output_files = glob.glob(upscaled_images_path + os.sep + '*.jpg')
     assert len(output_files) == 1
+    VF.copy_image_metadata(SMALL_IMAGE_PNG,output_files[0])
     for f in output_files:
         os.remove(f)
 
@@ -41,6 +42,7 @@ def test_upscale_png(tmpdir):
     
     output_files = glob.glob(upscaled_images_path + os.sep + '*.png')
     assert len(output_files) == 1
+    VF.copy_image_metadata(SMALL_IMAGE_PNG,output_files[0])
     for f in output_files:
         os.remove(f)
 
@@ -62,6 +64,9 @@ def test_upscale_folder(tmpdir):
     output_files = glob.glob(upscaled_images_path + os.sep + '*.jpg')
     assert len(output_files) > 0
     assert len(output_files) == len(original_video_frames)
+
+    VF.copy_image_metadata(extracted_images_path,upscaled_images_path)
+
     for f in output_files:
         os.remove(f)
     for f in original_video_frames:

@@ -2,6 +2,7 @@
 This release adds support for multiple export filetypes in addition to PNG. Exports to jpeg or PNG will have metadata embedded that describe the media generation settings. PNG files have already had metadata stored in PNG data chunks. JPG files, available in 2.1, have metadata stored in the exif fields XPTitle and XPComment. Other export filetypes are supported for still images, provded they are [types supported by Pillow](https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html).
 **API changes**
 * Engine.save_current_output() argument png_info, type  changed to img_metadata. 
+* _functional.copy_PNG_metadata replaced with _functional.copy_image_metadata. This function handles jpg and png files.
 
 # v2.0.5
 **Bug Fixes**

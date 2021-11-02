@@ -186,7 +186,7 @@ class Engine:
                 if os.path.splitext(save_filename)[1].lower() == '.png':
                     TF.to_pil_image(image_tensor[0].cpu()).save(save_filename, pnginfo=VF.png_info_chunks(img_metadata))
                 elif os.path.splitext(save_filename)[1].lower() == '.jpg':
-                    TF.to_pil_image(image_tensor[0].cpu()).save(save_filename, quality=75, exif=VF.info_to_exif(img_metadata))
+                    TF.to_pil_image(image_tensor[0].cpu()).save(save_filename, quality=75, exif=VF.info_to_jpg_exif(img_metadata))
                 else:
                     # unknown file extension so we can't include metadata, but if torch supports it try to save in that format.
                     TF.to_pil_image(image_tensor[0].cpu()).save(save_filename)

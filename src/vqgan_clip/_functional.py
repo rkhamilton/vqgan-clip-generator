@@ -408,30 +408,52 @@ def info_to_jpg_exif(list_of_info):
     
     return exif_bytes
 
-def copy_PNG_metadata(files_with_metadata_path,files_needing_metadata_path):
-    if os.path.isfile(files_with_metadata_path):
-        source_files = [files_with_metadata_path]
-    if os.path.isdir(files_with_metadata_path):
-        source_files = glob.glob(files_with_metadata_path + os.sep + '*.png')
+def copy_image_metadata(files_with_metadata_path,files_needing_metadata_path):
+    """Copy metadata between files. From one file to one file, or from one folder to another.
 
-    if os.path.isfile(files_needing_metadata_path):
+    Args:
+        files_with_metadata_path ([type]): [description]
+        files_needing_metadata_path ([type]): [description]
+    """
+    # one file to one file
+    if os.path.isfile(files_with_metadata_path):
+        ext = os.path.splitext(files_with_metadata_path)[1].lower()
+        assert( ext in ['.png', '.jpg'] )
+        source_files = [files_with_metadata_path]
+        if not os.path.isfile(files_needing_metadata_path):
+            raise NameError('If source is a file, destination must also be a file.')
         dest_files = [files_needing_metadata_path]
-    if os.path.isdir(files_needing_metadata_path):
+    # copy from a folder of images (jpg or png or both)
+    elif os.path.isdir(files_with_metadata_path):
+        source_files_png = glob.glob(files_with_metadata_path + os.sep + '*.png')
+        source_files_jpg = glob.glob(files_with_metadata_path + os.sep + '*.jpg')
+        source_files = source_files_png.append(source_files_jpg)
+        assert(os.path.isdir(files_needing_metadata_path))
+        
         # use source filenames
         dest_files = []
         for src in source_files:
             dest_files.append(os.path.join(files_needing_metadata_path,os.path.basename(src)))
+    else:
+        raise NameError('Input must be paths to files or folders.')
     
     assert len(source_files) == len(dest_files)
 
+    # creat tuples for matching source and dest paths
     file_set = zip(source_files, dest_files)
 
     for source_file, dest_file in file_set:
-        info = PngImagePlugin.PngInfo()
-        pil_source = Image.open(source_file)
-        pil_dest = Image.open(dest_file)
-        
-        for key, value in zip(pil_source.info.keys(), pil_source.info.values()):
-            info.add_text(key, value)
-        pil_dest.save(dest_file, "png", pnginfo=info)
-        
+        assert(os.path.exists(source_file))
+        assert(os.path.exists(dest_file))
+        # get file extension
+        ext = os.path.splitext(source_file)[1]
+        if ext.lower() == '.png':
+            info = PngImagePlugin.PngInfo()
+            pil_source = Image.open(source_file)
+            pil_dest = Image.open(dest_file)
+            
+            for key, value in zip(pil_source.info.keys(), pil_source.info.values()):
+                info.add_text(key, str(value))
+            pil_dest.save(dest_file, "png", pnginfo=info)
+        elif ext.lower() == '.jpg':
+            piexif.transplant(source_file,dest_file)
