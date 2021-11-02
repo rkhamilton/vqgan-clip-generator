@@ -36,6 +36,6 @@ if upscale_images:
                                 purge_existing_files=True,
                                 netscale=4,
                                 outscale=4)
-    # copy PNG metadata from generated images to upscaled images. This step is very slow so it's commented out by default.
-    # VF.copy_PNG_metadata(generated_images_path, upscaled_video_frames_path)
+    # copy metadata from generated images to upscaled images.
+    VF.copy_image_metadata(generated_images_path, upscaled_video_frames_path)
 print(f'generation parameters: {metadata_comment}')
