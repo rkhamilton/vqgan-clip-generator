@@ -12,10 +12,10 @@ config.output_image_size = [587, 330]
 upscale_image = True
 text_prompts = 'A pastoral landscape painting by Rembrandt'
 
-output_filename = f'example media{os.sep}example image.png'
+output_filename = f'example media{os.sep}example image.jpg'
 metadata_comment = generate.image(eng_config=config,
                                   text_prompts=text_prompts,
-                                  iterations=100,
+                                  iterations=400,
                                   output_filename=output_filename)
 
 # Upscale the image
@@ -25,5 +25,5 @@ if upscale_image:
                                 face_enhance=False,
                                 netscale=4,
                                 outscale=4)
-    VF.copy_PNG_metadata(output_filename, os.path.splitext(output_filename)[0]+'_upscaled.png')
+    VF.copy_image_metadata(output_filename, os.path.splitext(output_filename)[0]+'_upscaled.jpg')
 print(f'generation parameters: {metadata_comment}')

@@ -12,12 +12,28 @@ TEST_DATA_DIR = os.path.join(
     'test_files',
     )
 
-SMALL_IMAGE = os.path.join(TEST_DATA_DIR,'small.png')
+SMALL_IMAGE_PNG = os.path.join(TEST_DATA_DIR,'small.png')
+SMALL_IMAGE_JPG = os.path.join(TEST_DATA_DIR,'small.jpg')
 TEST_VIDEO = os.path.join(TEST_DATA_DIR,'small.mp4')
 
-def test_upscale_image(tmpdir):
+def test_upscale_jpg(tmpdir):
     upscaled_images_path = str(tmpdir.mkdir('upscaled_video_frames'))
-    esrgan.inference_realesrgan(input=SMALL_IMAGE,
+    esrgan.inference_realesrgan(input=SMALL_IMAGE_JPG,
+        output_images_path=upscaled_images_path,
+        face_enhance=False,
+        purge_existing_files=True,
+        netscale=4,
+        outscale=4)
+    
+    output_files = glob.glob(upscaled_images_path + os.sep + '*.jpg')
+    assert len(output_files) == 1
+    VF.copy_image_metadata(SMALL_IMAGE_PNG,output_files[0])
+    for f in output_files:
+        os.remove(f)
+
+def test_upscale_png(tmpdir):
+    upscaled_images_path = str(tmpdir.mkdir('upscaled_video_frames'))
+    esrgan.inference_realesrgan(input=SMALL_IMAGE_PNG,
         output_images_path=upscaled_images_path,
         face_enhance=False,
         purge_existing_files=True,
@@ -26,6 +42,7 @@ def test_upscale_image(tmpdir):
     
     output_files = glob.glob(upscaled_images_path + os.sep + '*.png')
     assert len(output_files) == 1
+    VF.copy_image_metadata(SMALL_IMAGE_PNG,output_files[0])
     for f in output_files:
         os.remove(f)
 
@@ -44,9 +61,12 @@ def test_upscale_folder(tmpdir):
         netscale=4,
         outscale=4)
     
-    output_files = glob.glob(upscaled_images_path + os.sep + '*.png')
+    output_files = glob.glob(upscaled_images_path + os.sep + '*.jpg')
     assert len(output_files) > 0
     assert len(output_files) == len(original_video_frames)
+
+    VF.copy_image_metadata(extracted_images_path,upscaled_images_path)
+
     for f in output_files:
         os.remove(f)
     for f in original_video_frames:

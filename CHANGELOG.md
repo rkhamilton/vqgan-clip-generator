@@ -1,3 +1,12 @@
+# v2.1.0
+This release adds support for multiple export filetypes in addition to PNG. Exports to jpeg or PNG will have metadata embedded that describe the media generation settings. PNG files have already had metadata stored in PNG data chunks. JPG files, available in 2.1, have metadata stored in the exif fields XPTitle and XPComment. Other export filetypes are supported for still images, provded they are [types supported by Pillow](https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html).
+
+I ran a lot of side-by-side comparisons of different cut_method approaches, and found the 'kornia' method produces more interesting small details in results, as compared to the 'original' and 'sg3' methods. I've changed the default cut_method to 'kornia'. You can get the old behavior back by setting config.cut_method='original' if desired.
+
+**API changes**
+* Engine.save_current_output() argument png_info, type  changed to img_metadata. 
+* _functional.copy_PNG_metadata replaced with _functional.copy_image_metadata. This function handles jpg and png files.
+
 # v2.0.5
 **Bug Fixes**
 * Real-ESRGAN script was not handling folders of complex filenames with spaces and special character.
