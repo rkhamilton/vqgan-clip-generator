@@ -427,7 +427,7 @@ def copy_image_metadata(files_with_metadata_path,files_needing_metadata_path):
     elif os.path.isdir(files_with_metadata_path):
         source_files_png = glob.glob(files_with_metadata_path + os.sep + '*.png')
         source_files_jpg = glob.glob(files_with_metadata_path + os.sep + '*.jpg')
-        source_files = source_files_png.append(source_files_jpg)
+        source_files = source_files_png + source_files_jpg
         assert(os.path.isdir(files_needing_metadata_path))
         
         # use source filenames
