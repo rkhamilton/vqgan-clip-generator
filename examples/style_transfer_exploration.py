@@ -25,19 +25,21 @@ video_framerate = 30
 frames_to_process = 10
 
 # Set some paths
-generated_video_frames_path = os.path.join(output_root_dir, 'video frames')
+generated_video_frames_path = os.path.join(output_root_dir, 'generated video frames')
 final_output_images_path = os.path.join(output_root_dir, 'parameter tests')
+extracted_video_frames_path = os.path.join(output_root_dir, 'extracted video frames')
 
 # ensure the output folder exists and is empty.
 os.makedirs(final_output_images_path, exist_ok=True)
-for f in glob.glob(os.path.join(output_root_dir, '*.png')):
+for f in glob.glob(os.path.join(generated_video_frames_path, '*.jpg')):
     os.remove(f)
-for f in glob.glob(os.path.join(final_output_images_path, '*.png')):
+for f in glob.glob(os.path.join(final_output_images_path, '*.jpg')):
     os.remove(f)
 
 # Use a wrapper for FFMPEG to extract stills from the original video.
 original_video_frames = video_tools.extract_video_frames(input_video_path,
-                                                         extraction_framerate=video_framerate)
+                                                         extraction_framerate=video_framerate,
+                                                         extracted_video_frames_path=extracted_video_frames_path)
 
 # Truncate to only the desired number of frames.
 del original_video_frames[frames_to_process:]

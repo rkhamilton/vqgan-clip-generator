@@ -456,4 +456,11 @@ def copy_image_metadata(files_with_metadata_path,files_needing_metadata_path):
                 info.add_text(key, str(value))
             pil_dest.save(dest_file, "png", pnginfo=info)
         elif ext.lower() == '.jpg':
-            piexif.transplant(source_file,dest_file)
+            try:
+                piexif.transplant(source_file,dest_file)
+            except ValueError as excpt:
+                # if the source file doesn't have exif data, just ignore it
+                if 'not found exif in input' in excpt.args:
+                    pass
+                else:
+                    raise

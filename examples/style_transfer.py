@@ -19,7 +19,7 @@ final_video_filename = os.path.join(output_root_dir, 'style transfer.mp4')
 # Set True if you want to copy audio from the original video to the output
 copy_audio = False
 # Set True if you installed the Real-ESRGAN package for upscaling. face_enhance is a feature of Real-ESRGAN.
-upscale_images = False
+upscale_images = True
 face_enhance = False
 # Set True if you installed the RIFE package for optical flow interpolation
 # IMPORTANT - RIFE will increase the framerate by 4x (-exp=2 option) or 16x (-exp=4). Keep this in mind as you generate your VQGAN video.
@@ -58,9 +58,8 @@ if upscale_images:
                                 # model_url='https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.2.4/RealESRGAN_x4plus_anime_6B.pth',
                                 netscale=4,
                                 outscale=4)
-    # copy PNG metadata from generated images to upscaled images
-    # copy PNG metadata from generated images to upscaled images. This step is very slow so it's commented out by default.
-    # VF.copy_PNG_metadata(generated_video_frames_path, upscaled_video_frames_path)
+    # copy metadata from generated images to upscaled images.
+    VF.copy_image_metadata(generated_video_frames_path, upscaled_video_frames_path)
     video_frames_to_encode = upscaled_video_frames_path
 else:
     video_frames_to_encode = generated_video_frames_path
@@ -80,6 +79,8 @@ if copy_audio:
         input_video_path, generated_video_no_audio, final_video_filename)
     os.remove(generated_video_no_audio)
 else:
+    if os.path.exists(final_video_filename):
+        os.remove(final_video_filename)
     os.rename(generated_video_no_audio, final_video_filename)
 
 if interpolate_with_RIFE:

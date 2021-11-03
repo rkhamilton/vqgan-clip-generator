@@ -358,7 +358,7 @@ def video_frames(num_video_frames,
                 tqdm.write(f'iteration:{iteration_num:6d}\tvideo frame: {video_frame_num:6d}\tloss sum: {sum(lossAll).item():7.3f}\tloss for each prompt:{losses_str}')
 
             # metadata to save to PNG file as data chunks
-            png_info =  [('text_prompts',text_prompts),
+            img_info =  [('text_prompts',text_prompts),
                 ('image_prompts',image_prompts),
                 ('noise_prompts',noise_prompts),
                 ('iterations',iterations_per_frame),
@@ -372,13 +372,13 @@ def video_frames(num_video_frames,
                 ('z_smoother_buffer_len',z_smoother_buffer_len),
                 ('z_smoother_alpha',z_smoother_alpha)]
             # if making a video, save a frame named for the video step
-            filepath_to_save = os.path.join(generated_video_frames_path,f'frame_{video_frame_num:012d}.png')
+            filepath_to_save = os.path.join(generated_video_frames_path,f'frame_{video_frame_num:012d}.jpg')
             if z_smoother:
                 smoothed_z.append(eng._z.clone())
                 output_tensor = eng.synth(smoothed_z._mean())
-                Engine.save_tensor_as_image(output_tensor,filepath_to_save,VF.png_info_chunks(png_info))
+                Engine.save_tensor_as_image(output_tensor,filepath_to_save,img_info)
             else:
-                eng.save_current_output(filepath_to_save,VF.png_info_chunks(png_info))
+                eng.save_current_output(filepath_to_save,img_info)
 
     except KeyboardInterrupt:
         pass
@@ -495,7 +495,7 @@ def style_transfer(video_frames,
     if z_smoother:
         # Populate the z smoother with the initial image
         init_image_pil = Image.open(init_image).convert('RGB').resize([output_size_X,output_size_Y], resample=Image.LANCZOS)
-        init_img_z = eng.pil_image_to_latent_vector(init_image_pil)
+        # init_img_z = eng.pil_image_to_latent_vector(init_image_pil)
         smoothed_z = Z_Smoother(buffer_len=z_smoother_buffer_len, alpha=z_smoother_alpha)
 
     # generate images
@@ -506,7 +506,7 @@ def style_transfer(video_frames,
         last_video_frame_generated = init_image
         video_frames_loop = tqdm(video_frames,unit='image',desc='style transfer',leave=leave_progress_bar)
         for video_frame in video_frames_loop:
-            filename_to_save = os.path.basename(os.path.splitext(video_frame)[0]) + '.png'
+            filename_to_save = os.path.basename(os.path.splitext(video_frame)[0]) + '.jpg'
             filepath_to_save = os.path.join(generated_video_frames_path,filename_to_save)
 
             # INIT IMAGE
@@ -542,7 +542,7 @@ def style_transfer(video_frames,
 
             # save a frame of video
             # metadata to save to PNG file as data chunks
-            png_info =  [('text_prompts',text_prompts),
+            img_info =  [('text_prompts',text_prompts),
                 ('image_prompts',image_prompts),
                 ('noise_prompts',noise_prompts),
                 ('iterations_per_frame',iterations_per_frame),
@@ -557,9 +557,9 @@ def style_transfer(video_frames,
             if z_smoother:
                 smoothed_z.append(eng._z.clone())
                 output_tensor = eng.synth(smoothed_z._mid_ewma())
-                Engine.save_tensor_as_image(output_tensor,filepath_to_save,VF.png_info_chunks(png_info))
+                Engine.save_tensor_as_image(output_tensor,filepath_to_save,img_info)
             else:
-                eng.save_current_output(filepath_to_save,VF.png_info_chunks(png_info))
+                eng.save_current_output(filepath_to_save,img_info)
             last_video_frame_generated = filepath_to_save
             video_frame_num += 1
     except KeyboardInterrupt:

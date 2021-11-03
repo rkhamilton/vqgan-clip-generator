@@ -29,8 +29,10 @@ esrgan.inference_realesrgan(input=extracted_video_frames_path,
                             face_enhance=False,
                             # Careful! This will delete everything in the output_images_path!
                             purge_existing_files=True,
-                            netscale=4,
-                            outscale=4)
+                            model_filename='RealESRGAN_x2plus.pth',
+                            model_url='https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.1/RealESRGAN_x2plus.pth',
+                            netscale=2,
+                            outscale=2)
 
 # Encode the video.
 generated_video_no_audio = f'{output_root_dir}{os.sep}output no audio.mp4'
