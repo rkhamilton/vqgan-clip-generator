@@ -61,7 +61,7 @@ class VQGAN_CLIP_Config:
         self.vqgan_model_yaml_url = f'https://heibox.uni-heidelberg.de/d/a7530b09fed84f80a887/files/?p=%2Fconfigs%2Fmodel.yaml&dl=1'
         self.vqgan_model_ckpt_url = f'https://heibox.uni-heidelberg.de/d/a7530b09fed84f80a887/files/?p=%2Fckpts%2Flast.ckpt&dl=1'
         self.learning_rate = 0.1
-        self.cut_method = 'sg3' # choices=['original','kornia','sg3'] default='original'
+        self.cut_method = 'kornia' # choices=['original','kornia','sg3'] default='kornia'
         self.num_cuts = 32
         self.cut_power = 1.0
         self.cudnn_determinism = False # if true, use algorithms that have reproducible, deterministic output. Performance will be lower.

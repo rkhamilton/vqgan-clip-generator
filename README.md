@@ -200,6 +200,7 @@ vqgan_clip.generate.image(eng_config = config,text_prompt='a horse')
 |init_noise|None|Seed an image with noise. Options None, 'pixels' or 'gradient' |
 |init_weight|0.0|A weight can be given to the initial image used so that the result will 'hold on to' the look of the starting point.
 |init_noise|None|Seed an image with noise. Options None, 'pixels' or 'gradient'|
+|cut_method|'kornia'|Sets the method used to generate cutouts which are fed into CLIP for evaluation. 'original' is the method from the original Katherine Crowson colab notebook. 'kornia' includes additional transformations and results in images with more small details. Defaults to 'kornia'.|
 |seed|None|Random number generator seed used for image generation. Reusing the same seed does not ensure perfectly identical output due to some nondeterministic algorithms used in PyTorch.|
 |optimizer|'Adam'|Different optimizers are provided for training the GAN. These all perform differently, and may give you a different result. See [torch.optim documentation](https://pytorch.org/docs/stable/optim.html).|
 |init_weight_method|'original'|Method used to compare current image to init_image. 'decay' will let the output image get further from the source by flattening the original image before letting the new image evolve from the flattened source. The 'decay' method may give a more creative output for longer iterations. 'original' is the method used in the original Katherine Crowson colab notebook, and keeps the output image closer to the original input. This argument is ignored for style transfers.|
