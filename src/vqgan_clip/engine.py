@@ -61,7 +61,7 @@ class VQGAN_CLIP_Config:
         self.vqgan_model_yaml_url = f'https://heibox.uni-heidelberg.de/d/a7530b09fed84f80a887/files/?p=%2Fconfigs%2Fmodel.yaml&dl=1'
         self.vqgan_model_ckpt_url = f'https://heibox.uni-heidelberg.de/d/a7530b09fed84f80a887/files/?p=%2Fckpts%2Flast.ckpt&dl=1'
         self.learning_rate = 0.1
-        self.cut_method = 'sg3' # choices=['original','kornia','sg3'] default='original'
+        self.cut_method = 'kornia' # choices=['original','kornia','sg3'] default='kornia'
         self.num_cuts = 32
         self.cut_power = 1.0
         self.cudnn_determinism = False # if true, use algorithms that have reproducible, deterministic output. Performance will be lower.
@@ -169,20 +169,29 @@ class Engine:
         
         return lossAll
 
-    def save_current_output(self, save_filename, png_info=None):
+    def save_current_output(self, save_filename, img_metadata=None):
         """Save the current output from the image generator as a PNG file to location save_filename
 
         Args:
             save_filename (str): string containing the path to save the generated image. e.g. 'output.png' or 'outputs/my_file.png'
         """
-        self.save_tensor_as_image(self.output_tensor, save_filename, png_info)
+        self.save_tensor_as_image(self.output_tensor, save_filename, img_metadata)
 
     @staticmethod
-    def save_tensor_as_image(image_tensor, save_filename, png_info=None):
+    def save_tensor_as_image(image_tensor, save_filename, img_metadata=None):
         with torch.inference_mode():
-            # if we weren't passed any info, generated a blank info object
-            info = png_info if png_info else PngImagePlugin.PngInfo()
-            TF.to_pil_image(image_tensor[0].cpu()).save(save_filename, pnginfo=info)
+            try:
+                # if we weren't passed any info, generated a blank info object
+                info = img_metadata if img_metadata else PngImagePlugin.PngInfo()
+                if os.path.splitext(save_filename)[1].lower() == '.png':
+                    TF.to_pil_image(image_tensor[0].cpu()).save(save_filename, pnginfo=VF.png_info_chunks(img_metadata))
+                elif os.path.splitext(save_filename)[1].lower() == '.jpg':
+                    TF.to_pil_image(image_tensor[0].cpu()).save(save_filename, quality=75, exif=VF.info_to_jpg_exif(img_metadata))
+                else:
+                    # unknown file extension so we can't include metadata, but if torch supports it try to save in that format.
+                    TF.to_pil_image(image_tensor[0].cpu()).save(save_filename)
+            except:
+                raise NameError('Unable to save image. Unknown file format?')
 
     def ascend_txt(self,iteration_number):
         """Part of the process of training a GAN

@@ -44,7 +44,7 @@ def image(output_filename,
         * verbose (boolean, optional) : When true, prints diagnostic data every time a video frame is saved. Defaults to False.
         * leave_progress_bar (boolean, optional) : When False, the tqdm progress bar will disappear when the work is completed. Useful for nested loops.
     """
-    output_filename = _filename_to_png(output_filename)
+    # output_filename = _filename_to_jpg(output_filename)
     output_folder_name = os.path.dirname(output_filename)
     if output_folder_name:
         os.makedirs(output_folder_name, exist_ok=True)
@@ -62,8 +62,8 @@ def image(output_filename,
     parsed_text_prompts, parsed_image_prompts, parsed_noise_prompts = VF.parse_all_prompts(text_prompts, image_prompts, noise_prompts)
     eng.encode_and_append_prompts(0, parsed_text_prompts, parsed_image_prompts, parsed_noise_prompts)
     eng.configure_optimizer()
-    # metadata to save to PNG file as data chunks
-    png_info =  [('text_prompts',text_prompts),
+    # metadata to save to jpge file as data chunks
+    img_info =  [('text_prompts',text_prompts),
             ('image_prompts',image_prompts),
             ('noise_prompts',noise_prompts),
             ('iterations',iterations),
@@ -83,10 +83,10 @@ def image(output_filename,
                     losses_str = ', '.join(f'{loss.item():7.3f}' for loss in lossAll)
                     tqdm.write(f'iteration:{iteration_num:6d}\tloss sum: {sum(lossAll).item():7.3f}\tloss for each prompt:{losses_str}')
                 # save an interim copy of the image so you can look at it as it changes if you like
-                eng.save_current_output(output_filename,VF.png_info_chunks(png_info)) 
+                eng.save_current_output(output_filename,img_info) 
 
         # Always save the output at the end
-        eng.save_current_output(output_filename,VF.png_info_chunks(png_info)) 
+        eng.save_current_output(output_filename,img_info) 
     except KeyboardInterrupt:
         pass
 
@@ -358,7 +358,7 @@ def video_frames(num_video_frames,
                 tqdm.write(f'iteration:{iteration_num:6d}\tvideo frame: {video_frame_num:6d}\tloss sum: {sum(lossAll).item():7.3f}\tloss for each prompt:{losses_str}')
 
             # metadata to save to PNG file as data chunks
-            png_info =  [('text_prompts',text_prompts),
+            img_info =  [('text_prompts',text_prompts),
                 ('image_prompts',image_prompts),
                 ('noise_prompts',noise_prompts),
                 ('iterations',iterations_per_frame),
@@ -372,13 +372,13 @@ def video_frames(num_video_frames,
                 ('z_smoother_buffer_len',z_smoother_buffer_len),
                 ('z_smoother_alpha',z_smoother_alpha)]
             # if making a video, save a frame named for the video step
-            filepath_to_save = os.path.join(generated_video_frames_path,f'frame_{video_frame_num:012d}.png')
+            filepath_to_save = os.path.join(generated_video_frames_path,f'frame_{video_frame_num:012d}.jpg')
             if z_smoother:
                 smoothed_z.append(eng._z.clone())
                 output_tensor = eng.synth(smoothed_z._mean())
-                Engine.save_tensor_as_image(output_tensor,filepath_to_save,VF.png_info_chunks(png_info))
+                Engine.save_tensor_as_image(output_tensor,filepath_to_save,img_info)
             else:
-                eng.save_current_output(filepath_to_save,VF.png_info_chunks(png_info))
+                eng.save_current_output(filepath_to_save,img_info)
 
     except KeyboardInterrupt:
         pass
@@ -399,13 +399,13 @@ def video_frames(num_video_frames,
     return config_info
 
 
-def _filename_to_png(file_path):
+def _filename_to_jpg(file_path):
     dir = os.path.dirname(file_path)
     filename_without_path = os.path.basename(file_path)
     basename_without_ext, ext = os.path.splitext(filename_without_path)
-    if ext.lower() not in ['.png','']:
-        warnings.warn('vqgan_clip_generator can only create and save .PNG files.')
-    path_str = os.path.join(dir,basename_without_ext+'.png')
+    if ext.lower() not in ['.jpg','']:
+        warnings.warn('vqgan_clip_generator can only create and save .jpg files.')
+    path_str = os.path.join(dir,basename_without_ext+'.jpg')
     return f'{path_str}'
 
 def style_transfer(video_frames,
@@ -453,7 +453,7 @@ def style_transfer(video_frames,
         iterations_for_first_frame = iterations_per_frame
 
     # Let's generate a single image to initialize the video. Otherwise it takes a few frames for the new video to stabilize on the generated imagery.
-    init_image = 'init_image.png'
+    init_image = 'init_image.jpg'
     eng_config_init_img = eng_config
     eng_config_init_img.init_image_method = 'original'
     image(output_filename=init_image,
@@ -495,7 +495,7 @@ def style_transfer(video_frames,
     if z_smoother:
         # Populate the z smoother with the initial image
         init_image_pil = Image.open(init_image).convert('RGB').resize([output_size_X,output_size_Y], resample=Image.LANCZOS)
-        init_img_z = eng.pil_image_to_latent_vector(init_image_pil)
+        # init_img_z = eng.pil_image_to_latent_vector(init_image_pil)
         smoothed_z = Z_Smoother(buffer_len=z_smoother_buffer_len, alpha=z_smoother_alpha)
 
     # generate images
@@ -506,7 +506,7 @@ def style_transfer(video_frames,
         last_video_frame_generated = init_image
         video_frames_loop = tqdm(video_frames,unit='image',desc='style transfer',leave=leave_progress_bar)
         for video_frame in video_frames_loop:
-            filename_to_save = os.path.basename(os.path.splitext(video_frame)[0]) + '.png'
+            filename_to_save = os.path.basename(os.path.splitext(video_frame)[0]) + '.jpg'
             filepath_to_save = os.path.join(generated_video_frames_path,filename_to_save)
 
             # INIT IMAGE
@@ -542,7 +542,7 @@ def style_transfer(video_frames,
 
             # save a frame of video
             # metadata to save to PNG file as data chunks
-            png_info =  [('text_prompts',text_prompts),
+            img_info =  [('text_prompts',text_prompts),
                 ('image_prompts',image_prompts),
                 ('noise_prompts',noise_prompts),
                 ('iterations_per_frame',iterations_per_frame),
@@ -557,9 +557,9 @@ def style_transfer(video_frames,
             if z_smoother:
                 smoothed_z.append(eng._z.clone())
                 output_tensor = eng.synth(smoothed_z._mid_ewma())
-                Engine.save_tensor_as_image(output_tensor,filepath_to_save,VF.png_info_chunks(png_info))
+                Engine.save_tensor_as_image(output_tensor,filepath_to_save,img_info)
             else:
-                eng.save_current_output(filepath_to_save,VF.png_info_chunks(png_info))
+                eng.save_current_output(filepath_to_save,img_info)
             last_video_frame_generated = filepath_to_save
             video_frame_num += 1
     except KeyboardInterrupt:

@@ -33,7 +33,7 @@ conda create --name vqgan python=3.9 pip ffmpeg numpy pytest tqdm git pytorch==1
 conda install -c conda-forge ffmpeg
 conda install ipykernel
 conda activate vqgan
-pip install git+https://github.com/openai/CLIP.git taming-transformers ftfy regex tqdm pytorch-lightning kornia imageio omegaconf torch_optimizer
+pip install git+https://github.com/openai/CLIP.git taming-transformers ftfy regex tqdm pytorch-lightning kornia imageio omegaconf torch_optimizer piexif
 pip install git+https://github.com/rkhamilton/vqgan-clip-generator.git
 ```
 
@@ -153,7 +153,7 @@ These parameters are common to all of the functions of vqgan_clip.generate: imag
 |noise_prompts|[]|Random number seeds can be used as prompts using the same format as a text prompt. E.g. '123:0.1\|234:0.2\|345:0.\|3' Stories (^) are supported. |
 |init_image|None|A seed image that can be used to start the training. Without an initial image, random noise will be used.|
 |save_every|50|An interim image will be saved to the output location every save_every iterations. If you are generating a video, a frame of video will be created every save_every iterations.|
-|output_filename|'output.png'|Location to save the output image file when a single file is being created.|
+|output_filename|'output.jpg'|Location to save the output image file when a single file is being created. All [filetypes supported by Pillow](https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html) should work. Only PNG and jpg files will have metadata embedded that describes generation parameters.|
 |verbose|False|Determines whether training diagnostics should be displayed every time a file is saved.|
 
 ## Parameters specific to generate.image()
@@ -200,6 +200,7 @@ vqgan_clip.generate.image(eng_config = config,text_prompt='a horse')
 |init_noise|None|Seed an image with noise. Options None, 'pixels' or 'gradient' |
 |init_weight|0.0|A weight can be given to the initial image used so that the result will 'hold on to' the look of the starting point.
 |init_noise|None|Seed an image with noise. Options None, 'pixels' or 'gradient'|
+|cut_method|'kornia'|Sets the method used to generate cutouts which are fed into CLIP for evaluation. 'original' is the method from the original Katherine Crowson colab notebook. 'kornia' includes additional transformations and results in images with more small details. Defaults to 'kornia'.|
 |seed|None|Random number generator seed used for image generation. Reusing the same seed does not ensure perfectly identical output due to some nondeterministic algorithms used in PyTorch.|
 |optimizer|'Adam'|Different optimizers are provided for training the GAN. These all perform differently, and may give you a different result. See [torch.optim documentation](https://pytorch.org/docs/stable/optim.html).|
 |init_weight_method|'original'|Method used to compare current image to init_image. 'decay' will let the output image get further from the source by flattening the original image before letting the new image evolve from the flattened source. The 'decay' method may give a more creative output for longer iterations. 'original' is the method used in the original Katherine Crowson colab notebook, and keeps the output image closer to the original input. This argument is ignored for style transfers.|
