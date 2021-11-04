@@ -152,8 +152,104 @@ class Prompt(nn.Module):
         replace_grad = ReplaceGrad.apply
         return self.weight.abs() * replace_grad(dists, torch.maximum(dists, self.stop)).mean()
 
+# Kornia2 with just resizedcrop, no pooling. Cutouts happens via RandomResizedCrop. 4.0 it/s
+class MakeCutoutsKornia3(nn.Module):
+    def __init__(self, cut_size, cutn):
+        super().__init__()
+        self.cut_size = cut_size
+        self.cutn = cutn
+        self.augs = nn.Sequential(
+            K.RandomResizedCrop(size=(self.cut_size,self.cut_size), scale=(0.1,1.0),  ratio=(1.0,1.0), cropping_mode='resample', p=1.0),
+            K.RandomHorizontalFlip(p=0.5),
+            K.ColorJitter(hue=0.01, saturation=0.01, p=0.7),
+            # K.RandomSharpness(0.3,p=0.4),
+            K.RandomAffine(degrees=30, translate=0.1, p=0.8, padding_mode='border'),
+            K.RandomPerspective(0.2,p=0.4),)
+        self.noise_fac = 0.1
 
-# An updated version with Kornia augments, but no pooling:
+
+    def forward(self, input):
+        # create a list where input is repeated once for each cut to create
+        cutouts = [input] * self.cutn
+        batch = self.augs(torch.cat(cutouts, dim=0))
+        if self.noise_fac:
+            facs = batch.new_empty([self.cutn, 1, 1, 1]).uniform_(0, self.noise_fac)
+            batch = batch + facs * torch.randn_like(batch)
+        return batch
+
+# A version of MakeCutouts with more augments, retains pooling. 3.8 it/s
+# Looks the same as MakeCutoutsKornia_pooling to me.
+class MakeCutoutsKornia2(nn.Module):
+    def __init__(self, cut_size, cutn):
+        super().__init__()
+        self.cut_size = cut_size
+        self.cutn = cutn
+
+        self.augs = nn.Sequential(
+            K.RandomResizedCrop(size=(self.cut_size,self.cut_size), scale=(0.1,1),  ratio=(0.75,1.333), cropping_mode='resample', p=0.5),
+            K.RandomAffine(degrees=15, translate=0.1, shear=5, p=0.7, padding_mode='zeros', keepdim=True), # border, reflection, zeros # original to NR
+            K.RandomPerspective(distortion_scale=0.7, p=0.7),
+            K.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1, hue=0.1, p=0.7),
+            K.RandomErasing(scale=(.1, .4), ratio=(.3, 1/.3), same_on_batch=True, p=0.7),
+        )
+        self.noise_fac = 0.1
+        
+        # Pooling
+        self.av_pool = nn.AdaptiveAvgPool2d((self.cut_size, self.cut_size))
+        self.max_pool = nn.AdaptiveMaxPool2d((self.cut_size, self.cut_size))
+
+    def forward(self, input):
+        cutouts = []
+        
+        for _ in range(self.cutn):            
+            # Use Pooling
+            cutout = (self.av_pool(input) + self.max_pool(input))/2
+            cutouts.append(cutout)
+            
+        batch = self.augs(torch.cat(cutouts, dim=0))
+        
+        if self.noise_fac:
+            facs = batch.new_empty([self.cutn, 1, 1, 1]).uniform_(0, self.noise_fac)
+            batch = batch + facs * torch.randn_like(batch)
+        return batch
+
+# Same as Kornia, but with pooling. No rectanguler cutouts. 4.0 it/s
+class MakeCutoutsKornia_pooling(nn.Module):
+    def __init__(self, cut_size, cutn):
+        super().__init__()
+        self.cut_size = cut_size
+        self.cutn = cutn
+        self.augs = nn.Sequential(
+            K.RandomHorizontalFlip(p=0.5),
+            K.ColorJitter(hue=0.01, saturation=0.01, p=0.7),
+            K.RandomSharpness(0.3,p=0.4),
+            K.RandomAffine(degrees=30, translate=0.1, p=0.8, padding_mode='border'),
+            K.RandomPerspective(0.2,p=0.4),)
+        self.noise_fac = 0.1
+
+        # Pooling
+        self.av_pool = nn.AdaptiveAvgPool2d((self.cut_size, self.cut_size))
+        self.max_pool = nn.AdaptiveMaxPool2d((self.cut_size, self.cut_size))
+
+    def forward(self, input):
+        cutouts = []
+        
+        for _ in range(self.cutn):            
+            # Use Pooling
+            cutout = (self.av_pool(input) + self.max_pool(input))/2
+            cutouts.append(cutout)
+            
+        batch = self.augs(torch.cat(cutouts, dim=0))
+        
+        if self.noise_fac:
+            facs = batch.new_empty([self.cutn, 1, 1, 1]).uniform_(0, self.noise_fac)
+            batch = batch + facs * torch.randn_like(batch)
+        return batch
+
+
+# An updated version with Kornia augments, but no pooling. 
+# Rectangular cutouts are made like original, but transformed in different ways with kornia augments.
+# Images look subjectively better to me. 3.4 it/s
 class MakeCutoutsKornia(nn.Module):
     def __init__(self, cut_size, cutn, cut_pow=1.):
         super().__init__()
@@ -186,6 +282,7 @@ class MakeCutoutsKornia(nn.Module):
             batch = batch + facs * torch.randn_like(batch)
         return batch
 
+# Rectangular cutouts like Original, but with pooling instead of resample and clampwithgrad. 4.6 it/s
 class MakeCutoutsSG3(torch.nn.Module):
     def __init__(self, cut_size, cutn, cut_pow=1.):
         super().__init__()

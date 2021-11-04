@@ -206,3 +206,5 @@ def test_image_no_folder(testing_config):
     assert os.path.exists(output_filename)
     os.remove(output_filename)
 
+def test_cut_methods():
+    assert(False)
