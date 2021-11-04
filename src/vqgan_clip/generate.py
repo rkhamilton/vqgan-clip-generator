@@ -438,6 +438,7 @@ def style_transfer(video_frames,
     * noise_prompts (str, optional) : Random number seeds can be used as prompts using the same format as a text prompt. E.g. \'123:0.1|234:0.2|345:0.3\' Stories (^) are supported. Default = []
     * change_prompts_on_frame (list(int)) : All prompts (separated by "^" will be cycled forward on the video frames provided here. Defaults to None.
     * iterations_per_frame (int, optional) : Number of iterations of train() to perform for each frame of video. Default = 15 
+    * iterations_for_first_frame (int, optional) : Number of additional iterations of train() to perform on the first frame so that the image is not a gray/random field. Default = 30
     * generated_video_frames_path (str, optional) : Path where still images should be saved as they are generated before being combined into a video. Defaults to './video_frames'.
     * current_source_frame_image_weight (float) : Assigns a loss weight to make the output image look like the source image itself. Default = 0.0
     * current_source_frame_prompt_weight (float) : Assigns a loss weight to make the output image look like the CLIP representation of the source image. Default = 0.0
