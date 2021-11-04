@@ -153,16 +153,17 @@ class Prompt(nn.Module):
         return self.weight.abs() * replace_grad(dists, torch.maximum(dists, self.stop)).mean()
 
 # Kornia2 with just resizedcrop, no pooling. Cutouts happens via RandomResizedCrop. 4.0 it/s
+# I think Kornia3 will replace Kornia. Visually the same, but 18% faster.
 class MakeCutoutsKornia3(nn.Module):
     def __init__(self, cut_size, cutn):
         super().__init__()
         self.cut_size = cut_size
         self.cutn = cutn
         self.augs = nn.Sequential(
-            K.RandomResizedCrop(size=(self.cut_size,self.cut_size), scale=(0.1,1.0),  ratio=(1.0,1.0), cropping_mode='resample', p=1.0),
+            K.RandomResizedCrop(size=(self.cut_size,self.cut_size), scale=(0.1,1.0),  ratio=(0.75,1.333), cropping_mode='resample', p=1.0),
             K.RandomHorizontalFlip(p=0.5),
             K.ColorJitter(hue=0.01, saturation=0.01, p=0.7),
-            # K.RandomSharpness(0.3,p=0.4),
+            K.RandomSharpness(0.3,p=0.4),
             K.RandomAffine(degrees=30, translate=0.1, p=0.8, padding_mode='border'),
             K.RandomPerspective(0.2,p=0.4),)
         self.noise_fac = 0.1
@@ -178,7 +179,8 @@ class MakeCutoutsKornia3(nn.Module):
         return batch
 
 # A version of MakeCutouts with more augments, retains pooling. 3.8 it/s
-# Looks the same as MakeCutoutsKornia_pooling to me.
+# Similar level of detail to Kornia, but with a single main visual element. With Kornia, the visual elements are spread around the frame.
+# images are more jumbled overall. Not preferred. Changing RandomResizedCrop(scale=(0.1,1) to 0.5,1
 class MakeCutoutsKornia2(nn.Module):
     def __init__(self, cut_size, cutn):
         super().__init__()
@@ -186,7 +188,7 @@ class MakeCutoutsKornia2(nn.Module):
         self.cutn = cutn
 
         self.augs = nn.Sequential(
-            K.RandomResizedCrop(size=(self.cut_size,self.cut_size), scale=(0.1,1),  ratio=(0.75,1.333), cropping_mode='resample', p=0.5),
+            K.RandomResizedCrop(size=(self.cut_size,self.cut_size), scale=(0.5,1),  ratio=(0.75,1.333), cropping_mode='resample', p=0.5),
             K.RandomHorizontalFlip(p=0.5),
             K.RandomAffine(degrees=15, translate=0.1, shear=5, p=0.7, padding_mode='zeros', keepdim=True), # border, reflection, zeros # original to NR
             K.RandomPerspective(distortion_scale=0.7, p=0.7),
@@ -214,6 +216,7 @@ class MakeCutoutsKornia2(nn.Module):
         return batch
 
 # Same as Kornia, but with pooling. No rectanguler cutouts. 4.0 it/s
+# Worse visually then kornia, but with a single main visual element. With Kornia, the visual elements are spread around the frame.
 class MakeCutoutsKornia_pooling(nn.Module):
     def __init__(self, cut_size, cutn):
         super().__init__()
@@ -283,6 +286,7 @@ class MakeCutoutsKornia(nn.Module):
         return batch
 
 # Rectangular cutouts like Original, but with pooling instead of resample and clampwithgrad. 4.6 it/s
+# Fast but worse than any kornia method in terms of image detail and interest.
 class MakeCutoutsSG3(torch.nn.Module):
     def __init__(self, cut_size, cutn, cut_pow=1.):
         super().__init__()
