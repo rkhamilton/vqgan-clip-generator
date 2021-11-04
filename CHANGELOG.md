@@ -1,3 +1,10 @@
+# v2.1.1
+**Bug Fixes**
+* generate.video_frames was not working for low iterations_per_frame. This is no corrected for non-zooming videos. As long as zoom_scale==1.0, and shift_x, and shift_y, are 0, you can freely set iterations_per_frame to 1 and get expected results.
+
+**Known Issues**
+There is still an issue with iterations_per_frame < ~5 when using zoom_scale==1.0, and shift_x, and shift_y. It takes more iterations_per_frame than expected to see progress in the result. For the time being, use a higher iterations_per_frame if you are using these parameters, than if you are not.
+
 # v2.1.0
 This release adds support for multiple export filetypes in addition to PNG. Exports to jpeg or PNG will have metadata embedded that describe the media generation settings. PNG files have already had metadata stored in PNG data chunks. JPG files, available in 2.1, have metadata stored in the exif fields XPTitle and XPComment. Other export filetypes are supported for still images, provded they are [types supported by Pillow](https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html).
 
