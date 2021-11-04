@@ -323,8 +323,6 @@ class Engine:
             self._make_cutouts = VF.MakeCutoutsSG3(self._perceptor.visual.input_resolution, self.conf.num_cuts, cut_pow=self.conf.cut_power)
         elif self.conf.cut_method == 'kornia_pooling':
             self._make_cutouts = VF.MakeCutoutsKornia_pooling(self._perceptor.visual.input_resolution, self.conf.num_cuts)
-        elif self.conf.cut_method == 'kornia_augs_pooling':
-            self._make_cutouts = VF.MakeCutoutsKornia2(self._perceptor.visual.input_resolution, self.conf.num_cuts)
         elif self.conf.cut_method == 'kornia3':
             self._make_cutouts = VF.MakeCutoutsKornia3(self._perceptor.visual.input_resolution, self.conf.num_cuts)
         else:
