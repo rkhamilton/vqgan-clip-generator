@@ -326,7 +326,7 @@ class Engine:
         elif self.conf.cut_method == 'kornia3':
             self._make_cutouts = VF.MakeCutoutsKornia3(self._perceptor.visual.input_resolution, self.conf.num_cuts)
         else:
-            self._make_cutouts = VF.MakeCutoutsOrig(self._perceptor.visual.input_resolution, self.conf.num_cuts, cut_pow=self.conf.cut_power)
+            raise ValueError('Invalid cut_method')
 
     def convert_image_to_init_image(self, pil_image):
         self._z = self.pil_image_to_latent_vector(pil_image)
