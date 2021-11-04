@@ -187,10 +187,10 @@ class MakeCutoutsKornia2(nn.Module):
 
         self.augs = nn.Sequential(
             K.RandomResizedCrop(size=(self.cut_size,self.cut_size), scale=(0.1,1),  ratio=(0.75,1.333), cropping_mode='resample', p=0.5),
+            K.RandomHorizontalFlip(p=0.5),
             K.RandomAffine(degrees=15, translate=0.1, shear=5, p=0.7, padding_mode='zeros', keepdim=True), # border, reflection, zeros # original to NR
             K.RandomPerspective(distortion_scale=0.7, p=0.7),
             K.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1, hue=0.1, p=0.7),
-            K.RandomErasing(scale=(.1, .4), ratio=(.3, 1/.3), same_on_batch=True, p=0.7),
         )
         self.noise_fac = 0.1
         
