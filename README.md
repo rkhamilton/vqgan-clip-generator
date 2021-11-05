@@ -214,8 +214,8 @@ vqgan_clip.generate.image(eng_config = config,text_prompt='a horse')
 |---------|---------|---------|
 |output_image_size|[256,256]|x/y dimensions of the output image in pixels. This will be adjusted slightly based on the CLIP model used. VRAM requirements increase steeply with image size. My video card with 10GB of VRAM can handle a size of [500,500], or [684,384] in 16:9 aspect ratio. **Note that a lower resolution output does not look like a scaled-down version of a higher resolution output.** Lower res images have less detail for CLIP to analyze and will generate different results than a higher resolution workflow.|
 |vqgan_model_name|f'models/vqgan_imagenet_f16_16384'|Name of the pre-trained VQGAN model to be used.|
-|vqgan_model_yaml_url|f'https://heibox.uni-heidelberg.de/d/a7530b09fed84f80a887/files/?p=%2Fconfigs%2Fmodel.yaml&dl=1'|Name of the pre-trained VQGAN model to be used. [Select a valid model name](#dynamic-model-download-and-caching).|
-|vqgan_model_ckpt_url|f'https://heibox.uni-heidelberg.de/d/a7530b09fed84f80a887/files/?p=%2Fckpts%2Flast.ckpt&dl=1'|Name of the pre-trained VQGAN model to be used. [Select a valid model name](#dynamic-model-download-and-caching).|
+|vqgan_model_yaml_url|f'https://heibox.uni-heidelberg.de/d/a7530b09fed84f80a887/files/?p=%2Fconfigs%2Fmodel.yaml&dl=1'|URL to download the .yaml file for the selected VQGAN model. [Select a valid model name](#dynamic-model-download-and-caching).|
+|vqgan_model_ckpt_url|f'https://heibox.uni-heidelberg.de/d/a7530b09fed84f80a887/files/?p=%2Fckpts%2Flast.ckpt&dl=1'|URL to download the .ckpt file for the selected VQGAN model. [Select a valid model name](#dynamic-model-download-and-caching).|
 |model_dir|None|If set to a folder name (e.g. 'models') then model files will be downloaded to a subfolder of the current working directory. This may be helpful if your default drive, used by PyTorch, is small.|
 |init_noise|None|Seed an image with noise. Options None, 'pixels' or 'gradient' |
 |init_weight|0.0|A weight can be given to the initial image used so that the result will 'hold on to' the look of the starting point.
