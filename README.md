@@ -350,7 +350,7 @@ A few supporting tools are provided. Documentation is provided in docstrings, an
 |output_framerate|None|Desired framerate of the output video from encode_video. If ommitted, the input_framerate willb e used. If supplied, ffmpeg will interpolate the video to the new output framerate. If you are using RIFE for optical flow interpolation, it is not recommended to first interpolte with ffmpeg.|
 
 ## Metadata
-A record of the settings and prompts used is stored within all generated PNG, JPEG, and MP4 files created by this library. On Windows, you can access this information by right clicking a file, chooing Properties, and selecting the Details tab.  
+A record of the settings and prompts used is stored within all generated PNG, JPEG, and MP4 files created by this library. On Windows, you can access this information by right clicking a file, choosing Properties, and selecting the Details tab. Any text prompts are stored as a Title. All of the configuration parameters and values are stored in the Comments field.
 <img src="./samples/image_metadata_demo.png"></img>
 
 # Troubleshooting
