@@ -338,19 +338,19 @@ def video_frames(num_video_frames,
                     eng.encode_and_append_prompts(current_prompt_number, parsed_text_prompts, parsed_image_prompts, parsed_noise_prompts)
 
             # Zoom / shift the generated image
-            if zoom_scale != 1.0 or shift_x or shift_y:
-                pil_image = TF.to_pil_image(eng.output_tensor[0].cpu())
-                if zoom_scale != 1.0:
-                    new_pil_image = VF.zoom_at(pil_image, output_image_size_x/2, output_image_size_y/2, zoom_scale)
-                else:
-                    new_pil_image = pil_image
+            pil_image = TF.to_pil_image(eng.output_tensor[0].cpu())
+            if zoom_scale != 1.0:
+                new_pil_image = VF.zoom_at(pil_image, output_image_size_x/2, output_image_size_y/2, zoom_scale)
+            else:
+                new_pil_image = pil_image
 
-                if shift_x or shift_y:
-                    new_pil_image = ImageChops.offset(new_pil_image, shift_x, shift_y)
-                
-                # Re-encode and use this as the new initial image for the next iteration
-                eng.convert_image_to_init_image(new_pil_image)
-                eng.configure_optimizer()
+            if shift_x or shift_y:
+                new_pil_image = ImageChops.offset(new_pil_image, shift_x, shift_y)
+            
+            # Re-encode and use this as the new initial image for the next iteration
+            eng.convert_image_to_init_image(new_pil_image)
+
+            eng.configure_optimizer()
 
             if verbose:
                 # display some statistics about how the GAN training is going whever we save an interim image
