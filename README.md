@@ -16,8 +16,8 @@ Some [sample](samples) images:
 
 <img src="./samples/dreamland.png" width="512px"></img>
 <img src="./samples/matte_painting.jpg" width="512px"></img>
-<img src="./samples/Pastoral landscape painting in the impressionist style initial.png" width="256px"></img>
-<img src="./samples/The_sadness_of_Colonel_Sanders_by_Thomas_Kinkade.png" width="256px"></img>  
+<img src="./samples/landscape.jpg" width="512px"></img>
+<img src="./samples/sadness.jpg" width="512px"></img>
 <img src="./samples/style_transfer_charcoal_spiders.gif" width="256px"></img>
 
 Environment:
@@ -28,7 +28,7 @@ Environment:
 * Also tested in Google Colab (free and pro tiers) using [this notebook](vqgan_clip_generator.ipynb).
 * Typical VRAM requirements:
   * 24 GB for a 900x900 image (1200x675 in 16:9 format)
-  * 16 GB for a 
+  * 16 GB for a 700x700 image (933x525 in 16:9 format)
   * 10 GB for a 512x512 image (684x384 in 16:9 format)
   * 8 GB for a 380x380 image (507x285 in 16:9 format)
 
