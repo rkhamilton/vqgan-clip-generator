@@ -18,6 +18,8 @@ Some [sample](samples) images:
 <img src="./samples/matte_painting.jpg" width="400px"></img>
 <img src="./samples/landscape.jpg" width="400px"></img>
 <img src="./samples/sadness.jpg" width="400px"></img>
+<img src="./samples/motes.jpg" width="400px"></img>
+<img src="./samples/fairies.jpg" width="400px"></img>
 <img src="./samples/style_transfer_charcoal_spiders.gif" width="256px"></img>
 
 Environment:
