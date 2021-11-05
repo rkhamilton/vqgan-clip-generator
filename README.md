@@ -15,6 +15,7 @@ In addition to refactoring NerdyRodent's code into a more pythonic package to im
 Some [sample](samples) images:
 
 <img src="./samples/dreamland.png" width="512px"></img>
+<img src="./samples/matte_painting.jpg" width="512px"></img>
 <img src="./samples/Pastoral landscape painting in the impressionist style initial.png" width="256px"></img>
 <img src="./samples/The_sadness_of_Colonel_Sanders_by_Thomas_Kinkade.png" width="256px"></img>  
 <img src="./samples/style_transfer_charcoal_spiders.gif" width="256px"></img>
