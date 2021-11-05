@@ -77,5 +77,5 @@ for current_source_frame_image_weight, iterations_per_frame, current_source_fram
     # save the last generated image with a descriptive filename
     final_output_filename = f'{final_output_images_path}{os.sep}image_weight {current_source_frame_image_weight:1.1f} prompt_weight {current_source_frame_prompt_weight:1.1f} iterations {iterations_per_frame} buf_len {z_smoother_buffer_len} alpha {z_smoother_alpha:1.1f}.png'
     generated_files = glob.glob(os.path.join(
-        generated_video_frames_path, '*.png'))
+        generated_video_frames_path, '*.jpg'))
     shutil.copy(generated_files[-1], final_output_filename)
