@@ -2,6 +2,10 @@
 This release changes style_transfer to work better at low iterations_per_frame. Previously it was resetting the gradient (training) with each new frame of video. Now it is preserved.
 The cut_method is also now saved to media metadata.
 
+The Google Colab [notebook](vqgan_clip_generator.ipynb) has been significantly expanded and improved.
+
+Documentation improvements.
+
 # v2.1.1
 **Bug Fixes**
 * generate.video_frames was not working for low iterations_per_frame. This is no corrected for non-zooming videos. As long as zoom_scale==1.0, and shift_x, and shift_y, are 0, you can freely set iterations_per_frame to 1 and get expected results.

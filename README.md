@@ -1,14 +1,20 @@
 # VQGAN-CLIP-GENERATOR Overview
 
-This is a package for running VQGAN+CLIP locally, with a focus on ease of use, good documentation, and generating smooth style transfer videos. I was motivated to create a version of this tool that would let me mix and match functions so that I could more easily experiment with permutations of settings, and style transfer methods. There are three main user-facing functions: generate.image(), generate.video_frames(), and generate.style_transfer().
+This is a package (with available [notebook](vqgan_clip_generator.ipynb)) for running VQGAN+CLIP locally, with a focus on ease of use, good documentation, and generating smooth style transfer videos. There are [three main user-facing functions](#functions): generate.image(), generate.video_frames(), and generate.style_transfer().
 
 This package started as a complete refactor of the code provided by [NerdyRodent](https://github.com/nerdyrodent/), which started out as a Katherine Crowson VQGAN+CLIP-derived Google colab notebook.
 
-In addition to refactoring NerdyRodent's code into a more pythonic package to improve usability, this project adds unit tests, and adds improvements to the ability to restyle an existing video.
+In addition to refactoring NerdyRodent's code into a more pythonic package to improve usability, this project includes the following noteable elements:
+* Significant improvements to the quality of style transfer videos
+* Video smoothing/deflicker by applying EWMA to latent vector series
+* A wrapper for Real-ESRGAN for  unit tests
+* Improvements to generated image quality derived from the use of NerdyRodent's cut method code
+* Example code for video includes optical flow interpolation using RIFE
+* A google colab [notebook](vqgan_clip_generator.ipynb)
 
-Some example images:
+Some [sample](samples) images:
 
-<img src="./samples/A child throwing the ducks into a wood chipper painting by Rembrandt initial.png" width="256px"></img>
+<img src="./samples/dreamland.png" width="512px"></img>
 <img src="./samples/Pastoral landscape painting in the impressionist style initial.png" width="256px"></img>
 <img src="./samples/The_sadness_of_Colonel_Sanders_by_Thomas_Kinkade.png" width="256px"></img>  
 <img src="./samples/style_transfer_charcoal_spiders.gif" width="256px"></img>
@@ -16,17 +22,19 @@ Some example images:
 Environment:
 
 * Tested on Windows 10 build 19043
-* GPU: Nvidia RTX 3080
-* CPU: AMD 5900X
+  * GPU: Nvidia RTX 3080 10GB
+  * CPU: AMD 5900X
+* Also tested in Google Colab (free and pro tiers) using [this notebook](vqgan_clip_generator.ipynb).
 * Typical VRAM requirements:
   * 24 GB for a 900x900 image (1200x675 in 16:9 format)
+  * 16 GB for a 
   * 10 GB for a 512x512 image (684x384 in 16:9 format)
   * 8 GB for a 380x380 image (507x285 in 16:9 format)
 
-Also tested in Google Colab (free tier) using [this notebook](vqgan_clip_generator.ipynb).
+
 # Setup
 ## Virtual environment
-This example uses [Anaconda](https://docs.conda.io/en/latest/miniconda.html) to manage virtual Python environments. Create a new virtual Python environment for VQGAN-CLIP-GENERATOR. Then, install the dependencies and my VQGAN-CLIP-GENERATOR package using pip. If you are completely new to python and just want to make some art, I have a [quick start guide](BEGINNERS.md).
+This example uses [Anaconda](https://docs.conda.io/en/latest/miniconda.html) to manage virtual Python environments. Create a new virtual Python environment for VQGAN-CLIP-GENERATOR. Then, install the dependencies and this VQGAN-CLIP-GENERATOR package using pip. If you are completely new to python and just want to make some art, I have a [quick start guide](BEGINNERS.md).
 
 ```sh
 conda create --name vqgan python=3.9 pip ffmpeg numpy pytest tqdm git pytorch==1.9.0 torchvision==0.10.0 torchaudio==0.9.0 cudatoolkit=11.1 -c pytorch -c conda-forge
@@ -192,7 +200,7 @@ vqgan_clip.generate.image(eng_config = config,text_prompt='a horse')
 ```
 |VQGAN_CLIP_Config Attribute|Default|Meaning
 |---------|---------|---------|
-|output_image_size|[256,256]|x/y dimensions of the output image in pixels. This will be adjusted slightly based on the CLIP model used. VRAM requirements increase steeply with image size. My video card with 10GB of VRAM can handle a size of [448,448], or [587,330] in 16:9 aspect ratio.|
+|output_image_size|[256,256]|x/y dimensions of the output image in pixels. This will be adjusted slightly based on the CLIP model used. VRAM requirements increase steeply with image size. My video card with 10GB of VRAM can handle a size of [500,500], or [684,384] in 16:9 aspect ratio. **Note that a lower resolution output does not look like a scaled-down version of a higher resolution output.** Lower res images have less detail for CLIP to analyze and will generate different results than a higher resolution workflow.|
 |vqgan_model_name|f'models/vqgan_imagenet_f16_16384'|Name of the pre-trained VQGAN model to be used.|
 |vqgan_model_yaml_url|f'https://heibox.uni-heidelberg.de/d/a7530b09fed84f80a887/files/?p=%2Fconfigs%2Fmodel.yaml&dl=1'|Name of the pre-trained VQGAN model to be used. [Select a valid model name](#dynamic-model-download-and-caching).|
 |vqgan_model_ckpt_url|f'https://heibox.uni-heidelberg.de/d/a7530b09fed84f80a887/files/?p=%2Fckpts%2Flast.ckpt&dl=1'|Name of the pre-trained VQGAN model to be used. [Select a valid model name](#dynamic-model-download-and-caching).|

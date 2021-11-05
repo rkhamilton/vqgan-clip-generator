@@ -15,6 +15,10 @@ pip install basicsr
 pip install facexlib
 pip install gfpgan
 pip install git+https://github.com/xinntao/Real-ESRGAN
+pip install sk-video
+pip install opencv-python
+pip install moviepy
+git clone git@github.com:hzwer/arXiv2020-RIFE.git
 ```
 3. Create a folder on your PC where you want to create your images. Into that folder, download one or more of the [example python files](https://github.com/rkhamilton/vqgan-clip-generator/tree/main/examples) provided in the repository. I will use the single_image.py file for the rest of this example.
 ## Creating images
