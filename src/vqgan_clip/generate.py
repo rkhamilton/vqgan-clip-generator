@@ -115,7 +115,10 @@ def restyle_video_frames(video_frames,
     z_smoother=False,
     z_smoother_buffer_len=3,
     z_smoother_alpha=0.6):
-    """Apply a style to an existing video using VQGAN+CLIP using a blended input frame method. The still image 
+    """DEPRECATED. See generate.style_transfer().  
+
+
+    Apply a style to an existing video using VQGAN+CLIP using a blended input frame method. The still image 
     frames from the original video are extracted, and used as initial images for VQGAN+CLIP. The resulting 
     folder of stills are then encoded into an HEVC video file. The audio from the original may optionally be 
     transferred. The configuration of the VQGAN+CLIP algorithms is done via a VQGAN_CLIP_Config instance. 
@@ -143,8 +146,8 @@ def restyle_video_frames(video_frames,
         * z_smoother_buffer_len (int, optional) : How many images' latent vectors should be combined in the smoothing algorithm. Bigger numbers will be smoother, and have more blurred motion. Must be an odd number. Defaults to 3.
         * z_smoother_alpha (float, optional) : When combining multiple latent vectors for smoothing, this sets how important the "keyframe" z is. As frames move further from the keyframe, their weight drops by (1-z_smoother_alpha) each frame. Bigger numbers apply more smoothing. Defaults to 0.6.
 """
+    warnings.warn('This function is deprecated and will be removed. Use generate.style_transfer() instead.')
     parsed_text_prompts, parsed_image_prompts, parsed_noise_prompts = VF.parse_all_prompts(text_prompts, image_prompts, noise_prompts)
-
     # lock in a seed to use for each frame
     if not eng_config.seed:
         # note, retreiving torch.seed() also sets the torch seed
@@ -459,6 +462,9 @@ def style_transfer(video_frames,
     # by default, run the first frame for the same number of iterations as the rest of the frames. It can be useful to use more though.
     if not iterations_for_first_frame:
         iterations_for_first_frame = iterations_per_frame
+
+    output_size_X, output_size_Y = VF.filesize_matching_aspect_ratio(video_frames[0], eng_config.output_image_size[0], eng_config.output_image_size[1])
+    eng_config.output_image_size = [output_size_X, output_size_Y]
 
     # Let's generate a single image to initialize the video. Otherwise it takes a few frames for the new video to stabilize on the generated imagery.
     init_image = 'init_image.jpg'
