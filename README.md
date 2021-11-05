@@ -349,6 +349,10 @@ A few supporting tools are provided. Documentation is provided in docstrings, an
 |input_framerate|30|When combining still images to make a video, this parameter can be used to force an assumed original framerate. For example, you could assume you started with 10fps, and interpolate to 60fps using ffmpeg or RIFE.|
 |output_framerate|None|Desired framerate of the output video from encode_video. If ommitted, the input_framerate willb e used. If supplied, ffmpeg will interpolate the video to the new output framerate. If you are using RIFE for optical flow interpolation, it is not recommended to first interpolte with ffmpeg.|
 
+## Metadata
+A record of the settings and prompts used is stored within all generated PNG, JPEG, and MP4 files created by this library. On Windows, you can access this information by right clicking a file, chooing Properties, and selecting the Details tab.  
+<img src="./samples/image_metadata_demo.png"></img>
+
 # Troubleshooting
 
 ## RuntimeError: CUDA out of memory
