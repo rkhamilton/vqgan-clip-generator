@@ -14,10 +14,10 @@ In addition to refactoring NerdyRodent's code into a more pythonic package to im
 
 Some [sample](samples) images:
 
-<img src="./samples/dreamland.png" width="512px"></img>
-<img src="./samples/matte_painting.jpg" width="512px"></img>
-<img src="./samples/landscape.jpg" width="512px"></img>
-<img src="./samples/sadness.jpg" width="512px"></img>
+<img src="./samples/dreamland.png" width="400px"></img>
+<img src="./samples/matte_painting.jpg" width="400px"></img>
+<img src="./samples/landscape.jpg" width="400px"></img>
+<img src="./samples/sadness.jpg" width="400px"></img>
 <img src="./samples/style_transfer_charcoal_spiders.gif" width="256px"></img>
 
 Environment:
