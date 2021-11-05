@@ -53,7 +53,7 @@ for art_type in tqdm(art_types, unit='style', desc='art type'):
                                       #image_prompts='input image.jpg',
                                       iterations=1000,
                                       save_every=None,
-                                      output_filename=f'{generated_images_path}{os.sep}{art_type}.png',
+                                      output_filename=f'{generated_images_path}{os.sep}{art_type}.jpg',
                                       leave_progress_bar=False)
 
 # Upscale the image

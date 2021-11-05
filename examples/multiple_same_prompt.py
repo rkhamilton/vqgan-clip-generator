@@ -25,7 +25,7 @@ for image_number in tqdm(range(1, number_images_to_generate+1), unit='image', de
                                       text_prompts=text_prompts,
                                       iterations=200,
                                       save_every=50,
-                                      output_filename=f'{generated_images_path}{os.sep}frame_{image_number:012d}.png',
+                                      output_filename=f'{generated_images_path}{os.sep}frame_{image_number:012d}.jpg',
                                       leave_progress_bar=False)
 
 # Upscale the image
