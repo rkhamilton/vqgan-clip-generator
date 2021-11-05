@@ -297,6 +297,9 @@ def video_frames(num_video_frames,
         * verbose (boolean, optional) : When true, prints diagnostic data every time a video frame is saved. Defaults to False.
         * leave_progress_bar (boolean, optional) : When False, the tqdm progress bar will disappear when the work is completed. Useful for nested loops.
     """
+    if zoom_scale != 1.0 or shift_x or shift_y:
+        if iterations_per_frame < 10:
+            warnings.warn('When using zoom_scale or shift_x/shift_y, iterations_per_frame should be above 10')
     if init_image:
         eng_config.init_image = init_image
     parsed_text_prompts, parsed_image_prompts, parsed_noise_prompts = VF.parse_all_prompts(text_prompts, image_prompts, noise_prompts)
