@@ -7,9 +7,10 @@ This package started as a complete refactor of the code provided by [NerdyRodent
 In addition to refactoring NerdyRodent's code into a more pythonic package to improve usability, this project includes the following noteable elements:
 * Significant improvements to the quality of style transfer videos
 * Video smoothing/deflicker by applying EWMA to latent vector series
-* A wrapper for Real-ESRGAN for  unit tests
+* A wrapper for Real-ESRGAN
 * Improvements to generated image quality derived from the use of NerdyRodent's cut method code
 * Example code for video includes optical flow interpolation using RIFE
+* Unit tests
 * A google colab [notebook](vqgan_clip_generator.ipynb)
 
 Some [sample](samples) images:
