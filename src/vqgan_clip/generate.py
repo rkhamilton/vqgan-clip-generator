@@ -69,6 +69,7 @@ def image(output_filename,
             ('iterations',iterations),
             ('init_image',init_image),
             ('save_every',save_every),
+            ('cut_method',eng_config.cut_method),
             ('seed',eng.conf.seed)]
 
     # generate the image
@@ -96,6 +97,7 @@ def image(output_filename,
             f'init_weight_method: {eng_config.init_image_method}, '\
             f'init_weight {eng_config.init_weight:1.2f}, '\
             f'init_image {init_image}, '\
+            f'cut_method {eng_config.cut_method}, '\
             f'seed {eng.conf.seed}'
     return config_info
 
@@ -250,6 +252,7 @@ def restyle_video_frames(video_frames,
             f'init_weight_method: {eng_config.init_image_method}, '\
             f'init_weight {eng_config.init_weight:1.2f}, '\
             f'init_image {generated_video_frames_path}, '\
+            f'cut_method {eng_config.cut_method}, '\
             f'current_source_frame_prompt_weight {current_source_frame_prompt_weight:2.2f}, '\
             f'previous_generated_frame_prompt_weight {previous_generated_frame_prompt_weight:2.2f}, '\
             f'generated_frame_init_blend {generated_frame_init_blend:2.2f}, '\
@@ -366,7 +369,7 @@ def video_frames(num_video_frames,
                 ('noise_prompts',noise_prompts),
                 ('iterations',iterations_per_frame),
                 ('init_image',video_frame_num),
-                ('change_prompt_every','N/A'),
+                ('cut_method',eng_config.cut_method),
                 ('seed',eng.conf.seed),
                 ('zoom_scale',zoom_scale),
                 ('shift_x',shift_x),
@@ -391,6 +394,7 @@ def video_frames(num_video_frames,
             f'noise_prompts: {noise_prompts}, '\
             f'init_weight_method: {eng_config.init_image_method}, '\
             f'init_weight {eng_config.init_weight:1.2f}, '\
+            f'cut_method {eng_config.cut_method}, '\
             f'init_image {init_image}, '\
             f'seed {eng.conf.seed}, '\
             f'zoom_scale {zoom_scale}, '\
@@ -507,18 +511,19 @@ def style_transfer(video_frames,
     current_prompt_number = 0
     try:
         # To generate the first frame of video, either use the init_image argument, or the first frame of source video.
-        last_video_frame_generated = init_image
+        pil_image_previous_generated_frame = Image.open(init_image).convert('RGB').resize([output_size_X,output_size_Y], resample=Image.LANCZOS)
+        eng.convert_image_to_init_image(pil_image_previous_generated_frame)
+        eng.configure_optimizer()
         video_frames_loop = tqdm(video_frames,unit='image',desc='style transfer',leave=leave_progress_bar)
         for video_frame in video_frames_loop:
             filename_to_save = os.path.basename(os.path.splitext(video_frame)[0]) + '.jpg'
             filepath_to_save = os.path.join(generated_video_frames_path,filename_to_save)
 
             # INIT IMAGE
-            # Alternate aglorithm - init image is previous output
-            # alternate_image_target is the new source frame. Apply a loss in Engine using conf.init_image_method == 'alternate_img_target'
+            # Alternate aglorithm - init image is unchanged from the previous output. We are not resetting the tensor gradient.
+            # alternate_image_target is the new source frame of video. Apply a loss in Engine using conf.init_image_method == 'alternate_img_target'
+            # The previous output will be trained to change toward the new source frame.
             pil_image_new_frame = Image.open(video_frame).convert('RGB').resize([output_size_X,output_size_Y], resample=Image.LANCZOS)
-            pil_image_previous_generated_frame = Image.open(last_video_frame_generated).convert('RGB').resize([output_size_X,output_size_Y], resample=Image.LANCZOS)
-            eng.convert_image_to_init_image(pil_image_previous_generated_frame)
             eng.set_alternate_image_target(pil_image_new_frame)
 
             # Optionally use the current source video frame, and the previous generate frames, as input prompts
@@ -530,9 +535,6 @@ def style_transfer(video_frames,
             eng.encode_and_append_prompts(current_prompt_number, parsed_text_prompts, parsed_image_prompts, parsed_noise_prompts)
             if current_source_frame_prompt_weight:
                 eng.encode_and_append_pil_image(pil_image_new_frame, weight=current_source_frame_prompt_weight)
-
-            # Setup for this frame is complete. Configure the optimizer for this z.
-            eng.configure_optimizer()
 
             # Generate a new image
             for iteration_num in tqdm(range(1,iterations_per_frame+1),unit='iteration',desc='generating frame',leave=False):
@@ -550,8 +552,9 @@ def style_transfer(video_frames,
                 ('image_prompts',image_prompts),
                 ('noise_prompts',noise_prompts),
                 ('iterations_per_frame',iterations_per_frame),
+                ('iterations_for_first_frame',iterations_for_first_frame),
+                ('cut_method',eng_config.cut_method),
                 ('init_image',video_frame),
-                ('change_prompt_every','N/A'),
                 ('seed',eng.conf.seed),
                 ('z_smoother',z_smoother),
                 ('z_smoother_buffer_len',z_smoother_buffer_len),
@@ -576,6 +579,7 @@ def style_transfer(video_frames,
             f'init_image {init_image}, '\
             f'current_source_frame_prompt_weight {current_source_frame_prompt_weight:2.2f}, '\
             f'current_source_frame_image_weight {current_source_frame_image_weight:2.2f}, '\
+            f'cut_method {eng_config.cut_method}, '\
             f'z_smoother {z_smoother:2.2f}, '\
             f'z_smoother_buffer_len {z_smoother_buffer_len:2.2f}, '\
             f'z_smoother_alpha {z_smoother_alpha:2.2f}, '\
