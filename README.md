@@ -370,9 +370,6 @@ Your request doesn't fit into your GPU's VRAM. Reduce the image size and/or numb
     author = {Alec Radford, Ilya Sutskever, Jong Wook Kim, Gretchen Krueger, Sandhini Agarwal},
     year   = {2021}
 }
-```
-
-```bibtex
 @misc{esser2020taming,
       title={Taming Transformers for High-Resolution Image Synthesis}, 
       author={Patrick Esser and Robin Rombach and Björn Ommer},
@@ -381,9 +378,21 @@ Your request doesn't fit into your GPU's VRAM. Reduce the image size and/or numb
       archivePrefix={arXiv},
       primaryClass={cs.CV}
 }
+@InProceedings{wang2021realesrgan,
+    author    = {Xintao Wang and Liangbin Xie and Chao Dong and Ying Shan},
+    title     = {Real-ESRGAN: Training Real-World Blind Super-Resolution with Pure Synthetic Data},
+    booktitle = {International Conference on Computer Vision Workshops (ICCVW)},
+    date      = {2021}
+}
+@article{huang2020rife,
+  title={RIFE: Real-Time Intermediate Flow Estimation for Video Frame Interpolation},
+  author={Huang, Zhewei and Zhang, Tianyuan and Heng, Wen and Shi, Boxin and Zhou, Shuchang},
+  journal={arXiv preprint arXiv:2011.06294},
+  year={2020}
+}
 ```
 
-Katherine Crowson - <https://github.com/crowsonkb>
+Katherine Crowson - <https://github.com/crowsonkb>  
 NerdyRodent - <https://github.com/nerdyrodent/>
 
 Public Domain images from Open Access Images at the Art Institute of Chicago - <https://www.artic.edu/open-access/open-access-images>
