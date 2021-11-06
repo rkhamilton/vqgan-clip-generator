@@ -49,7 +49,7 @@ def extract_video_frames(input_video_path, extraction_framerate, extracted_video
     return video_frames
 
 
-def copy_video_audio(original_video, destination_file_without_audio, output_file):
+def copy_video_audio(original_video, destination_file_without_audio, output_file, verbose = False):
     # audio file, if any, from the original video file
     extracted_original_audio = os.path.join(os.path.dirname(
         destination_file_without_audio), 'extracted_original_audio.aac')
@@ -59,9 +59,14 @@ def copy_video_audio(original_video, destination_file_without_audio, output_file
     if os.path.exists(output_file):
         os.remove(output_file)
 
+    if verbose:
+        log_level_command = ''
+    else:
+        log_level_command = '-hide_banner -loglevel error'
+
     # extract original audio
     try:
-        ffmpeg_command = f'ffmpeg -i {enquote_paths_with_spaces(original_video)} -vn -acodec copy -hide_banner -loglevel error {enquote_paths_with_spaces(extracted_original_audio)}'
+        ffmpeg_command = f'ffmpeg -i {enquote_paths_with_spaces(original_video)} -vn -acodec copy {log_level_command} {enquote_paths_with_spaces(extracted_original_audio)}'
         print(f'FFMPEG command used was:\n{ffmpeg_command}')
         subprocess.Popen(ffmpeg_command, shell=True).wait()
         assert(os.path.exists(extracted_original_audio))
@@ -70,7 +75,7 @@ def copy_video_audio(original_video, destination_file_without_audio, output_file
 
     # if there is extracted audio from the original file, re-merge it here
     try:
-        ffmpeg_command = f'ffmpeg -i {enquote_paths_with_spaces(destination_file_without_audio)} -i {enquote_paths_with_spaces(extracted_original_audio)} -c copy -map 0:v:0 -map 1:a:0 -hide_banner -loglevel error {enquote_paths_with_spaces(output_file)}'
+        ffmpeg_command = f'ffmpeg -i {enquote_paths_with_spaces(destination_file_without_audio)} -i {enquote_paths_with_spaces(extracted_original_audio)} -c copy -map 0:v:0 -map 1:a:0 {log_level_command} {enquote_paths_with_spaces(output_file)}'
         print(f'FFMPEG command used was:\n{ffmpeg_command}')
         subprocess.Popen(ffmpeg_command, shell=True).wait()
         assert(os.path.exists(output_file))
@@ -81,7 +86,7 @@ def copy_video_audio(original_video, destination_file_without_audio, output_file
     os.remove(extracted_original_audio)
 
 
-def encode_video(output_file, input_framerate, path_to_stills=f'video_frames', output_framerate=None, metadata_title='', metadata_comment='', vcodec='libx264', crf=23):
+def encode_video(output_file, input_framerate, path_to_stills=f'video_frames', output_framerate=None, metadata_title='', metadata_comment='', vcodec='libx264', crf=23, verbose=False):
     """Wrapper for FFMPEG. Encodes a folder of jpg images to a video in HEVC format using ffmpeg with optional interpolation. Input stills must be sequentially numbered jpg files named in the format frame_%12d.jpg.
     Note that this wrapper will print to the command line the exact ffmpeg command that was used. You can copy this and run it from the command line with any tweaks necessary.
 
@@ -103,14 +108,20 @@ def encode_video(output_file, input_framerate, path_to_stills=f'video_frames', o
         output_framerate_option = f'-r {output_framerate_to_use}'
     metadata_option = f'-metadata title=\"{metadata_title}\" -metadata comment=\"{metadata_comment}\" -metadata description=\"Generated with https://github.com/rkhamilton/vqgan-clip-generator\"'
     input_path = enquote_paths_with_spaces(f'{path_to_stills}{os.sep}frame_%12d.jpg')
-    ffmpeg_command = f'ffmpeg -y -f image2 -r {input_framerate} -i {input_path} {output_framerate_option} -vcodec {vcodec} -crf {crf} -pix_fmt yuv420p -hide_banner -loglevel error {metadata_option} {enquote_paths_with_spaces(output_file)}'
+
+    if verbose:
+        log_level_command = ''
+    else:
+        log_level_command = '-hide_banner -loglevel error'
+
+    ffmpeg_command = f'ffmpeg -y -f image2 -r {input_framerate} -i {input_path} {output_framerate_option} -vcodec {vcodec} -crf {crf} -pix_fmt yuv420p {log_level_command} {metadata_option} {enquote_paths_with_spaces(output_file)}'
     subprocess.Popen(ffmpeg_command, shell=True).wait()
     print(f'FFMPEG command used was:\n{ffmpeg_command}')
     if not os.path.exists(output_file):
         raise NameError('encode_video failed to generate an output file')
 
 
-def RIFE_interpolation(input, output, interpolation_factor=4, metadata_title='', metadata_comment=''):
+def RIFE_interpolation(input, output, interpolation_factor=4, metadata_title='', metadata_comment='', verbose=False):
     """Perform optical flow interpolation with arXiv2020-RIFE.
 
     Args:
@@ -135,8 +146,10 @@ def RIFE_interpolation(input, output, interpolation_factor=4, metadata_title='',
     input_framerate = cv2.VideoCapture(input).get(cv2.CAP_PROP_FPS)
 
     of_cmnd = f'python arXiv2020-RIFE{os.sep}inference_video.py --exp={2 if interpolation_factor==4 else 4} --model=arXiv2020-RIFE{os.sep}train_log --video={enquote_paths_with_spaces(input)}'
+    if verbose:
+        print(f'RIFE optical flow command is:\n{of_cmnd}')
     subprocess.Popen(of_cmnd, shell=True).wait()
-    # print(f'RIFE optical flow command used was:\n{of_cmnd}')
+
 
     # Re-encode the RIFE output to a compressed format
     metadata_option = f'-metadata title=\"{metadata_title}\" -metadata comment=\"{metadata_comment}\" -metadata description=\"Generated with https://github.com/rkhamilton/vqgan-clip-generator\"'
@@ -145,12 +158,18 @@ def RIFE_interpolation(input, output, interpolation_factor=4, metadata_title='',
     if not os.path.exists(RIFE_output_filename):
         raise NameError('RIFE_interpolation failed to generate an output file')
 
-    ffmpeg_command = f'ffmpeg -y -i {enquote_paths_with_spaces(RIFE_output_filename)} -vcodec libx264 -crf 23 -pix_fmt yuv420p -hide_banner -loglevel error {metadata_option} {enquote_paths_with_spaces(output)}'
+    if verbose:
+        log_level_command = ''
+    else:
+        log_level_command = '-hide_banner -loglevel error'
+
+    ffmpeg_command = f'ffmpeg -y -i {enquote_paths_with_spaces(RIFE_output_filename)} -vcodec libx264 -crf 23 -pix_fmt yuv420p {log_level_command} {metadata_option} {enquote_paths_with_spaces(output)}'
+    if verbose:
+        print(f'FFMPEG command used is:\t{ffmpeg_command}')
     subprocess.Popen(ffmpeg_command, shell=True).wait()
     if not os.path.exists(output):
         raise NameError('RIFE_interpolation failed to generate an output file')
     os.remove(RIFE_output_filename)
-    # print(f'FFMPEG command used was:\t{ffmpeg_command}')
 
 
 def enquote_paths_with_spaces(path):
