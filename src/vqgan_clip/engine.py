@@ -43,7 +43,7 @@ class VQGAN_CLIP_Config:
     * self.num_cuts (int, optional): Number of cuts to use. Impacts VRAM use if increased. Defaults to 32 
     * self.cut_power (float, optional): Exponent used in MakeCutouts. Defaults to 1.0  
     * self.cudnn_determinism (boolean, optional): If true, use algorithms that have reproducible, deterministic output. Performance will be lower.  Defaults to False.
-    * self.optimizer (str, optional): Optimizer used when training VQGAN. choices=[\'Adam\',\'AdamW\',\'Adagrad\',\'Adamax\',\'DiffGrad\',\'AdamP\',\'RAdam\',\'RMSprop\']. Defaults to \'Adam\' 
+    * self.optimizer (str, optional): Optimizer used when training VQGAN. choices=[\'Adam\',\'AdamW\',\'Adagrad\',\'Adamax\',\'DiffGrad\',\'RAdam\',\'RMSprop\']. Defaults to \'Adam\' 
     * self.cuda_device (str, optional): Select your GPU. Default to the first gpu, device 0.  Defaults to \'cuda:0\'
     * self.adaptiveLR (boolean, optional): If true, use an adaptive learning rate. If the quality of the image stops improving, it will change less with each iteration. Generate.zoom output is more stable. Defaults to False.
     * self.conf.model_dir (str, optional): If set to a folder name (e.g. 'models') then model files will be downloaded to a subfolder of the current working directory. Defaults to None.
@@ -65,7 +65,7 @@ class VQGAN_CLIP_Config:
         self.num_cuts = 32
         self.cut_power = 1.0
         self.cudnn_determinism = False # if true, use algorithms that have reproducible, deterministic output. Performance will be lower.
-        self.optimizer = 'Adam' # choices=['Adam','AdamW','Adagrad','Adamax','DiffGrad','AdamP','RAdam','RMSprop'], default='Adam'
+        self.optimizer = 'Adam' # choices=['Adam','AdamW','Adagrad','Adamax','DiffGrad','RAdam','RMSprop'], default='Adam'
         self.cuda_device = 'cuda:0' # select your GPU. Default to the first gpu, device 0
         self.adaptiveLR = False # If true, use an adaptive learning rate. If the quality of the image stops improving, it will change less with each iteration. Generate.zoom output is more stable.
         self.model_dir = None # If set to a folder name (e.g. 'models') then model files will be downloaded to a subfolder of the current working directory.
@@ -129,8 +129,6 @@ class Engine:
             self._optimizer = optim.Adamax([self._z], lr=opt_lr)	
         elif opt_name == "DiffGrad":
             self._optimizer = DiffGrad([self._z], lr=opt_lr, eps=1e-9, weight_decay=1e-9) # NR: Playing for reasons
-        elif opt_name == "AdamP":
-            self._optimizer = AdamP([self._z], lr=opt_lr)		    
         elif opt_name == "RAdam":
             self._optimizer = RAdam([self._z], lr=opt_lr)		    
         elif opt_name == "RMSprop":
