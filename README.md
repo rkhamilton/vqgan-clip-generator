@@ -41,11 +41,11 @@ Environment:
 This example uses [Anaconda](https://docs.conda.io/en/latest/miniconda.html) to manage virtual Python environments. Create a new virtual Python environment for VQGAN-CLIP-GENERATOR. Then, install the dependencies and this VQGAN-CLIP-GENERATOR package using pip. If you are completely new to python and just want to make some art, I have a [quick start guide](BEGINNERS.md).
 
 ```sh
-conda create --name vqgan python=3.9 pip ffmpeg numpy pytest tqdm git pytorch==1.9.0 torchvision==0.10.0 torchaudio==0.9.0 cudatoolkit=11.1 -c pytorch -c conda-forge
+conda create --name vqgan python=3.9 pip numpy pytest tqdm git pytorch==1.9.0 torchvision=0.10.0 torchaudio=0.9.0 cudatoolkit=11.1 -c pytorch -c conda-forge
+conda activate vqgan
 conda install -c conda-forge ffmpeg
 conda install ipykernel
-conda activate vqgan
-pip install git+https://github.com/openai/CLIP.git taming-transformers ftfy regex tqdm pytorch-lightning kornia imageio omegaconf torch_optimizer piexif
+pip install git+https://github.com/openai/CLIP.git taming-transformers==0.0.1 ftfy==6.0.3 regex pytorch-lightning==1.4.9 kornia==0.5.11 imageio==2.9.0 omegaconf==2.1.1 torch-optimizer==0.1.0 piexif==1.1.3
 pip install git+https://github.com/rkhamilton/vqgan-clip-generator.git
 ```
 
