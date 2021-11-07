@@ -31,6 +31,27 @@ def test_upscale_jpg(tmpdir):
     for f in output_files:
         os.remove(f)
 
+def test_invalid_input_file(tmpdir):
+    upscaled_images_path = str(tmpdir.mkdir('upscaled_video_frames'))
+    path = f'{upscaled_images_path}{os.sep}missing_file.jpg'
+    with pytest.raises(ValueError, match=f'file could not be read as a valid image.'):
+        esrgan.inference_realesrgan(input=TEST_VIDEO,
+            output_images_path=upscaled_images_path,
+            face_enhance=False,
+            purge_existing_files=True,
+            netscale=4,
+            outscale=4)
+
+def test_empty_input_dir(tmpdir):
+    upscaled_images_path = str(tmpdir.mkdir('upscaled_video_frames'))
+    with pytest.raises(ValueError, match=f'input directory does not contain any files.'):
+        esrgan.inference_realesrgan(input=upscaled_images_path,
+            output_images_path=upscaled_images_path,
+            face_enhance=False,
+            purge_existing_files=True,
+            netscale=4,
+            outscale=4)
+
 def test_upscale_png(tmpdir):
     upscaled_images_path = str(tmpdir.mkdir('upscaled_video_frames'))
     esrgan.inference_realesrgan(input=SMALL_IMAGE_PNG,

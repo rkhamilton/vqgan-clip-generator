@@ -1,6 +1,7 @@
 # adapted from https://github.com/xinntao/Real-ESRGAN/blob/master/inference_realesrgan.py
 # modified to convert to a callable function
 # This requires Real-ESRGAN to be installed.
+from array import array
 import cv2
 import glob
 import os
@@ -47,6 +48,9 @@ def inference_realesrgan(input='./video_frames',
         * ext (str, optional): Image extension. Options: auto | jpg | png, auto means using the same extension as inputs. Defaults to 'auto'
         * model_dir (str, optional): If set to a folder name (e.g. 'models') then model files will be downloaded to a subfolder of the current working directory. Defaults to None.
     """
+    if not os.path.isdir(f'{input}') and not os.path.isfile(f'{input}'):
+        raise ValueError(f'input must be a file or a directory.')
+
     # load the file from disk if available, otherwise download it.
     model_filename = load_file_from_url(model_url, model_dir=model_dir, progress=True, file_name=model_filename)
 
@@ -78,7 +82,7 @@ def inference_realesrgan(input='./video_frames',
 
     # purge previously extracted original frames
     if not os.path.exists(output_images_path):
-        os.mkdir(output_images_path)
+        os.makedirs(output_images_path,exist_ok=True)
     else:
         if purge_existing_files:
             for f in glob.glob(output_images_path+os.sep+'*'):
@@ -92,10 +96,16 @@ def inference_realesrgan(input='./video_frames',
         # paths = sorted(glob.glob(f'{input}{os.sep}*'),
         #                key=lambda x: int(re.sub('\D', '', x)))
 
+    if len(paths)==0:
+        raise ValueError('input directory does not contain any files.')
+
     for path in tqdm(paths, unit='image', desc='Real-ESRGAN'):
         imgname, extension = os.path.splitext(os.path.basename(path))
 
         img = cv2.imread(path, cv2.IMREAD_UNCHANGED)
+        # confirm the file was read successfully.
+        if img is None or img.size == 0:
+            raise ValueError(f'file could not be read as a valid image.')
         if len(img.shape) == 3 and img.shape[2] == 4:
             img_mode = 'RGBA'
         else:
