@@ -23,6 +23,68 @@ IMAGE_2 = os.path.join(TEST_DATA_DIR,'prompt2.jpg')
 IMAGE_PROMPTS = f'{IMAGE_1}:0.5|{IMAGE_2}:0.5'
 TEST_VIDEO = os.path.join(TEST_DATA_DIR,'small.mp4')
 
+def test_image_invalid_input(testing_config, tmpdir):
+    '''Confirm we get an exception when given invalid prompts
+    '''
+    config = testing_config
+    config.output_image_size = [128,128]
+    output_filename = str(tmpdir.mkdir('output').join('output.png'))
+    with pytest.raises(ValueError, match='text_prompts must be a string'):
+        vqgan_clip.generate.image(eng_config=config,
+            text_prompts = 3,
+            image_prompts = [],
+            noise_prompts = [],
+            init_image = [],
+            iterations = 5,
+            save_every = 50,
+            output_filename = output_filename)
+    with pytest.raises(ValueError, match='image_prompts must be a string'):
+        vqgan_clip.generate.image(eng_config=config,
+            text_prompts = [],
+            image_prompts = 3,
+            noise_prompts = [],
+            init_image = [],
+            iterations = 5,
+            save_every = 50,
+            output_filename = output_filename)
+    with pytest.raises(ValueError, match='noise_prompts must be a string'):
+        vqgan_clip.generate.image(eng_config=config,
+            text_prompts = [],
+            image_prompts = [],
+            noise_prompts = 3,
+            init_image = [],
+            iterations = 5,
+            save_every = 50,
+            output_filename = output_filename)
+    init_image = output_filename
+    with pytest.raises(ValueError, match=f'init_image does not exist.'):
+        vqgan_clip.generate.image(eng_config=config,
+            text_prompts = [],
+            image_prompts = [],
+            noise_prompts = [],
+            init_image = init_image,
+            iterations = 5,
+            save_every = 50,
+            output_filename = output_filename)
+    with pytest.raises(ValueError, match=f'save_every must be an int.'):
+        vqgan_clip.generate.image(eng_config=config,
+            text_prompts = 'test prompt',
+            image_prompts = [],
+            noise_prompts = [],
+            init_image = [],
+            iterations = 5,
+            save_every = [50],
+            output_filename = output_filename)
+    with pytest.raises(ValueError, match='No valid prompts were provided'):
+        vqgan_clip.generate.image(eng_config=config,
+            text_prompts =  [],
+            image_prompts = [],
+            noise_prompts = [],
+            init_image = [],
+            iterations = 5,
+            save_every = 50,
+            output_filename = output_filename)
+
 def test_image_png(testing_config, tmpdir):
     '''Generate a single png image based on a text prompt
     '''

@@ -44,6 +44,19 @@ def image(output_filename,
         * verbose (boolean, optional) : When true, prints diagnostic data every time a video frame is saved. Defaults to False.
         * leave_progress_bar (boolean, optional) : When False, the tqdm progress bar will disappear when the work is completed. Useful for nested loops.
     """
+    if text_prompts not in [[], None] and not isinstance(text_prompts, str):
+        raise ValueError('text_prompts must be a string')
+    if image_prompts not in [[], None] and not isinstance(image_prompts, str):
+        raise ValueError('image_prompts must be a string')
+    if noise_prompts not in [[], None] and not isinstance(noise_prompts, str):
+        raise ValueError('noise_prompts must be a string')
+    if init_image not in [[], None] and not os.path.isfile(init_image):
+        raise ValueError(f'init_image does not exist.')
+    if save_every not in [[], None] and not isinstance(save_every, int):
+        raise ValueError(f'save_every must be an int.')
+    if text_prompts in [[], None] and image_prompts in [[], None] and noise_prompts in [[], None]:
+        raise ValueError('No valid prompts were provided')
+
     # output_filename = _filename_to_jpg(output_filename)
     output_folder_name = os.path.dirname(output_filename)
     if output_folder_name:
@@ -303,6 +316,19 @@ def video_frames(num_video_frames,
         * verbose (boolean, optional) : When true, prints diagnostic data every time a video frame is saved. Defaults to False.
         * leave_progress_bar (boolean, optional) : When False, the tqdm progress bar will disappear when the work is completed. Useful for nested loops.
     """
+    if text_prompts not in [[], None] and not isinstance(text_prompts, str):
+        raise ValueError('text_prompts must be a string')
+    if image_prompts not in [[], None] and not isinstance(image_prompts, str):
+        raise ValueError('image_prompts must be a string')
+    if noise_prompts not in [[], None] and not isinstance(noise_prompts, str):
+        raise ValueError('noise_prompts must be a string')
+    if init_image not in [[], None] and not os.path.isfile(init_image):
+        raise ValueError(f'init_image does not exist.')
+    if num_video_frames not in [[], None] and not isinstance(num_video_frames, int):
+        raise ValueError(f'num_video_frames must be an int.')
+    if text_prompts in [[], None] and image_prompts in [[], None] and noise_prompts in [[], None]:
+        raise ValueError('No valid prompts were provided')
+
     if zoom_scale != 1.0 or shift_x or shift_y:
         if iterations_per_frame < 10:
             warnings.warn('When using zoom_scale or shift_x/shift_y, iterations_per_frame should be above 10')
@@ -457,6 +483,17 @@ def style_transfer(video_frames,
     * z_smoother_alpha (float, optional) : When combining multiple latent vectors for smoothing, this sets how important the "keyframe" z is. As frames move further from the keyframe, their weight drops by (1-z_smoother_alpha) each frame. Bigger numbers apply more smoothing. Defaults to 0.6.
     * leave_progress_bar (boolean, optional) : When False, the tqdm progress bar will disappear when the work is completed. Useful for nested loops.
 """
+    if text_prompts not in [[], None] and not isinstance(text_prompts, str):
+        raise ValueError('text_prompts must be a string')
+    if image_prompts not in [[], None] and not isinstance(image_prompts, str):
+        raise ValueError('image_prompts must be a string')
+    if noise_prompts not in [[], None] and not isinstance(noise_prompts, str):
+        raise ValueError('noise_prompts must be a string')
+    if text_prompts in [[], None] and image_prompts in [[], None] and noise_prompts in [[], None]:
+        raise ValueError('No valid prompts were provided')
+    if not isinstance(video_frames,list) or not os.path.isfile(f'{video_frames[0]}'):
+        raise ValueError(f'video_frames must be a list of paths to files.')
+
     eng_config.init_weight = current_source_frame_image_weight
 
     # by default, run the first frame for the same number of iterations as the rest of the frames. It can be useful to use more though.

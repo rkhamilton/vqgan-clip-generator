@@ -23,6 +23,75 @@ IMAGE_2 = os.path.join(TEST_DATA_DIR,'prompt2.jpg')
 IMAGE_PROMPTS = f'{IMAGE_1}:0.5|{IMAGE_2}:0.5'
 TEST_VIDEO = os.path.join(TEST_DATA_DIR,'small.mp4')
 
+def test_video_invalid_input(testing_config, tmpdir):
+    '''test invalid inputs
+    '''
+    config = testing_config
+    config.output_image_size = [128,128]
+    steps_path = str(tmpdir.mkdir('video_frames'))
+    iterations_per_frame = 15
+    num_video_frames = 5
+    with pytest.raises(ValueError, match='text_prompts must be a string'):
+        vqgan_clip.generate.video_frames(eng_config=config,
+            text_prompts = 3,
+            image_prompts = [],
+            noise_prompts = [],
+            init_image= None,
+            num_video_frames=num_video_frames,
+            iterations_per_frame = iterations_per_frame,
+            generated_video_frames_path=steps_path, 
+            zoom_scale=1.0, 
+            shift_x=0, 
+            shift_y=0)
+    with pytest.raises(ValueError, match='image_prompts must be a string'):
+        vqgan_clip.generate.video_frames(eng_config=config,
+            text_prompts = [],
+            image_prompts = 3,
+            noise_prompts = [],
+            init_image= None,
+            num_video_frames=num_video_frames,
+            iterations_per_frame = iterations_per_frame,
+            generated_video_frames_path=steps_path, 
+            zoom_scale=1.0, 
+            shift_x=0, 
+            shift_y=0)
+    with pytest.raises(ValueError, match='noise_prompts must be a string'):
+        vqgan_clip.generate.video_frames(eng_config=config,
+            text_prompts = [],
+            image_prompts = [],
+            noise_prompts = 3,
+            init_image= None,
+            num_video_frames=num_video_frames,
+            iterations_per_frame = iterations_per_frame,
+            generated_video_frames_path=steps_path, 
+            zoom_scale=1.0, 
+            shift_x=0, 
+            shift_y=0)
+    with pytest.raises(ValueError, match=f'init_image does not exist.'):
+        vqgan_clip.generate.video_frames(eng_config=config,
+            text_prompts = [],
+            image_prompts = [],
+            noise_prompts = [],
+            init_image= f'{steps_path}{os.sep}nonexistant_file.jpg',
+            num_video_frames=num_video_frames,
+            iterations_per_frame = iterations_per_frame,
+            generated_video_frames_path=steps_path, 
+            zoom_scale=1.0, 
+            shift_x=0, 
+            shift_y=0)
+    with pytest.raises(ValueError, match=f'num_video_frames must be an int.'):
+        vqgan_clip.generate.video_frames(eng_config=config,
+            text_prompts = 'test prompt',
+            image_prompts = [],
+            noise_prompts = [],
+            init_image= None,
+            num_video_frames='string',
+            iterations_per_frame = iterations_per_frame,
+            generated_video_frames_path=steps_path, 
+            zoom_scale=1.0, 
+            shift_x=0, 
+            shift_y=0)
+
 @pytest.mark.slow
 def test_video(testing_config, tmpdir):
     '''Generate a zoom video based on a text prompt changing every 10 iterations
@@ -200,6 +269,67 @@ def test_video_all_prompts(testing_config, tmpdir):
     for f in output_files:
         os.remove(f)
     os.remove(output_filename)
+
+def test_style_transfer_invalid_input(testing_config, tmpdir):
+    '''test invalid inputs
+    '''
+    output_images_path = str(tmpdir.mkdir('video_frames'))
+    original_video_frames = video_tools.extract_video_frames(TEST_VIDEO, 
+        extraction_framerate = 2,
+        extracted_video_frames_path=output_images_path)
+
+    # Restyle the video by applying VQGAN to each frame independently
+    generated_video_frames_path = str(tmpdir.mkdir('generated_video_frames'))
+    with pytest.raises(ValueError, match='text_prompts must be a string'):
+        vqgan_clip.generate.style_transfer(original_video_frames,
+                eng_config=testing_config,
+                text_prompts = 3,
+                image_prompts = [],
+                noise_prompts = [],
+                iterations_per_frame = 5,
+                generated_video_frames_path = generated_video_frames_path,
+                current_source_frame_prompt_weight=0.1,
+                current_source_frame_image_weight=0.1)
+    with pytest.raises(ValueError, match='image_prompts must be a string'):
+        vqgan_clip.generate.style_transfer(original_video_frames,
+                eng_config=testing_config,
+                text_prompts = [],
+                image_prompts = 3,
+                noise_prompts = [],
+                iterations_per_frame = 5,
+                generated_video_frames_path = generated_video_frames_path,
+                current_source_frame_prompt_weight=0.1,
+                current_source_frame_image_weight=0.1)
+    with pytest.raises(ValueError, match='noise_prompts must be a string'):
+        vqgan_clip.generate.style_transfer(original_video_frames,
+                eng_config=testing_config,
+                text_prompts = [],
+                image_prompts = [],
+                noise_prompts = 3,
+                iterations_per_frame = 5,
+                generated_video_frames_path = generated_video_frames_path,
+                current_source_frame_prompt_weight=0.1,
+                current_source_frame_image_weight=0.1)
+    with pytest.raises(ValueError, match='No valid prompts were provided'):
+        vqgan_clip.generate.style_transfer(original_video_frames,
+                eng_config=testing_config,
+                text_prompts = [],
+                image_prompts = [],
+                noise_prompts = [],
+                iterations_per_frame = 5,
+                generated_video_frames_path = generated_video_frames_path,
+                current_source_frame_prompt_weight=0.1,
+                current_source_frame_image_weight=0.1)
+    with pytest.raises(ValueError, match=f'video_frames must be a list of paths to files.'):
+        vqgan_clip.generate.style_transfer(IMAGE_1,
+                eng_config=testing_config,
+                text_prompts = 'a red rose|a fish^the last horse',
+                image_prompts = [],
+                noise_prompts = [],
+                iterations_per_frame = 5,
+                generated_video_frames_path = generated_video_frames_path,
+                current_source_frame_prompt_weight=0.1,
+                current_source_frame_image_weight=0.1)
 
 @pytest.mark.slow
 def test_style_transfer(testing_config, tmpdir):

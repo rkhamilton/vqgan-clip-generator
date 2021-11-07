@@ -25,6 +25,9 @@ def extract_video_frames(input_video_path, extraction_framerate, extracted_video
     extracted_video_frames_path = f'{extracted_video_frames_path}'
     input_video_path = f'{input_video_path}'
 
+    if not os.path.isfile(input_video_path):
+        raise ValueError(f'input_video_path must be a directory')
+
     # purge previously extracted original frames
     if not os.path.exists(enquote_paths_with_spaces(extracted_video_frames_path)):
         os.makedirs(extracted_video_frames_path, exist_ok=True)
@@ -50,6 +53,11 @@ def extract_video_frames(input_video_path, extraction_framerate, extracted_video
 
 
 def copy_video_audio(original_video, destination_file_without_audio, output_file, verbose = False):
+    if not os.path.isfile(original_video):
+        raise NameError(f'{original_video} does not exist')
+    if not os.path.isfile(destination_file_without_audio):
+        raise NameError(f'{destination_file_without_audio} does not exist')
+
     # audio file, if any, from the original video file
     extracted_original_audio = os.path.join(os.path.dirname(
         destination_file_without_audio), 'extracted_original_audio.aac')
@@ -99,6 +107,9 @@ def encode_video(output_file, input_framerate, path_to_stills=f'video_frames', o
         crf (int, optional): The -crf parameter value to pass to ffmpeg. Appropriate values depend on the codec, and image resolution. See ffmpeg documentation for guidance. Defaults to 23.
         vcodec (str, optional): The video codec (-vcodec) to pass to ffmpeg. Any valid video codec for ffmpeg is valid. Defaults to 'libx264'.
     """
+    if not os.path.isdir(path_to_stills):
+        raise ValueError(f'path_to_stills must be a directory. Received {path_to_stills}')
+    
     if input_framerate and output_framerate and input_framerate != output_framerate:
         # a different input and output framerate are specified. Use interpolation
         output_framerate_option = f"-filter:v minterpolate='mi_mode=mci:me=hexbs:me_mode=bidir:mc_mode=aobmc:vsbmc=1:mb_size=8:search_param=32:fps={str(output_framerate)}'"
@@ -133,6 +144,8 @@ def RIFE_interpolation(input, output, interpolation_factor=4, metadata_title='',
     """
     # This section runs RIFE optical flow interpolation and then compresses the resulting (uncompressed) video to h264 format.
     # Valid choices are 4 or 16
+    if not os.path.isfile(input):
+        raise ValueError(f'input must be a file. Received {input}')
 
     if not os.path.exists(f'arXiv2020-RIFE{os.sep}inference_video.py'):
         raise NameError(f'RIFE NOT FOUND at arXiv2020-RIFE{os.sep}inference_video.py')
