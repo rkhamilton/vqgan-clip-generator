@@ -26,6 +26,7 @@ def image(output_filename,
         image_prompts = [],
         noise_prompts = [],
         init_image = None,
+        init_weight = 1.0,
         iterations = 100,
         save_every = None,
         verbose = False,
@@ -39,6 +40,7 @@ def image(output_filename,
         * image_prompts (str, optional) : Path to image that will be turned into a prompt via CLIP (analyzed for content). Default = []
         * noise_prompts (str, optional) : Random number seeds can be used as prompts using the same format as a text prompt. E.g. \'123:0.1|234:0.2|345:0.3\' Stories (^) are supported. Default = []
         * init_image (str, optional) : Path to an image file that will be used as the seed to generate output (analyzed for pixels).
+        * init_weight (float, optional) : Relative weight to assign to keeping the init_image content.
         * iterations (int, optional) : Number of iterations of train() to perform before stopping. Default = 100 
         * save_every (int, optional) : An interim image will be saved as the final image is being generated. It's saved to the output location every save_every iterations, and training stats will be displayed. Default = None  
         * verbose (boolean, optional) : When true, prints diagnostic data every time a video frame is saved. Defaults to False.
@@ -66,6 +68,7 @@ def image(output_filename,
         eng_config.init_image = init_image
         output_size_X, output_size_Y = VF.filesize_matching_aspect_ratio(init_image, eng_config.output_image_size[0], eng_config.output_image_size[1])
         eng_config.output_image_size = [output_size_X, output_size_Y]
+        eng_config.init_weight = init_weight
 
     # suppress stdout to keep the progress bar clear
     with open(os.devnull, 'w') as devnull:

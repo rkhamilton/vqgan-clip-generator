@@ -1,3 +1,5 @@
+# v2.3.0
+* added init_weight as option to generate.image(). It works the same as in the other functions, but was missing from image.
 # v2.2.2
 **Bug Fixes**
 * esrgan.inference_realesrgan() will now raise an exception if it is unable to load an image from the passed file or folder.

@@ -221,6 +221,22 @@ def test_image_init_image(testing_config, tmpdir):
     assert os.path.exists(output_filename)
     os.remove(output_filename)
 
+def test_image_init_image_weight(testing_config, tmpdir):
+    '''Generate a single image based on a image prompt
+    '''
+    config = testing_config
+    config.output_image_size = [128,128]
+    output_filename = str(tmpdir.mkdir('output').join('output.jpg'))
+    init_image = IMAGE_1
+    vqgan_clip.generate.image(eng_config=config,
+        text_prompts = 'A painting of flowers in the renaissance style',
+        init_image = init_image,
+        init_weight= 0.5,
+        iterations = 5,
+        output_filename = output_filename)
+    assert os.path.exists(output_filename)
+    os.remove(output_filename)
+
 def test_image_all_prompts(testing_config, tmpdir):
     '''Generate a single image based on a text prompt, image prompt, and noise prompt.
     '''
