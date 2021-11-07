@@ -1,3 +1,11 @@
+# v2.2.2
+**Bug Fixes**
+* esrgan.inference_realesrgan() will now raise an exception if it is unable to load an image from the passed file or folder.
+
+# v2.2.1
+**Bug Fixes**
+* generate.* functions now check for valid function inputs, and will raise exceptions appropriately.
+
 # v2.2.0
 This release changes style_transfer to work better at low iterations_per_frame. Previously it was resetting the gradient (training) with each new frame of video. Now it is preserved.
 The cut_method is also now saved to media metadata.
