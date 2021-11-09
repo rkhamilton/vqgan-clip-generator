@@ -189,9 +189,9 @@ def restyle_video_frames(video_frames,
     video_frame_num = 1
     try:
         last_video_frame_generated = video_frames[0]
-        video_frames_loop = tqdm(video_frames,unit='image',desc='style transfer')
+        video_frames_loop = tqdm(video_frames,unit='image',desc='restyle_video')
         for video_frame in video_frames_loop:
-            filename_to_save = os.path.basename(os.path.splitext(video_frame)[0]) + '.png'
+            filename_to_save = os.path.basename(os.path.splitext(video_frame)[0]) + '.jpg'
             filepath_to_save = os.path.join(generated_video_frames_path,filename_to_save)
 
             # INIT IMAGE
@@ -243,7 +243,7 @@ def restyle_video_frames(video_frames,
             tqdm.write(f'iteration:{iteration_num:6d}\tvideo frame: {video_frame_num:6d}\tloss sum: {sum(lossAll).item():7.3f}\tloss for each prompt:{losses_str}')
 
             # metadata to save to PNG file as data chunks
-            png_info =  [('text_prompts',text_prompts),
+            img_info =  [('text_prompts',text_prompts),
                 ('image_prompts',image_prompts),
                 ('noise_prompts',noise_prompts),
                 ('iterations',iterations),
@@ -258,9 +258,9 @@ def restyle_video_frames(video_frames,
             if z_smoother:
                 smoothed_z.append(eng._z.clone())
                 output_tensor = eng.synth(smoothed_z._mid_ewma())
-                Engine.save_tensor_as_image(output_tensor,filepath_to_save,VF.png_info_chunks(png_info))
+                Engine.save_tensor_as_image(output_tensor,filepath_to_save,img_info)
             else:
-                eng.save_current_output(filepath_to_save,VF.png_info_chunks(png_info))
+                eng.save_current_output(filepath_to_save,img_info)
             last_video_frame_generated = filepath_to_save
             video_frame_num += 1
     except KeyboardInterrupt:
