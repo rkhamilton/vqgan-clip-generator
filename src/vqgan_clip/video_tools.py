@@ -29,12 +29,10 @@ def extract_video_frames(input_video_path, extraction_framerate, extracted_video
         raise ValueError(f'input_video_path must be a file')
 
     # purge previously extracted original frames
-    if not os.path.exists(enquote_paths_with_spaces(extracted_video_frames_path)):
-        os.makedirs(extracted_video_frames_path, exist_ok=True)
-    else:
-        files = glob.glob(extracted_video_frames_path+os.sep+'*')
-        for f in files:
-            os.remove(f)
+    os.makedirs(extracted_video_frames_path, exist_ok=True)
+    files = glob.glob(extracted_video_frames_path+os.sep+'*')
+    for f in files:
+        os.remove(f)
 
     # print("Extracting image frames from original video")
     # extract original video frames
