@@ -67,7 +67,7 @@ else:
 
 
 # Use a wrapper for FFMPEG to encode the video. Try setting video_encode_framerate=video_exraction_framerate/2 for a slow motion look.
-generated_video_no_audio = f'{output_root_dir}{os.sep}encoded video.mp4'
+generated_video_no_audio = f'example media{os.sep}output no audio.mp4'
 video_tools.encode_video(output_file=generated_video_no_audio,
                          path_to_stills=video_frames_to_encode,
                          metadata_title=text_prompts,
