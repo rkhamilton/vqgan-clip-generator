@@ -9,7 +9,6 @@ def test_examples_custom_zoom_video():
     cmnd = 'python ' + os.path.join(EXAMPLES_PATH,'custom_zoom_video.py')
     subprocess.check_output(cmnd)
 
-
 def test_examples_image_prompt():
     cmnd = 'python ' + os.path.join(EXAMPLES_PATH,'image_prompt.py')
     subprocess.check_output(cmnd)
@@ -30,7 +29,7 @@ def test_examples_single_image():
 
 @pytest.mark.slow
 def test_examples_restyle_video_naive():
-    cmnd = 'python ' + os.path.join(EXAMPLES_PATH,'style_transfer.py')
+    cmnd = 'python ' + os.path.join(EXAMPLES_PATH,'restyle_video.py')
     subprocess.check_output(cmnd)
 
 @pytest.mark.slow
