@@ -26,7 +26,7 @@ def extract_video_frames(input_video_path, extraction_framerate, extracted_video
     input_video_path = f'{input_video_path}'
 
     if not os.path.isfile(input_video_path):
-        raise ValueError(f'input_video_path must be a directory')
+        raise ValueError(f'input_video_path must be a file')
 
     # purge previously extracted original frames
     if not os.path.exists(enquote_paths_with_spaces(extracted_video_frames_path)):
