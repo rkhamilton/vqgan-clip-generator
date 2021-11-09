@@ -347,8 +347,10 @@ def filesize_matching_aspect_ratio(file_name, desired_x, desired_y):
         restyled_image_y (int) : Height of an image file matching the aspect ratio of the input image filename.
     """
     # get the source video file dimensions
-    files = glob.glob(file_name)
-    img=Image.open(files[0])
+    if not os.path.exists(file_name):
+        print(f'FILE NOT FOUND: {file_name}')
+        raise ValueError('Input argument file_name not found.')
+    img=Image.open(file_name)
     source_img_x,source_img_y=img.size
     img.close()
     source_aspect_ratio = source_img_x/source_img_y
