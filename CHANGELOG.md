@@ -1,3 +1,9 @@
+# v2.3.1
+**Bug Fixes**
+* extract_video_frames() had a misleading error message, which is clarified.
+* restyle_video_naive.py had some bugs because it hadn't been kept up with API changes. It should run now, but it is still using the deprecated restyle_video function, so you should move to style_transfer.py as your example starting point.
+* extract_video_frames() will do a better job purging existing files from the extraction folder.
+
 # v2.3.0
 * added init_weight as option to generate.image(). It works the same as in the other functions, but was missing from image.
 # v2.2.2
