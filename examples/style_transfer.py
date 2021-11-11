@@ -9,7 +9,7 @@ import subprocess
 from vqgan_clip import _functional as VF
 
 config = VQGAN_CLIP_Config()
-config.output_image_size = [256, 256]
+config.output_image_size = [684, 384]
 text_prompts = 'portrait covered in spiders charcoal drawing'
 input_video_path = '20211004_132008000_iOS.MOV'
 output_root_dir = 'example media'
