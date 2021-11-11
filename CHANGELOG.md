@@ -1,3 +1,7 @@
+# v2.3.2
+**Bug Fixes**
+* style_transfer did not correctly pass an init_weight to image(), resulting is non-changing video output. Fixes issue [#61](https://github.com/rkhamilton/vqgan-clip-generator/issues/61).
+
 # v2.3.1
 **Bug Fixes**
 * extract_video_frames() had a misleading error message, which is clarified.
