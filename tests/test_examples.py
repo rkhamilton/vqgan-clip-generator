@@ -52,4 +52,7 @@ def test_examples_zoom_video():
     cmnd = 'python ' + os.path.join(EXAMPLES_PATH,'zoom_video.py')
     subprocess.check_output(cmnd)
 
-
+@pytest.mark.slow
+def test_examples_alternate_models():
+    cmnd = 'python ' + os.path.join(EXAMPLES_PATH,'alternate_models.py')
+    subprocess.check_output(cmnd)

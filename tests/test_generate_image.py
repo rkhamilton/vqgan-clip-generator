@@ -284,3 +284,97 @@ def test_image_no_folder(testing_config):
     assert os.path.exists(output_filename)
     os.remove(output_filename)
 
+def test_image_vqgan_imagenet_f16_16384(testing_config, tmpdir):
+    '''Generate a single jpg image using vqgan_imagenet_f16_16384
+    '''
+    config = testing_config
+    config.vqgan_model_name = 'vqgan_imagenet_f16_16384'
+    config.vqgan_model_yaml_url = f'https://heibox.uni-heidelberg.de/d/a7530b09fed84f80a887/files/?p=%2Fconfigs%2Fmodel.yaml&dl=1'
+    config.vqgan_model_ckpt_url = f'https://heibox.uni-heidelberg.de/d/a7530b09fed84f80a887/files/?p=%2Fckpts%2Flast.ckpt&dl=1'
+    config.output_image_size = [128,128]
+    output_filename = str(tmpdir.mkdir('output').join('output.jpg'))
+    vqgan_clip.generate.image(eng_config=config,
+        text_prompts = 'A painting of flowers in the renaissance style:0.5|rembrandt:0.5^fish:0.2|love:1',
+        image_prompts = [],
+        noise_prompts = [],
+        init_image = [],
+        iterations = 5,
+        output_filename = output_filename)
+    assert os.path.exists(output_filename)
+    os.remove(output_filename)
+
+def test_image_vqgan_imagenet_f16_1024(testing_config, tmpdir):
+    '''Generate a single jpg image using vqgan_imagenet_f16_1024
+    '''
+    config = testing_config
+    config.vqgan_model_name = 'vqgan_imagenet_f16_1024'
+    config.vqgan_model_yaml_url = f'https://heibox.uni-heidelberg.de/d/8088892a516d4e3baf92/files/?p=%2Fconfigs%2Fmodel.yaml&dl=1'
+    config.vqgan_model_ckpt_url = f'https://heibox.uni-heidelberg.de/d/8088892a516d4e3baf92/files/?p=%2Fckpts%2Flast.ckpt&dl=1'
+    config.output_image_size = [128,128]
+    output_filename = str(tmpdir.mkdir('output').join('output.jpg'))
+    vqgan_clip.generate.image(eng_config=config,
+        text_prompts = 'A painting of flowers in the renaissance style:0.5|rembrandt:0.5^fish:0.2|love:1',
+        image_prompts = [],
+        noise_prompts = [],
+        init_image = [],
+        iterations = 5,
+        output_filename = output_filename)
+    assert os.path.exists(output_filename)
+    os.remove(output_filename)
+
+def test_image_sflckr(testing_config, tmpdir):
+    '''Generate a single jpg image using sflckr
+    '''
+    config = testing_config
+    config.vqgan_model_name = 'vqgan_imagenet_f16_1024'
+    config.vqgan_model_yaml_url = f'https://heibox.uni-heidelberg.de/d/8088892a516d4e3baf92/files/?p=%2Fconfigs%2Fmodel.yaml&dl=1'
+    config.vqgan_model_ckpt_url = f'https://heibox.uni-heidelberg.de/d/8088892a516d4e3baf92/files/?p=%2Fckpts%2Flast.ckpt&dl=1'
+    config.output_image_size = [128,128]
+    output_filename = str(tmpdir.mkdir('output').join('output.jpg'))
+    vqgan_clip.generate.image(eng_config=config,
+        text_prompts = 'A painting of flowers in the renaissance style:0.5|rembrandt:0.5^fish:0.2|love:1',
+        image_prompts = [],
+        noise_prompts = [],
+        init_image = [],
+        iterations = 5,
+        output_filename = output_filename)
+    assert os.path.exists(output_filename)
+    os.remove(output_filename)
+
+def test_image_coco_transformer(testing_config, tmpdir):
+    '''Generate a single jpg image using coco_transformer
+    '''
+    config = testing_config
+    config.vqgan_model_name = 'coco_transformer'
+    config.vqgan_model_yaml_url = f'https://dl.nmkd.de/ai/clip/coco/coco.yaml'
+    config.vqgan_model_ckpt_url = f'https://dl.nmkd.de/ai/clip/coco/coco.ckpt'
+    config.output_image_size = [128,128]
+    output_filename = str(tmpdir.mkdir('output').join('output.jpg'))
+    vqgan_clip.generate.image(eng_config=config,
+        text_prompts = 'A painting of flowers in the renaissance style:0.5|rembrandt:0.5^fish:0.2|love:1',
+        image_prompts = [],
+        noise_prompts = [],
+        init_image = [],
+        iterations = 5,
+        output_filename = output_filename)
+    assert os.path.exists(output_filename)
+    os.remove(output_filename)
+
+def test_image_vqgan_gumbel_f8(testing_config, tmpdir):
+    '''Generate a single jpg image using coco_transformer
+    '''
+    config = testing_config
+    config.vqgan_model_name = 'vqgan_gumbel_f8'
+    config.vqgan_model_yaml_url = f'https://heibox.uni-heidelberg.de/d/2e5662443a6b4307b470/files/?p=%2Fconfigs%2Fmodel.yaml&dl=1'
+    config.vqgan_model_ckpt_url = f'https://heibox.uni-heidelberg.de/d/2e5662443a6b4307b470/files/?p=%2Fckpts%2Flast.ckpt&dl=1'
+    config.output_image_size = [128,128]
+    output_filename = str(tmpdir.mkdir('output').join('output.jpg'))
+    vqgan_clip.generate.image(eng_config=config,
+        text_prompts = 'A painting of flowers in the renaissance style:0.5|rembrandt:0.5^fish:0.2|love:1',
+        image_prompts = [],
+        noise_prompts = [],
+        init_image = [],
+        iterations = 5,
+        output_filename = output_filename)
+    assert os.path.exists(output_filename)
+    os.remove(output_filename)
