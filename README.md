@@ -49,7 +49,7 @@ pip install git+https://github.com/openai/CLIP.git taming-transformers==0.0.1 ft
 pip install git+https://github.com/rkhamilton/vqgan-clip-generator.git
 ```
 
-The library is under active development as of November 2021. To upgrade to the latest version, use pip to update the package.
+To upgrade to the latest version of this package, use the standard pip upgrade command.
 ```sh
 pip install git+https://github.com/rkhamilton/vqgan-clip-generator.git --upgrade 
 ```
